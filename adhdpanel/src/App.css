@@ -1,0 +1,34 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.adhd-panel {
+  display: flex;
+  height: 100%;
+}
+
+.side-menu {
+  width: 200px;
+  background-color: lightgray;
+}
+
+.side-menu ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.side-menu li {
+  padding: 10px;
+  margin-bottom: 5px;
+}
+
+.side-menu li a {
+  text-decoration: none;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 20px;
+}
