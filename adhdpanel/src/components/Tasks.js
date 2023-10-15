@@ -217,8 +217,8 @@ const TaskManagementPanel = () => {
   };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", textAlign: "center", maxWidth: "400px", margin: "0 auto", backgroundColor: "#000", color: "#fff" }}>
-      <h2 style={{ color: "#555", margin: "20px 0" }}>Task Management Panel</h2>
+    <div style={{ fontFamily: "Arial, sans-serif", textAlign: "center", maxWidth: "400px", margin: "0 auto", backgroundColor: "#222", color: "#fff", padding: "20px" }}>
+      <h2 style={{ color: "#fff", marginBottom: "20px" }}>Task Management Panel</h2>
       <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
         <input
           type="text"
@@ -226,18 +226,18 @@ const TaskManagementPanel = () => {
           onChange={handleTaskChange}
           placeholder="Enter task"
           ref={taskInputRef} // Focus on the input field on render
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", flex: 1, backgroundColor: "#000", color: "#fff" }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", flex: 1, backgroundColor: "#555", color: "#fff" }}
         />
         <input
           type="date"
           value={dueDate}
           onChange={handleDueDateChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "#000", color: "#fff" }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", backgroundColor: "#555", color: "#fff" }}
         />
         <select
           value={priority}
           onChange={handlePriorityChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "#000", color: "#fff" }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", backgroundColor: "#555", color: "#fff" }}
         >
           <option value={TaskPriority.HIGH}>High</option>
           <option value={TaskPriority.MEDIUM}>Medium</option>
@@ -246,7 +246,7 @@ const TaskManagementPanel = () => {
         <select
           value={category}
           onChange={handleCategoryChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "#000", color: "#fff" }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", backgroundColor: "#555", color: "#fff" }}
         >
           <option value={TaskCategories.WORK}>Work</option>
           <option value={TaskCategories.PERSONAL}>Personal</option>
@@ -256,18 +256,19 @@ const TaskManagementPanel = () => {
           onClick={handleAddTask}
           style={{
             backgroundColor: "#3EA055",
-            color: "white",
+            color: "#fff",
             border: "none",
             padding: "8px 20px",
             borderRadius: "4px",
             cursor: "pointer",
+            outline: "none",
           }}
         >
           Add Task
         </button>
       </div>
       {taskList.length === 0 ? (
-        <p style={{ color: "#777", marginTop: "20px" }}>No tasks found. Add a task to get started!</p>
+        <p style={{ color: "#888", marginTop: "20px" }}>No tasks found. Add a task to get started!</p>
       ) : (
         <div style={{ marginTop: "20px" }}>
           <div style={{ marginBottom: "10px" }}>
@@ -278,10 +279,10 @@ const TaskManagementPanel = () => {
               style={{
                 padding: "8px",
                 borderRadius: "4px",
-                border: "1px solid #ccc",
+                border: "1px solid #555",
                 cursor: "pointer",
-                backgroundColor: "#000",
-                color: "#fff"
+                backgroundColor: "#555",
+                color: "#fff",
               }}
             >
               <option value="default">Default</option>
@@ -296,10 +297,10 @@ const TaskManagementPanel = () => {
               style={{
                 padding: "8px",
                 borderRadius: "4px",
-                border: "1px solid #ccc",
+                border: "1px solid #555",
                 cursor: "pointer",
-                backgroundColor: "#000",
-                color: "#fff"
+                backgroundColor: "#555",
+                color: "#fff",
               }}
             >
               <option value="all">All</option>
@@ -321,6 +322,7 @@ const TaskManagementPanel = () => {
                   padding: "10px",
                   borderRadius: "4px",
                   border: `1px solid ${TaskStatusColors[taskItem.status]}`,
+                  color: TaskStatusColors[taskItem.status], // Setting text color to match status color
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center" }}>
@@ -404,9 +406,9 @@ const TaskManagementPanel = () => {
                     marginLeft: "10px",
                     padding: "8px",
                     borderRadius: "4px",
-                    border: "1px solid #ccc",
-                    backgroundColor: "#000",
-                    color: "#fff"
+                    border: "1px solid #555",
+                    backgroundColor: "#555",
+                    color: "#fff",
                   }}
                 />
               </div>
@@ -419,11 +421,11 @@ const TaskManagementPanel = () => {
                     marginLeft: "10px",
                     padding: "8px",
                     borderRadius: "4px",
-                    border: "1px solid #ccc",
+                    border: "1px solid #555",
                     width: "100%",
                     height: "80px",
-                    backgroundColor: "#000",
-                    color: "#fff"
+                    backgroundColor: "#555",
+                    color: "#fff",
                   }}
                 />
               </div>
@@ -436,9 +438,9 @@ const TaskManagementPanel = () => {
                     marginLeft: "10px",
                     padding: "8px",
                     borderRadius: "4px",
-                    border: "1px solid #ccc",
-                    backgroundColor: "#000",
-                    color: "#fff"
+                    border: "1px solid #555",
+                    backgroundColor: "#555",
+                    color: "#fff",
                   }}
                 >
                   <option value={TaskPriority.HIGH}>High</option>
@@ -455,9 +457,9 @@ const TaskManagementPanel = () => {
                     marginLeft: "10px",
                     padding: "8px",
                     borderRadius: "4px",
-                    border: "1px solid #ccc",
-                    backgroundColor: "#000",
-                    color: "#fff"
+                    border: "1px solid #555",
+                    backgroundColor: "#555",
+                    color: "#fff",
                   }}
                 >
                   <option value={TaskCategories.WORK}>Work</option>
@@ -477,9 +479,9 @@ const TaskManagementPanel = () => {
                         marginRight: "10px",
                         padding: "8px",
                         borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#000",
-                        color: "#fff"
+                        border: "1px solid #555",
+                        backgroundColor: "#555",
+                        color: "#fff",
                       }}
                     />
                     <input
@@ -490,9 +492,9 @@ const TaskManagementPanel = () => {
                         marginRight: "10px",
                         padding: "8px",
                         borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#000",
-                        color: "#fff"
+                        border: "1px solid #555",
+                        backgroundColor: "#555",
+                        color: "#fff",
                       }}
                     />
                     <button
