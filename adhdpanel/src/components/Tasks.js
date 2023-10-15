@@ -60,7 +60,8 @@ const TaskManagementPanel = () => {
 
   const handleAddTask = () => {
     if (task.trim() !== "") {
-      setTaskList([...taskList, { task, status, dueDate, notes, priority, category, reminders }]);
+      const newTask = { task, status, dueDate, notes, priority, category, reminders };
+      setTaskList([...taskList, newTask]);
       setTask("");
       setStatus(TaskStatus.PENDING);
       setDueDate("");
@@ -216,7 +217,7 @@ const TaskManagementPanel = () => {
   };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", textAlign: "center", maxWidth: "400px", margin: "0 auto" }}>
+    <div style={{ fontFamily: "Arial, sans-serif", textAlign: "center", maxWidth: "400px", margin: "0 auto", backgroundColor: "#000", color: "#fff" }}>
       <h2 style={{ color: "#555", margin: "20px 0" }}>Task Management Panel</h2>
       <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
         <input
@@ -225,18 +226,18 @@ const TaskManagementPanel = () => {
           onChange={handleTaskChange}
           placeholder="Enter task"
           ref={taskInputRef} // Focus on the input field on render
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", flex: 1 }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", flex: 1, backgroundColor: "#000", color: "#fff" }}
         />
         <input
           type="date"
           value={dueDate}
           onChange={handleDueDateChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "#000", color: "#fff" }}
         />
         <select
           value={priority}
           onChange={handlePriorityChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "#000", color: "#fff" }}
         >
           <option value={TaskPriority.HIGH}>High</option>
           <option value={TaskPriority.MEDIUM}>Medium</option>
@@ -245,7 +246,7 @@ const TaskManagementPanel = () => {
         <select
           value={category}
           onChange={handleCategoryChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: "#000", color: "#fff" }}
         >
           <option value={TaskCategories.WORK}>Work</option>
           <option value={TaskCategories.PERSONAL}>Personal</option>
@@ -270,7 +271,7 @@ const TaskManagementPanel = () => {
       ) : (
         <div style={{ marginTop: "20px" }}>
           <div style={{ marginBottom: "10px" }}>
-            <label style={{ marginRight: "10px" }}>Sort Order:</label>
+            <label style={{ marginRight: "10px", color: "#fff" }}>Sort Order:</label>
             <select
               value={sortOrder}
               onChange={handleSortOrderChange}
@@ -279,6 +280,8 @@ const TaskManagementPanel = () => {
                 borderRadius: "4px",
                 border: "1px solid #ccc",
                 cursor: "pointer",
+                backgroundColor: "#000",
+                color: "#fff"
               }}
             >
               <option value="default">Default</option>
@@ -286,7 +289,7 @@ const TaskManagementPanel = () => {
               <option value="overdue">Overdue</option>
               <option value="completed">Completed</option>
             </select>
-            <label style={{ marginLeft: "20px" }}>Filter Status:</label>
+            <label style={{ marginLeft: "20px", color: "#fff" }}>Filter Status:</label>
             <select
               value={filterStatus}
               onChange={handleFilterStatusChange}
@@ -295,6 +298,8 @@ const TaskManagementPanel = () => {
                 borderRadius: "4px",
                 border: "1px solid #ccc",
                 cursor: "pointer",
+                backgroundColor: "#000",
+                color: "#fff"
               }}
             >
               <option value="all">All</option>
@@ -390,7 +395,7 @@ const TaskManagementPanel = () => {
             <div style={{ marginTop: "20px" }}>
               <h3>Task Details</h3>
               <div style={{ marginBottom: "10px" }}>
-                <label style={{ marginRight: "10px" }}>Due Date:</label>
+                <label style={{ marginRight: "10px", color: "#fff" }}>Due Date:</label>
                 <input
                   type="date"
                   value={dueDate}
@@ -400,11 +405,13 @@ const TaskManagementPanel = () => {
                     padding: "8px",
                     borderRadius: "4px",
                     border: "1px solid #ccc",
+                    backgroundColor: "#000",
+                    color: "#fff"
                   }}
                 />
               </div>
               <div>
-                <label style={{ marginRight: "10px" }}>Notes:</label>
+                <label style={{ marginRight: "10px", color: "#fff" }}>Notes:</label>
                 <textarea
                   value={notes}
                   onChange={handleNotesChange}
@@ -415,11 +422,13 @@ const TaskManagementPanel = () => {
                     border: "1px solid #ccc",
                     width: "100%",
                     height: "80px",
+                    backgroundColor: "#000",
+                    color: "#fff"
                   }}
                 />
               </div>
               <div style={{ marginTop: "20px" }}>
-                <label style={{ marginRight: "10px" }}>Priority:</label>
+                <label style={{ marginRight: "10px", color: "#fff" }}>Priority:</label>
                 <select
                   value={priority}
                   onChange={handlePriorityChange}
@@ -428,6 +437,8 @@ const TaskManagementPanel = () => {
                     padding: "8px",
                     borderRadius: "4px",
                     border: "1px solid #ccc",
+                    backgroundColor: "#000",
+                    color: "#fff"
                   }}
                 >
                   <option value={TaskPriority.HIGH}>High</option>
@@ -436,7 +447,7 @@ const TaskManagementPanel = () => {
                 </select>
               </div>
               <div style={{ marginTop: "20px" }}>
-                <label style={{ marginRight: "10px" }}>Category:</label>
+                <label style={{ marginRight: "10px", color: "#fff" }}>Category:</label>
                 <select
                   value={category}
                   onChange={handleCategoryChange}
@@ -445,6 +456,8 @@ const TaskManagementPanel = () => {
                     padding: "8px",
                     borderRadius: "4px",
                     border: "1px solid #ccc",
+                    backgroundColor: "#000",
+                    color: "#fff"
                   }}
                 >
                   <option value={TaskCategories.WORK}>Work</option>
@@ -465,6 +478,8 @@ const TaskManagementPanel = () => {
                         padding: "8px",
                         borderRadius: "4px",
                         border: "1px solid #ccc",
+                        backgroundColor: "#000",
+                        color: "#fff"
                       }}
                     />
                     <input
@@ -476,6 +491,8 @@ const TaskManagementPanel = () => {
                         padding: "8px",
                         borderRadius: "4px",
                         border: "1px solid #ccc",
+                        backgroundColor: "#000",
+                        color: "#fff"
                       }}
                     />
                     <button
