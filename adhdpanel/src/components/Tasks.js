@@ -345,8 +345,8 @@ const TaskManagementPanel = () => {
                       outline: "none",
                       fontSize: "16px",
                       fontWeight: "bold",
-                      backgroundColor: "transparent",
-                      color: "#fff",
+                      backgroundColor: "lightgrey",
+                      color: "#000",
                     }}
                   />
                 </div>
