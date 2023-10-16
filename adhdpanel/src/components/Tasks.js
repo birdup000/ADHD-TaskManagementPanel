@@ -224,13 +224,12 @@ const TaskManagementPanel = () => {
     <div style={{ 
       fontFamily: "Arial, sans-serif", 
       textAlign: "center", 
-      maxWidth: "400px", 
+      maxWidth: "600px", 
       margin: "0 auto", 
-      backgroundColor: "#222", 
-      color: "#fff", 
+      backgroundColor: "#f5f5f5", 
       padding: "20px" 
     }}>
-      <h2 style={{ color: "#fff", marginBottom: "20px" }}>Task Management Panel</h2>
+      <h2 style={{ color: "#000", marginBottom: "20px" }}>Task Management Panel</h2>
       <div style={{ 
         display: "flex", 
         alignItems: "center", 
@@ -248,8 +247,7 @@ const TaskManagementPanel = () => {
             borderRadius: "4px", 
             border: "1px solid #555", 
             flex: 1, 
-            backgroundColor: "#555", 
-            color: "#fff" 
+            outline: "none" 
           }}
         />
         <select
@@ -260,8 +258,7 @@ const TaskManagementPanel = () => {
             padding: "8px",
             borderRadius: "4px",
             border: "1px solid #555",
-            backgroundColor: "#555",
-            color: "#fff"
+            outline: "none"
           }}
         >
           <option value={TaskPriority.HIGH}>High</option>
@@ -276,8 +273,7 @@ const TaskManagementPanel = () => {
             padding: "8px",
             borderRadius: "4px",
             border: "1px solid #555",
-            backgroundColor: "#555",
-            color: "#fff"
+            outline: "none"
           }}
         >
           <option value={TaskCategories.WORK}>Work</option>
@@ -304,7 +300,7 @@ const TaskManagementPanel = () => {
       ) : (
         <div style={{ marginTop: "20px" }}>
           <div style={{ marginBottom: "10px" }}>
-            <label style={{ marginRight: "10px", color: "#fff" }}>Sort Order:</label>
+            <label style={{ marginRight: "10px", color: "#000" }}>Sort Order:</label>
             <select
               value={sortOrder}
               onChange={handleSortOrderChange}
@@ -313,8 +309,8 @@ const TaskManagementPanel = () => {
                 borderRadius: "4px",
                 border: "1px solid #555",
                 cursor: "pointer",
-                backgroundColor: "#555",
-                color: "#fff",
+                outline: "none",
+                marginRight: "10px"
               }}
             >
               <option value="default">Default</option>
@@ -322,7 +318,7 @@ const TaskManagementPanel = () => {
               <option value="overdue">Overdue</option>
               <option value="completed">Completed</option>
             </select>
-            <label style={{ marginLeft: "20px", color: "#fff" }}>Filter Status:</label>
+            <label style={{ marginRight: "10px", color: "#000" }}>Filter Status:</label>
             <select
               value={filterStatus}
               onChange={handleFilterStatusChange}
@@ -331,8 +327,7 @@ const TaskManagementPanel = () => {
                 borderRadius: "4px",
                 border: "1px solid #555",
                 cursor: "pointer",
-                backgroundColor: "#555",
-                color: "#fff",
+                outline: "none",
               }}
             >
               <option value="all">All</option>
@@ -350,10 +345,10 @@ const TaskManagementPanel = () => {
                   alignItems: "center",
                   justifyContent: "space-between",
                   margin: "10px 0",
-                  backgroundColor: selectedTaskIndex === index ? "#eaf6ff" : "#f5f5f5",
+                  backgroundColor: selectedTaskIndex === index ? "#eaf6ff" : "#fff",
                   padding: "10px",
                   borderRadius: "4px",
-                  border: `1px solid ${TaskStatusColors[taskItem.status]}`,
+                  border: `2px solid ${TaskStatusColors[taskItem.status]}`,
                   color: TaskStatusColors[taskItem.status], // Setting text color to match status color
                 }}
               >
@@ -377,8 +372,6 @@ const TaskManagementPanel = () => {
                       outline: "none",
                       fontSize: "16px",
                       fontWeight: "bold",
-                      backgroundColor: "lightgrey",
-                      color: "#000",
                     }}
                   />
                 </div>
@@ -396,7 +389,7 @@ const TaskManagementPanel = () => {
                       backgroundColor: TaskStatusColors[taskItem.status],
                       color: "#fff",
                       border: "none",
-                      padding: "6px 12px",
+                      padding: "4px 8px",
                       borderRadius: "4px",
                       fontSize: "12px",
                       marginRight: "6px",
@@ -412,7 +405,7 @@ const TaskManagementPanel = () => {
                       backgroundColor: "#DA4147",
                       color: "#fff",
                       border: "none",
-                      padding: "6px 12px",
+                      padding: "4px 8px",
                       borderRadius: "4px",
                       fontSize: "12px",
                       cursor: "pointer",
@@ -429,7 +422,7 @@ const TaskManagementPanel = () => {
             <div style={{ marginTop: "20px" }}>
               <h3>Task Details</h3>
               <div style={{ marginBottom: "10px" }}>
-                <label style={{ marginRight: "10px", color: "#fff" }}>Due Date:</label>
+                <label style={{ marginRight: "10px", color: "#000" }}>Due Date:</label>
                 <input
                   type="date"
                   value={dueDate}
@@ -439,13 +432,12 @@ const TaskManagementPanel = () => {
                     padding: "8px",
                     borderRadius: "4px",
                     border: "1px solid #555",
-                    backgroundColor: "#555",
-                    color: "#fff",
+                    outline: "none",
                   }}
                 />
               </div>
               <div>
-                <label style={{ marginRight: "10px", color: "#fff" }}>Notes:</label>
+                <label style={{ marginRight: "10px", color: "#000" }}>Notes:</label>
                 <textarea
                   value={notes}
                   onChange={handleNotesChange}
@@ -456,13 +448,12 @@ const TaskManagementPanel = () => {
                     border: "1px solid #555",
                     width: "100%",
                     height: "80px",
-                    backgroundColor: "#555",
-                    color: "#fff",
+                    outline: "none",
                   }}
                 />
               </div>
               <div style={{ marginTop: "20px" }}>
-                <label style={{ marginRight: "10px", color: "#fff" }}>Priority:</label>
+                <label style={{ marginRight: "10px", color: "#000" }}>Priority:</label>
                 <select
                   value={priority}
                   onChange={handlePriorityChange}
@@ -471,8 +462,7 @@ const TaskManagementPanel = () => {
                     padding: "8px",
                     borderRadius: "4px",
                     border: "1px solid #555",
-                    backgroundColor: "#555",
-                    color: "#fff",
+                    outline: "none",
                   }}
                 >
                   <option value={TaskPriority.HIGH}>High</option>
@@ -481,7 +471,7 @@ const TaskManagementPanel = () => {
                 </select>
               </div>
               <div style={{ marginTop: "20px" }}>
-                <label style={{ marginRight: "10px", color: "#fff" }}>Category:</label>
+                <label style={{ marginRight: "10px", color: "#000" }}>Category:</label>
                 <select
                   value={category}
                   onChange={handleCategoryChange}
@@ -490,8 +480,7 @@ const TaskManagementPanel = () => {
                     padding: "8px",
                     borderRadius: "4px",
                     border: "1px solid #555",
-                    backgroundColor: "#555",
-                    color: "#fff",
+                    outline: "none",
                   }}
                 >
                   <option value={TaskCategories.WORK}>Work</option>
@@ -512,8 +501,7 @@ const TaskManagementPanel = () => {
                         padding: "8px",
                         borderRadius: "4px",
                         border: "1px solid #555",
-                        backgroundColor: "#555",
-                        color: "#fff",
+                        outline: "none",
                       }}
                     />
                     <input
@@ -525,8 +513,7 @@ const TaskManagementPanel = () => {
                         padding: "8px",
                         borderRadius: "4px",
                         border: "1px solid #555",
-                        backgroundColor: "#555",
-                        color: "#fff",
+                        outline: "none",
                       }}
                     />
                     <button
@@ -535,7 +522,7 @@ const TaskManagementPanel = () => {
                         backgroundColor: "#DA4147",
                         color: "#fff",
                         border: "none",
-                        padding: "6px 12px",
+                        padding: "4px 8px",
                         borderRadius: "4px",
                         fontSize: "12px",
                         cursor: "pointer",
@@ -552,7 +539,7 @@ const TaskManagementPanel = () => {
                     backgroundColor: "#3EA055",
                     color: "#fff",
                     border: "none",
-                    padding: "6px 12px",
+                    padding: "4px 8px",
                     borderRadius: "4px",
                     fontSize: "12px",
                     cursor: "pointer",
