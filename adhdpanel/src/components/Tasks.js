@@ -62,13 +62,7 @@ const TaskManagementPanel = () => {
     if (task.trim() !== "") {
       const newTask = { task, status, dueDate, notes, priority, category, reminders };
       setTaskList([...taskList, newTask]);
-      setTask("");
-      setStatus(TaskStatus.PENDING);
-      setDueDate("");
-      setNotes("");
-      setPriority(TaskPriority.MEDIUM);
-      setCategory(TaskCategories.WORK);
-      setReminders([]);
+      resetForm();
     }
   };
 
@@ -212,32 +206,63 @@ const TaskManagementPanel = () => {
     setTaskList(updatedTaskList);
   };
 
+  const resetForm = () => {
+    setTask("");
+    setStatus(TaskStatus.PENDING);
+    setDueDate("");
+    setNotes("");
+    setPriority(TaskPriority.MEDIUM);
+    setCategory(TaskCategories.WORK);
+    setReminders([]);
+  };
+
   const formatTime = (time) => {
     return time.substr(0, 5);
   };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", textAlign: "center", maxWidth: "400px", margin: "0 auto", backgroundColor: "#222", color: "#fff", padding: "20px" }}>
+    <div style={{ 
+      fontFamily: "Arial, sans-serif", 
+      textAlign: "center", 
+      maxWidth: "400px", 
+      margin: "0 auto", 
+      backgroundColor: "#222", 
+      color: "#fff", 
+      padding: "20px" 
+    }}>
       <h2 style={{ color: "#fff", marginBottom: "20px" }}>Task Management Panel</h2>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
+      <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        marginBottom: "10px" 
+      }}>
         <input
           type="text"
           value={task}
           onChange={handleTaskChange}
           placeholder="Enter task"
           ref={taskInputRef} // Focus on the input field on render
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", flex: 1, backgroundColor: "#555", color: "#fff" }}
-        />
-        <input
-          type="date"
-          value={dueDate}
-          onChange={handleDueDateChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", backgroundColor: "#555", color: "#fff" }}
+          style={{ 
+            marginRight: "10px", 
+            padding: "8px", 
+            borderRadius: "4px", 
+            border: "1px solid #555", 
+            flex: 1, 
+            backgroundColor: "#555", 
+            color: "#fff" 
+          }}
         />
         <select
           value={priority}
           onChange={handlePriorityChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", backgroundColor: "#555", color: "#fff" }}
+          style={{
+            marginRight: "10px",
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #555",
+            backgroundColor: "#555",
+            color: "#fff"
+          }}
         >
           <option value={TaskPriority.HIGH}>High</option>
           <option value={TaskPriority.MEDIUM}>Medium</option>
@@ -246,7 +271,14 @@ const TaskManagementPanel = () => {
         <select
           value={category}
           onChange={handleCategoryChange}
-          style={{ marginRight: "10px", padding: "8px", borderRadius: "4px", border: "1px solid #555", backgroundColor: "#555", color: "#fff" }}
+          style={{
+            marginRight: "10px",
+            padding: "8px",
+            borderRadius: "4px",
+            border: "1px solid #555",
+            backgroundColor: "#555",
+            color: "#fff"
+          }}
         >
           <option value={TaskCategories.WORK}>Work</option>
           <option value={TaskCategories.PERSONAL}>Personal</option>
