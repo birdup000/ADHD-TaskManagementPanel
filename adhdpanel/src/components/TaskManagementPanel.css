@@ -138,6 +138,7 @@
   
   .task-details-heading {
     margin-top: 0;
+    color: black;
   }
   
   .due-date-container, .notes-container, .priority-container, .category-container {
@@ -159,6 +160,7 @@
   
   .reminders-container {
     margin-top: 20px;
+    color: black;
   }
   
   .reminders-label {
