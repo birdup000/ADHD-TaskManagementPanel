@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import TaskManagementPanelCSS from "./TaskManagementPanel.css";
+
 
 const TaskStatus = {
   PENDING: "pending",
@@ -221,45 +223,21 @@ const TaskManagementPanel = () => {
   };
 
   return (
-    <div style={{ 
-      fontFamily: "Arial, sans-serif", 
-      textAlign: "center", 
-      maxWidth: "600px", 
-      margin: "0 auto", 
-      backgroundColor: "#f5f5f5", 
-      padding: "20px" 
-    }}>
-      <h2 style={{ color: "#000", marginBottom: "20px" }}>Task Management Panel</h2>
-      <div style={{ 
-        display: "flex", 
-        alignItems: "center", 
-        marginBottom: "10px" 
-      }}>
+    <div className="task-management-panel">
+      <h2 className="heading">Task Management Panel</h2>
+      <div className="add-task">
         <input
           type="text"
           value={task}
           onChange={handleTaskChange}
           placeholder="Enter task"
-          ref={taskInputRef} // Focus on the input field on render
-          style={{ 
-            marginRight: "10px", 
-            padding: "8px", 
-            borderRadius: "4px", 
-            border: "1px solid #555", 
-            flex: 1, 
-            outline: "none" 
-          }}
+          ref={taskInputRef}
+          className="task-input"
         />
         <select
           value={priority}
           onChange={handlePriorityChange}
-          style={{
-            marginRight: "10px",
-            padding: "8px",
-            borderRadius: "4px",
-            border: "1px solid #555",
-            outline: "none"
-          }}
+          className="select-priority"
         >
           <option value={TaskPriority.HIGH}>High</option>
           <option value={TaskPriority.MEDIUM}>Medium</option>
@@ -268,13 +246,7 @@ const TaskManagementPanel = () => {
         <select
           value={category}
           onChange={handleCategoryChange}
-          style={{
-            marginRight: "10px",
-            padding: "8px",
-            borderRadius: "4px",
-            border: "1px solid #555",
-            outline: "none"
-          }}
+          className="select-category"
         >
           <option value={TaskCategories.WORK}>Work</option>
           <option value={TaskCategories.PERSONAL}>Personal</option>
@@ -282,53 +254,32 @@ const TaskManagementPanel = () => {
         </select>
         <button
           onClick={handleAddTask}
-          style={{
-            backgroundColor: "#3EA055",
-            color: "#fff",
-            border: "none",
-            padding: "8px 20px",
-            borderRadius: "4px",
-            cursor: "pointer",
-            outline: "none",
-          }}
+          className="add-button"
         >
           Add Task
         </button>
       </div>
       {taskList.length === 0 ? (
-        <p style={{ color: "#888", marginTop: "20px" }}>No tasks found. Add a task to get started!</p>
+        <p className="no-tasks">No tasks found. Add a task to get started!</p>
       ) : (
-        <div style={{ marginTop: "20px" }}>
-          <div style={{ marginBottom: "10px" }}>
-            <label style={{ marginRight: "10px", color: "#000" }}>Sort Order:</label>
+        <div>
+          <div className="sort-filter">
+            <label className="sort-label">Sort Order:</label>
             <select
               value={sortOrder}
               onChange={handleSortOrderChange}
-              style={{
-                padding: "8px",
-                borderRadius: "4px",
-                border: "1px solid #555",
-                cursor: "pointer",
-                outline: "none",
-                marginRight: "10px"
-              }}
+              className="select-sort"
             >
               <option value="default">Default</option>
               <option value="pending">Pending</option>
               <option value="overdue">Overdue</option>
               <option value="completed">Completed</option>
             </select>
-            <label style={{ marginRight: "10px", color: "#000" }}>Filter Status:</label>
+            <label className="filter-label">Filter Status:</label>
             <select
               value={filterStatus}
               onChange={handleFilterStatusChange}
-              style={{
-                padding: "8px",
-                borderRadius: "4px",
-                border: "1px solid #555",
-                cursor: "pointer",
-                outline: "none",
-              }}
+              className="select-filter"
             >
               <option value="all">All</option>
               <option value={TaskStatus.PENDING}>Pending</option>
@@ -336,46 +287,28 @@ const TaskManagementPanel = () => {
               <option value={TaskStatus.COMPLETED}>Completed</option>
             </select>
           </div>
-          <ul style={{ listStyleType: "none", padding: 0 }}>
+          <ul className="task-list">
             {getSortedFilteredTaskList().map((taskItem, index) => (
               <li
                 key={index}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  margin: "10px 0",
-                  backgroundColor: selectedTaskIndex === index ? "#eaf6ff" : "#fff",
-                  padding: "10px",
-                  borderRadius: "4px",
-                  border: `2px solid ${TaskStatusColors[taskItem.status]}`,
-                  color: TaskStatusColors[taskItem.status], // Setting text color to match status color
-                }}
+                className={selectedTaskIndex === index ? "task-item selected" : "task-item"}
+                style={{ borderColor: TaskStatusColors[taskItem.status], color: TaskStatusColors[taskItem.status] }}
               >
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div className="task-details">
                   <input
                     type="checkbox"
                     checked={selectedTaskIndex === index}
                     onChange={() => handleSelectTask(index)}
-                    style={{ marginRight: "10px" }}
+                    className="task-checkbox"
                   />
                   <input
                     type="text"
                     value={taskItem.task}
                     onChange={(event) => handleRenameTask(index, event.target.value)}
-                    style={{
-                      marginRight: "10px",
-                      padding: "8px",
-                      borderRadius: "4px",
-                      border: "none",
-                      flex: 1,
-                      outline: "none",
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                    }}
+                    className="task-name"
                   />
                 </div>
-                <div>
+                <div className="task-actions">
                   <button
                     onClick={() =>
                       handleSetTaskStatus(
@@ -385,32 +318,13 @@ const TaskManagementPanel = () => {
                           : TaskStatus.PENDING
                       )
                     }
-                    style={{
-                      backgroundColor: TaskStatusColors[taskItem.status],
-                      color: "#fff",
-                      border: "none",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      marginRight: "6px",
-                      cursor: "pointer",
-                      outline: "none",
-                    }}
+                    className="status-button"
                   >
                     {taskItem.status === TaskStatus.PENDING ? "Set Overdue" : "Set Pending"}
                   </button>
                   <button
                     onClick={() => handleDeleteTask(index)}
-                    style={{
-                      backgroundColor: "#DA4147",
-                      color: "#fff",
-                      border: "none",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      fontSize: "12px",
-                      cursor: "pointer",
-                      outline: "none",
-                    }}
+                    className="delete-button"
                   >
                     Delete
                   </button>
@@ -419,115 +333,68 @@ const TaskManagementPanel = () => {
             ))}
           </ul>
           {selectedTaskIndex >= 0 && (
-            <div style={{ marginTop: "20px" }}>
-              <h3>Task Details</h3>
-              <div style={{ marginBottom: "10px" }}>
-                <label style={{ marginRight: "10px", color: "#000" }}>Due Date:</label>
+            <div className="task-details-container">
+              <h3 className="task-details-heading">Task Details</h3>
+              <div className="due-date-container">
+                <label className="due-date-label">Due Date:</label>
                 <input
                   type="date"
                   value={dueDate}
                   onChange={handleDueDateChange}
-                  style={{
-                    marginLeft: "10px",
-                    padding: "8px",
-                    borderRadius: "4px",
-                    border: "1px solid #555",
-                    outline: "none",
-                  }}
+                  className="due-date-input"
                 />
               </div>
-              <div>
-                <label style={{ marginRight: "10px", color: "#000" }}>Notes:</label>
+              <div className="notes-container">
+                <label className="notes-label">Notes:</label>
                 <textarea
                   value={notes}
                   onChange={handleNotesChange}
-                  style={{
-                    marginLeft: "10px",
-                    padding: "8px",
-                    borderRadius: "4px",
-                    border: "1px solid #555",
-                    width: "100%",
-                    height: "80px",
-                    outline: "none",
-                  }}
+                  className="notes-input"
                 />
               </div>
-              <div style={{ marginTop: "20px" }}>
-                <label style={{ marginRight: "10px", color: "#000" }}>Priority:</label>
+              <div className="priority-container">
+                <label className="priority-label">Priority:</label>
                 <select
                   value={priority}
                   onChange={handlePriorityChange}
-                  style={{
-                    marginLeft: "10px",
-                    padding: "8px",
-                    borderRadius: "4px",
-                    border: "1px solid #555",
-                    outline: "none",
-                  }}
+                  className="select-priority"
                 >
                   <option value={TaskPriority.HIGH}>High</option>
                   <option value={TaskPriority.MEDIUM}>Medium</option>
                   <option value={TaskPriority.LOW}>Low</option>
                 </select>
               </div>
-              <div style={{ marginTop: "20px" }}>
-                <label style={{ marginRight: "10px", color: "#000" }}>Category:</label>
+              <div className="category-container">
+                <label className="category-label">Category:</label>
                 <select
                   value={category}
                   onChange={handleCategoryChange}
-                  style={{
-                    marginLeft: "10px",
-                    padding: "8px",
-                    borderRadius: "4px",
-                    border: "1px solid #555",
-                    outline: "none",
-                  }}
+                  className="select-category"
                 >
                   <option value={TaskCategories.WORK}>Work</option>
                   <option value={TaskCategories.PERSONAL}>Personal</option>
                   <option value={TaskCategories.SHOPPING}>Shopping</option>
                 </select>
               </div>
-              <div style={{ marginTop: "20px" }}>
-                <label style={{ marginRight: "10px" }}>Reminders:</label>
+              <div className="reminders-container">
+                <label className="reminders-label">Reminders:</label>
                 {reminders.map((reminder) => (
-                  <div key={reminder.id} style={{ marginTop: "10px" }}>
+                  <div key={reminder.id} className="reminder-item">
                     <input
                       type="date"
                       value={reminder.date}
                       onChange={(event) => handleReminderDateChange(event, reminder.id)}
-                      style={{
-                        marginRight: "10px",
-                        padding: "8px",
-                        borderRadius: "4px",
-                        border: "1px solid #555",
-                        outline: "none",
-                      }}
+                      className="reminder-date"
                     />
                     <input
                       type="time"
                       value={reminder.time}
                       onChange={(event) => handleReminderTimeChange(event, reminder.id)}
-                      style={{
-                        marginRight: "10px",
-                        padding: "8px",
-                        borderRadius: "4px",
-                        border: "1px solid #555",
-                        outline: "none",
-                      }}
+                      className="reminder-time"
                     />
                     <button
                       onClick={() => handleRemoveReminder(reminder.id)}
-                      style={{
-                        backgroundColor: "#DA4147",
-                        color: "#fff",
-                        border: "none",
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                        outline: "none",
-                      }}
+                      className="remove-reminder-button"
                     >
                       Remove
                     </button>
@@ -535,67 +402,31 @@ const TaskManagementPanel = () => {
                 ))}
                 <button
                   onClick={handleAddReminder}
-                  style={{
-                    backgroundColor: "#3EA055",
-                    color: "#fff",
-                    border: "none",
-                    padding: "4px 8px",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    marginTop: "10px",
-                    outline: "none",
-                  }}
+                  className="add-reminder-button"
                 >
                   Add Reminder
                 </button>
               </div>
             </div>
           )}
-          <div style={{ marginTop: "20px" }}>
+          <div className="action-buttons-container">
             <button
               onClick={handleCompletePendingTasks}
-              style={{
-                backgroundColor: TaskStatusColors[TaskStatus.COMPLETED],
-                color: "#fff",
-                border: "none",
-                padding: "8px 20px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                marginRight: "10px",
-                outline: "none",
-              }}
+              className="complete-pending-button"
               disabled={taskList.filter((taskItem) => taskItem.status === TaskStatus.PENDING).length === 0}
             >
               Complete All Pending
             </button>
             <button
               onClick={handleCompleteAllTasks}
-              style={{
-                backgroundColor: TaskStatusColors[TaskStatus.COMPLETED],
-                color: "#fff",
-                border: "none",
-                padding: "8px 20px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                marginRight: "10px",
-                outline: "none",
-              }}
+              className="complete-all-button"
               disabled={taskList.filter((taskItem) => taskItem.status !== TaskStatus.COMPLETED).length === 0}
             >
               Complete All
             </button>
             <button
               onClick={handleClearTasks}
-              style={{
-                backgroundColor: "#DA4147",
-                color: "#fff",
-                border: "none",
-                padding: "8px 20px",
-                borderRadius: "4px",
-                cursor: "pointer",
-                outline: "none",
-              }}
+              className="clear-tasks-button"
               disabled={taskList.length === 0}
             >
               Clear Tasks

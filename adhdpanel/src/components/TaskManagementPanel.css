@@ -1,0 +1,223 @@
+.task-management-panel {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #f5f5f5;
+    padding: 20px;
+  }
+  
+  .heading {
+    color: #000;
+    margin-bottom: 20px;
+  }
+  
+  .add-task {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .task-input {
+    margin-right: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    flex: 1;
+    outline: none;
+  }
+  
+  .select-priority, .select-category {
+    margin-right: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    outline: none;
+  }
+  
+  .add-button {
+    background-color: #3EA055;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .no-tasks {
+    color: #888;
+    margin-top: 20px;
+  }
+  
+  .sort-filter {
+    margin-bottom: 10px;
+  }
+  
+  .sort-label, .filter-label {
+    margin-right: 10px;
+    color: #000;
+  }
+  
+  .select-sort, .select-filter {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    cursor: pointer;
+    outline: none;
+    margin-right: 10px;
+  }
+  
+  .task-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .task-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 0;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 4px;
+    border-width: 2px;
+    border-style: solid;
+    color: #555;
+  }
+  
+  .task-item.selected {
+    background-color: #eaf6ff;
+  }
+  
+  .task-details {
+    display: flex;
+    align-items: center;
+  }
+  
+  .task-checkbox {
+    margin-right: 10px;
+  }
+  
+  .task-name {
+    margin-right: 10px;
+    padding: 8px;
+    border: none;
+    flex: 1;
+    outline: none;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  .task-actions .status-button {
+    background-color: #FFC900;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 6px;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .task-actions .delete-button {
+    background-color: #DA4147;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .task-details-container {
+    margin-top: 20px;
+  }
+  
+  .task-details-heading {
+    margin-top: 0;
+  }
+  
+  .due-date-container, .notes-container, .priority-container, .category-container {
+    margin-top: 20px;
+  }
+  
+  .due-date-label, .notes-label, .priority-label, .category-label {
+    margin-right: 10px;
+    color: #000;
+  }
+  
+  .due-date-input, .notes-input {
+    margin-left: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    outline: none;
+  }
+  
+  .reminders-container {
+    margin-top: 20px;
+  }
+  
+  .reminders-label {
+    margin-right: 10px;
+  }
+  
+  .reminder-item {
+    margin-top: 10px;
+  }
+  
+  .reminder-date, .reminder-time {
+    margin-right: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    outline: none;
+  }
+  
+  .add-reminder-button {
+    background-color: #3EA055;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 10px;
+    outline: none;
+  }
+  
+  .remove-reminder-button {
+    background-color: #DA4147;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .action-buttons-container {
+    margin-top: 20px;
+  }
+  
+  .complete-pending-button, .complete-all-button, .clear-tasks-button {
+    background-color: #3EA055;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+    margin-right: 10px;
+  }
+  
+  .complete-pending-button[disabled], .complete-all-button[disabled], .clear-tasks-button[disabled] {
+    background-color: #ccc;
+    cursor: default;
+  }
+  
+  
