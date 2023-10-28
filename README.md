@@ -5,6 +5,12 @@ Task management fundamentally ensures focused work, better time usage and less p
 
 I plan to create a Android App to also interact with the interface to communicate with a custom backend for managing the tasks list. As of right now the task list isn't presistant so if you wanna leave the page and go back all of your saved entries will be gone so having a backend to store within a db or local using json while also having the ability to import task lists to different instnaces. Multi-user Support will be added so that will include authentication additions, this is really a rough idea of how I plan it to function but if anyone wants to make a issues request for ideas you are very welcome to do so 😄 and is much appreciated for that! 
 
+- [x] Backend (Still in development)
+- [x] Web Interface (Still in development)
+- [ ] Android App
+
+
+
 # Setup Instructions
 
 * You'll need a machine that can run Nodejs preferably capable of running the latest stable version of Nodejs with NPM, Git, x64 or x86 machine (I have not tested this project on a arm64, or arm7 machine)
