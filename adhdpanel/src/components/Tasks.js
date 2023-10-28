@@ -45,6 +45,23 @@ const TaskManagementPanel = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const fetchTaskList = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/tasks");
+
+        if (response.ok) {
+          const taskList = await response.json();
+          setTaskList(taskList);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchTaskList();
+  }, []);
+
   const taskInputRef = useRef(null);
 
   const handleTaskChange = (event) => {
