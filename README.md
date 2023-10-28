@@ -8,3 +8,7 @@ I plan to create a Android App to also interact with the interface to communicat
 # Screenshots of Task Management Page
 
 ![Screenshot from 2023-10-16 22-18-41](https://github.com/greengeckowizard/ADHD-TaskManagementPanel/assets/34012548/37341794-4969-4a7b-8d90-6c62b623fed4)
+
+# Screenshots of Timer Page
+
+![2023-10-27_21-22](https://github.com/greengeckowizard/ADHD-TaskManagementPanel/assets/34012548/35137b59-d82c-45d8-8d85-8d51a943a4ca)
