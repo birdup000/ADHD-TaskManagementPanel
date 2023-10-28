@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import TaskManagementPanelCSS from "./TaskManagementPanel.css";
 
+
 const TaskStatus = {
   PENDING: "pending",
   OVERDUE: "overdue",
@@ -59,84 +60,31 @@ const TaskManagementPanel = () => {
     setNotes(event.target.value);
   };
 
-  const handleAddTask = async () => {
+  const handleAddTask = () => {
     if (task.trim() !== "") {
       const newTask = { task, status, dueDate, notes, priority, category, reminders };
-
-      try {
-        const response = await fetch("localhost:5000/api/tasks", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newTask),
-        });
-
-        if (response.ok) {
-          setTaskList([...taskList, newTask]);
-          resetForm();
-        }
-      } catch (error) {
-        console.error(error);
-      }
+      setTaskList([...taskList, newTask]);
+      resetForm();
     }
   };
 
-  const handleDeleteTask = async (index) => {
-    try {
-      const response = await fetch(`localhost:5000/api/tasks/${index}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        const updatedTaskList = [...taskList];
-        updatedTaskList.splice(index, 1);
-        setTaskList(updatedTaskList);
-        setSelectedTaskIndex(-1);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleDeleteTask = (index) => {
+    const updatedTaskList = [...taskList];
+    updatedTaskList.splice(index, 1);
+    setTaskList(updatedTaskList);
+    setSelectedTaskIndex(-1);
   };
 
-  const handleRenameTask = async (index, newTask) => {
-    try {
-      const response = await fetch(`localhost:5000/api/tasks/${index}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...taskList[index], task: newTask }),
-      });
-
-      if (response.ok) {
-        const updatedTaskList = [...taskList];
-        updatedTaskList[index].task = newTask;
-        setTaskList(updatedTaskList);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleRenameTask = (index, newTask) => {
+    const updatedTaskList = [...taskList];
+    updatedTaskList[index].task = newTask;
+    setTaskList(updatedTaskList);
   };
 
-  const handleSetTaskStatus = async (index, newStatus) => {
-    try {
-      const response = await fetch(`localhost:5000/api/tasks/${index}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...taskList[index], status: newStatus }),
-      });
-
-      if (response.ok) {
-        const updatedTaskList = [...taskList];
-        updatedTaskList[index].status = newStatus;
-        setTaskList(updatedTaskList);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleSetTaskStatus = (index, newStatus) => {
+    const updatedTaskList = [...taskList];
+    updatedTaskList[index].status = newStatus;
+    setTaskList(updatedTaskList);
   };
 
   const handleSelectTask = (index) => {
@@ -241,55 +189,23 @@ const TaskManagementPanel = () => {
     return sortedTaskList.filter((item) => item.status === filterStatus);
   };
 
-  const handleClearTasks = async () => {
-    try {
-      const response = await fetch("localhost:5000/api/tasks", {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setTaskList([]);
-        setSelectedTaskIndex(-1);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleClearTasks = () => {
+    setTaskList([]);
+    setSelectedTaskIndex(-1);
   };
 
-  const handleCompleteAllTasks = async () => {
-    try {
-      const response = await fetch("localhost:5000/api/tasks/complete-all", {
-        method: "PUT",
-      });
-
-      if (response.ok) {
-        const updatedTaskList = taskList.map((taskItem) =>
-          taskItem.status === TaskStatus.COMPLETED ? taskItem : { ...taskItem, status: TaskStatus.COMPLETED }
-        );
-        setTaskList(updatedTaskList);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleCompleteAllTasks = () => {
+    const updatedTaskList = taskList.map((taskItem) =>
+      taskItem.status === TaskStatus.COMPLETED ? taskItem : { ...taskItem, status: TaskStatus.COMPLETED }
+    );
+    setTaskList(updatedTaskList);
   };
 
-  const handleCompletePendingTasks = async () => {
-    try {
-      const response = await fetch("localhost:5000/api/tasks/complete-pending", {
-        method: "PUT",
-      });
-
-      if (response.ok) {
-        const updatedTaskList = taskList.map((taskItem) =>
-          taskItem.status === TaskStatus.PENDING
-            ? { ...taskItem, status: TaskStatus.COMPLETED }
-            : taskItem
-        );
-        setTaskList(updatedTaskList);
-      }
-    } catch (error) {
-      console.error(error);
-    }
+  const handleCompletePendingTasks = () => {
+    const updatedTaskList = taskList.map((taskItem) =>
+      taskItem.status === TaskStatus.PENDING ? { ...taskItem, status: TaskStatus.COMPLETED } : taskItem
+    );
+    setTaskList(updatedTaskList);
   };
 
   const resetForm = () => {
@@ -336,7 +252,10 @@ const TaskManagementPanel = () => {
           <option value={TaskCategories.PERSONAL}>Personal</option>
           <option value={TaskCategories.SHOPPING}>Shopping</option>
         </select>
-        <button onClick={handleAddTask} className="add-button">
+        <button
+          onClick={handleAddTask}
+          className="add-button"
+        >
           Add Task
         </button>
       </div>
@@ -372,13 +291,8 @@ const TaskManagementPanel = () => {
             {getSortedFilteredTaskList().map((taskItem, index) => (
               <li
                 key={index}
-                className={
-                  selectedTaskIndex === index ? "task-item selected" : "task-item"
-                }
-                style={{
-                  borderColor: TaskStatusColors[taskItem.status],
-                  color: TaskStatusColors[taskItem.status],
-                }}
+                className={selectedTaskIndex === index ? "task-item selected" : "task-item"}
+                style={{ borderColor: TaskStatusColors[taskItem.status], color: TaskStatusColors[taskItem.status] }}
               >
                 <div className="task-details">
                   <input
@@ -406,9 +320,7 @@ const TaskManagementPanel = () => {
                     }
                     className="status-button"
                   >
-                    {taskItem.status === TaskStatus.PENDING
-                      ? "Set Overdue"
-                      : "Set Pending"}
+                    {taskItem.status === TaskStatus.PENDING ? "Set Overdue" : "Set Pending"}
                   </button>
                   <button
                     onClick={() => handleDeleteTask(index)}
@@ -471,17 +383,13 @@ const TaskManagementPanel = () => {
                     <input
                       type="date"
                       value={reminder.date}
-                      onChange={(event) =>
-                        handleReminderDateChange(event, reminder.id)
-                      }
+                      onChange={(event) => handleReminderDateChange(event, reminder.id)}
                       className="reminder-date"
                     />
                     <input
                       type="time"
                       value={reminder.time}
-                      onChange={(event) =>
-                        handleReminderTimeChange(event, reminder.id)
-                      }
+                      onChange={(event) => handleReminderTimeChange(event, reminder.id)}
                       className="reminder-time"
                     />
                     <button
@@ -505,21 +413,14 @@ const TaskManagementPanel = () => {
             <button
               onClick={handleCompletePendingTasks}
               className="complete-pending-button"
-              disabled={
-                taskList.filter((taskItem) => taskItem.status === TaskStatus.PENDING)
-                  .length === 0
-              }
+              disabled={taskList.filter((taskItem) => taskItem.status === TaskStatus.PENDING).length === 0}
             >
               Complete All Pending
             </button>
             <button
               onClick={handleCompleteAllTasks}
               className="complete-all-button"
-              disabled={
-                taskList.filter(
-                  (taskItem) => taskItem.status !== TaskStatus.COMPLETED
-                ).length === 0
-              }
+              disabled={taskList.filter((taskItem) => taskItem.status !== TaskStatus.COMPLETED).length === 0}
             >
               Complete All
             </button>
