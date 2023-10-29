@@ -7,12 +7,13 @@ I plan to create a Android App to also interact with the interface to communicat
 
 - [x] Backend (Still in development)
 - [x] Web Interface (Still in development)
-- [ ] Android App
+- [x] Android App (Still in development
 - [ ] Multi-User Support
 - [ ] Login Page
 - [x] Import Task list (Yes if you move the json file from each server from the backend. Will add to web interface soon!)  
 - [ ] DB Support
 - [ ] AI integration (Coming Soon! To enhance productivity and help keep you focused)
+- [x] Google Calander Integrations (Still in development)
 
 
 # Setup Instructions
