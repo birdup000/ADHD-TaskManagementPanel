@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@fullcalendar/common": "^5.11.5",
+    "@fullcalendar/daygrid": "^6.1.9",
+    "@fullcalendar/interaction": "^6.1.9",
+    "@fullcalendar/react": "^6.1.9",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -11,6 +15,7 @@
     "express": "^4.18.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-google-calendar-api": "^2.3.0",
     "react-router-config": "^5.1.1",
     "react-router-dom": "^6.16.0",
     "react-scripts": "5.0.1",
