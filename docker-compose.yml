@@ -1,0 +1,21 @@
+version: "3"
+services:
+  backend:
+    build:
+      context: ./adhdpanel/backend-adhdpanel
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./adhdpanel/backend-adhdpanel:/app
+  frontend:
+    build:
+      context: ./adhdpanel
+      dockerfile: Dockerfile
+    command: node main.js
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./adhdpanel:/app
+    
+
