@@ -1,5 +1,5 @@
 # ADHD-TaskManagementPanel (Still in Development)
-Task management fundamentally ensures focused work, better time usage and less procrastination, while aiding memory, boosting efficiency, promoting deadline adherence, tracking goal progression and reducing stress. It's a universal tool beneficial for all, including those with ADHD and without.
+Task management fundamentally ensures focused work, better time usage and less procrastination, while aiding memory, boosting efficiency, promoting deadline adherence, tracking goal progression and reducing stress. It's a universal tool beneficial for all, including those with ADHD and without. Also Mental health is important in general so that is why I decided to make this application as it would be a game changer in helping everyone overall and you'll be able to see the code so you know what is running yay for open-source!!
 
 # Plans
 
