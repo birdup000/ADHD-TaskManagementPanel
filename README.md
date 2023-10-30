@@ -20,6 +20,11 @@ I plan to create a Android App to also interact with the interface to communicat
 # Plans Extra 
 I plan to have the Android app self compile or I could take into consideration of having a part where you would enter the api keys from your Google and or Microsoft Accounts so that the integrations would work which would mean compiled (apk/xapk).
 
+# Q/A
+1.Why are you very committed into making this project succesful?
+I'm commited because as an individual have ADHD and its hard to focus in general also tis why progress in the project may be slow. 
+
+
 # Setup Instructions
 
 * You'll need a machine that can run Nodejs preferably capable of running the latest stable version of Nodejs with NPM, Git, x64 or x86 machine (I have not tested this project on a arm64, or arm7 machine)
