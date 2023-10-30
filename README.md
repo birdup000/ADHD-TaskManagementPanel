@@ -5,6 +5,8 @@ Task management fundamentally ensures focused work, better time usage and less p
 
 I plan to create a Android App to also interact with the interface to communicate with a custom backend for managing the tasks list. As of right now the task list isn't presistant so if you wanna leave the page and go back all of your saved entries will be gone so having a backend to store within a db or local using json while also having the ability to import task lists to different instnaces. Multi-user Support will be added so that will include authentication additions, Google Calender and Microsoft Office 365 (Outlook Calender) Calender Integrations so when you set a task due date and or Reminder it will show up on one or both if linked. This is really the idea of how I plan it to function but if anyone wants to make a issues request for ideas you are very welcome to do so 😄 and is much appreciated for that! If you have questions feel free to reach me in the issues but please tag the title with [QUESTION] and will respond to your question as quickly as possible.
 
+The following in the list below are features for sure are gonna be added.
+
 - [x] Backend (Still in development)
 - [x] Web Interface (Still in development)
 - [x] Android App (Still in development
