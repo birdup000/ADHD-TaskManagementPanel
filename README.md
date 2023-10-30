@@ -8,14 +8,14 @@ I plan to create a Android App to also interact with the interface to communicat
 - [x] Backend (Still in development)
 - [x] Web Interface (Still in development)
 - [x] Android App (Still in development
-- [ ] Multi-User Support
 - [ ] Login Page
+         - Multi-User Support
+         - Google Auth for login and Microsoft Auth for login
 - [x] Import Task list (Yes if you move the json file from each server from the backend. Will add to web interface soon!)  
 - [ ] DB Support
 - [ ] AI integration (Coming Soon! To enhance productivity and help keep you focused),(Unofficial OpenAI apis support /v1/chat/completion and offical support)
 - [x] Google Calander Integrations (Still in development)
 - [ ] Microsoft Office 365 Calender (Outlook Calender)
-- [ ] Google Auth for login and Microsoft Auth for login
 
 # Plans Extra 
 I plan to have the Android app self compile or I could take into consideration of having a part where you would enter the api keys from your Google and or Microsoft Accounts so that the integrations would work which would mean compiled (apk/xapk).
