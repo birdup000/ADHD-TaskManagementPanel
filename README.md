@@ -8,7 +8,7 @@ I plan to create a Android App to also interact with the interface to communicat
 - [x] Backend (Still in development)
 - [x] Web Interface (Still in development)
 - [x] Android App (Still in development
-- [ ] Login Page
+- [X] Login Page
          - Multi-User Support (Still in Development)
          - Google Auth for login and Microsoft Auth for login (Not Added Yet)
 - [x] Import Task list (Yes if you move the json file from each server from the backend. Will add to web interface soon!)  
