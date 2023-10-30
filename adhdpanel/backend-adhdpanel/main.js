@@ -11,8 +11,10 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const taskListFilePath = path.join(__dirname, "taskList.json");
+const userFilePath = path.join(__dirname, "users.json");
 
 let taskList = [];
+let users = [];
 
 const saveTaskListToFile = () => {
   fs.writeFileSync(taskListFilePath, JSON.stringify(taskList), (err) => {
@@ -31,7 +33,30 @@ const loadTaskListFromFile = () => {
   }
 };
 
+const saveUsersToFile = () => {
+  fs.writeFileSync(userFilePath, JSON.stringify(users), (err) => {
+    if (err) {
+      console.error("Error writing users to file:", err);
+    }
+  });
+};
+
+const loadUsersFromFile = () => {
+  try {
+    const data = fs.readFileSync(userFilePath);
+    users = JSON.parse(data.toString());
+  } catch (err) {
+    console.error("Error loading users from file:", err);
+  }
+};
+
 loadTaskListFromFile();
+loadUsersFromFile();
+
+const authenticateUser = (username, password) => {
+  const user = users.find((user) => user.username === username && user.password === password);
+  return user !== undefined;
+};
 
 app.get("/api/tasks", (req, res) => {
   res.json(taskList);
@@ -84,6 +109,29 @@ app.delete("/api/tasks", (req, res) => {
   saveTaskListToFile();
   res.sendStatus(200);
 });
+
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body;
+  const authenticated = authenticateUser(username, password);
+  if (authenticated) {
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+app.post("/api/signup", (req, res) => {
+  const { username, password } = req.body;
+  const userExists = users.some((user) => user.username === username);
+  if (userExists) {
+    res.sendStatus(409);
+  } else {
+    users.push({ username, password });
+    saveUsersToFile();
+    res.sendStatus(200);
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

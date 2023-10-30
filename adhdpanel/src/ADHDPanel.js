@@ -5,6 +5,7 @@ import Tasks from "./components/Tasks";
 import Timer from "./components/Timer";
 import Reports from "./components/Reports";
 import Calender from "./components/Calender.tsx";
+import LoginForm from "./components/Login"
 import "./ADHDPanel.css";
 
 const ADHDPanel = () => {
@@ -28,6 +29,9 @@ const ADHDPanel = () => {
             <li>
               <Link to="/calendar">Calender</Link>
             </li>
+            <li>
+              <Link to="/login">Login</Link>
+            </li>
           </ul>
         </div>
         <div className="content">
@@ -37,6 +41,7 @@ const ADHDPanel = () => {
             <Route path="/timer" element={<Timer />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/calendar" element={<Calender />} />
+            <Route path="/login" element={<LoginForm />} />
           </Routes>
         </div>
       </div>
