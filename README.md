@@ -16,6 +16,8 @@ I plan to create a Android App to also interact with the interface to communicat
 - [ ] AI integration (Coming Soon! To enhance productivity and help keep you focused),(Unofficial OpenAI apis support /v1/chat/completion and offical support)
 - [x] Google Calander Integrations (Still in development)
 - [ ] Microsoft Office 365 Calender (Outlook Calender)
+- [ ] Docker Support /w docker compose
+- [ ] Docker Support /w docker image on dockerhub
 
 # Plans Extra 
 I plan to have the Android app self compile or I could take into consideration of having a part where you would enter the api keys from your Google and or Microsoft Accounts so that the integrations would work which would mean compiled (apk/xapk).
