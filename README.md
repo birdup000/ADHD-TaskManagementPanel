@@ -9,8 +9,8 @@ I plan to create a Android App to also interact with the interface to communicat
 - [x] Web Interface (Still in development)
 - [x] Android App (Still in development
 - [ ] Login Page
-         - Multi-User Support
-         - Google Auth for login and Microsoft Auth for login
+         - Multi-User Support (Still in Development)
+         - Google Auth for login and Microsoft Auth for login (Not Added Yet)
 - [x] Import Task list (Yes if you move the json file from each server from the backend. Will add to web interface soon!)  
 - [ ] DB Support
 - [ ] AI integration (Coming Soon! To enhance productivity and help keep you focused),(Unofficial OpenAI apis support /v1/chat/completion and offical support)
