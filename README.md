@@ -16,7 +16,7 @@ I plan to create a Android App to also interact with the interface to communicat
 - [ ] AI integration (Coming Soon! To enhance productivity and help keep you focused),(Unofficial OpenAI apis support /v1/chat/completion and offical support)
 - [x] Google Calander Integrations (Still in development)
 - [ ] Microsoft Office 365 Calender (Outlook Calender)
-- [ ] Docker Support /w docker compose
+- [X] Docker Support /w docker compose (Still in Development. Frontend Working, Backend Broken)
 - [ ] Docker Support /w docker image on dockerhub
 
 # Plans Extra 
