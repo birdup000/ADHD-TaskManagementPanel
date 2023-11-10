@@ -15,7 +15,7 @@ const AuthContext = React.createContext({
 });
 
 const AuthProvider = ({ children }) => {
-  const [jwtToken, setJwtToken] = useState('');
+  const [jwtToken, setJwtToken] = useState('token');
 
   const login = async (username, password) => {
     const response = await axios.post('/api/login', {
@@ -28,9 +28,18 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  const logout = async () => {
+    const response = await axios.post('/api/logout');
+
+    if (response.status === 200) {
+      setJwtToken('');
+    }
+  };
+
   const value = {
     jwtToken,
     login,
+    logout,
   };
 
   return (
@@ -51,45 +60,78 @@ const PrivateRoute = ({ children }) => {
 };
 
 const ADHDPanel = () => {
+  const { jwtToken } = useContext(AuthContext);
+
+  if (!jwtToken) {
+    return <LoginForm />;
+  }
+
   return (
-    <AuthProvider>
-      <Router>
-        <div className="adhd-panel">
-          <div className="side-menu">
-            <ul>
-              <li>
-                <Link to="/">Home</Link>
-              </li>
-              <li>
-                <Link to="/tasks">Tasks</Link>
-              </li>
-              <li>
-                <Link to="/timer">Timer</Link>
-              </li>
-              <li>
-                <Link to="/reports">Reports</Link>
-              </li>
-              <li>
-                <Link to="/calendar">Calender</Link>
-              </li>
-              <li>
-                <Link to="/login">Login</Link>
-              </li>
-            </ul>
-          </div>
-          <div className="content">
-            <Routes>
-              <Routes path="/" element={<Home />} />
-              <Routes path="/tasks" element={<PrivateRoute><Tasks /></PrivateRoute>} />
-              <Routes path="/timer" element={<PrivateRoute><Timer /></PrivateRoute>} />
-              <Routes path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
-              <Routes path="/calendar" element={<PrivateRoute><Calender /></PrivateRoute>} />
-              <Routes path="/login" element={<LoginForm />} />
-            </Routes>
-          </div>
+    <Router>
+      <div className="adhd-panel">
+        <div className="side-menu">
+          <ul>
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li>
+              <Link to="/tasks">Tasks</Link>
+            </li>
+            <li>
+              <Link to="/timer">Timer</Link>
+            </li>
+            <li>
+              <Link to="/reports">Reports</Link>
+            </li>
+            <li>
+              <Link to="/calendar">Calendar</Link>
+            </li>
+            <li>
+              <Link to="/logout">Logout</Link>
+            </li>
+          </ul>
         </div>
-      </Router>
-    </AuthProvider>
+        <div className="content">
+          <Routes>
+            <Routes path="/" element={<Home />} />
+            <Routes
+              path="/tasks"
+              element={
+                <PrivateRoute>
+                  <Tasks />
+                </PrivateRoute>
+              }
+            />
+            <Routes
+              path="/timer"
+              element={
+                <PrivateRoute>
+                  <Timer />
+                </PrivateRoute>
+              }
+            />
+            <Routes
+              path="/reports"
+              element={
+                <PrivateRoute>
+                  <Reports />
+                </PrivateRoute>
+              }
+            />
+            <Routes
+              path="/calendar"
+              element={
+                <PrivateRoute>
+                  <Calender />
+                </PrivateRoute>
+              }
+            />
+            <Routes path="/login" element={<LoginForm />} />
+            <Routes path="/logout" element={<LoginForm />} />
+          </Routes>
+        </div>
+      </div>
+    </Router>
   );
 };
 
