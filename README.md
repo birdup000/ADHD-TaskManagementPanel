@@ -10,7 +10,7 @@ The following in the list below are features for sure are gonna be added.
 - [x] Backend (Still in development)
 - [x] Web Interface (Still in development)
 - [x] Android App (Still in development
-- [X] Login Page
+- [X] Login Page (Overall Still in Development and progress for this is inside Authentication Branch)
          - Multi-User Support (Still in Development)
          - Google Auth for login and Microsoft Auth for login (Not Added Yet)
 - [x] Import Task list (Yes if you move the json file from each server from the backend. Will add to web interface soon!)  
