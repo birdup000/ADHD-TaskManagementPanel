@@ -7,11 +7,20 @@ const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
 
+app.use(cors({
+  origin: "http://localhost:3000", // Replace with the correct URL of your frontend app
+  methods: ["GET", "POST"], // Specify allowed HTTP methods
+  allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers including Authorization for JWT tokens
+}));
+app.use(bodyParser.json());
 
-const verifyToken = (req, res, next) => {
+
+// Define verifyToken middleware function first before using it.
+function verifyToken(req, res, next) {
   const token = req.headers.authorization;
 
-  if (!token) {
+  if (!token && req.path !== "/api/signup") { // Exclude /api/signup from token verification
+    console.log('No token provided');
     return res.status(401).send("Unauthorized");
   }
 
@@ -20,14 +29,13 @@ const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('Invalid token');
     res.status(401).send("Invalid token");
   }
-};
+}
 
-
-app.use(cors());
-app.use(bodyParser.json());
 app.use(verifyToken);
+
 
 const taskListFilePath = path.join(__dirname, "taskList.json");
 const userFilePath = path.join(__dirname, "users.json");
@@ -35,7 +43,15 @@ const userFilePath = path.join(__dirname, "users.json");
 let taskList = [];
 let users = [];
 
-const secretKey = "YOUR_SECRET_KEY"
+const createUser = (username, password) => {
+  const newUser = { username, password };
+  users.push(newUser);
+  saveUsersToFile();
+};
+
+const secretKey = '3544578934973475437857349';
+
+///const { secretKey } = require("./config");
 
 const saveTaskListToFile = () => {
   fs.writeFileSync(taskListFilePath, JSON.stringify(taskList), (err) => {
@@ -146,17 +162,26 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-app.post("/api/signup", async (req, res) => {
+app.post("/api/signup", (req, res) => {
   const { username, password } = req.body;
-  const userExists = users.some((user) => user.username === username);
+  const userExists = users.some(user => user.username === username);
 
   if (userExists) {
     res.status(409).send("User already exists");
   } else {
-    const newUser = createUser(username, password);
+    createUser(username, password); // Create a new user
     res.sendStatus(201);
   }
 });
+
+
+app.post("/api/logout", (req, res) => {
+  // No need for implementation as JWT tokens are stateless and can be invalidated on client side.
+  res.sendStatus(200);
+});
+
+
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

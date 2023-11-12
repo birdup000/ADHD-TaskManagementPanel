@@ -18,7 +18,7 @@ const LoginForm = ({ onSuccess }) => {
   
     try {
       const response = await axios.post("http://localhost:5000/api/login", { username, password });
-      if (response.status === 200) {
+      if (response.status === 201) {
         onSuccess();
       }
     } catch (error) {
@@ -33,25 +33,26 @@ const LoginForm = ({ onSuccess }) => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-
+  
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match");
-      return;
+      return; // Return from the function to prevent signup
     }
-
+  
     try {
       const response = await axios.post("http://localhost:5000/api/signup", { username, password });
-      if (response.status === 200) {
+      if (response.status === 201) { // Check for status 201 instead of 200
         onSuccess();
       }
-    } catch (error) {
-      if (error.response.status === 409) {
-        setErrorMessage("Username already exists");
-      } else {
-        setErrorMessage("An error occurred. Please try again later.");
-      }
-    }
+     } catch (error) {
+       if (error.response && error.response.status === 409 ) { // Update condition for conflict response
+         setErrorMessage("Username already exists");
+       } else {
+         setErrorMessage("An error occurred. Please try again later.");
+       }
+     }
   };
+  
 
   return (
     <div>

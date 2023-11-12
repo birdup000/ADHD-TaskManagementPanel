@@ -15,16 +15,20 @@ const AuthContext = React.createContext({
 });
 
 const AuthProvider = ({ children }) => {
-  const [jwtToken, setJwtToken] = useState('token');
+  const [jwtToken, setJwtToken] = useState('');
 
   const login = async (username, password) => {
-    const response = await axios.post('/api/login', {
-      username,
-      password,
-    });
-
-    if (response.status === 200) {
-      setJwtToken(response.headers['authorization']);
+    try {
+      const response = await axios.post('http://localhost:5000/api/login', { username, password });
+      if (response.status === 201) {
+        setJwtToken(`Bearer ${response.data.token}`);
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        console.log("Invalid username or password");
+      } else {
+        console.log("An error occurred. Please try again later.");
+      }
     }
   };
 
