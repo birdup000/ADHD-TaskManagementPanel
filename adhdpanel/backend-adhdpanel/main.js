@@ -3,18 +3,39 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const path = require("path");
-
+const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
 
+
+const verifyToken = (req, res, next) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).send("Unauthorized");
+  }
+
+  try {
+    const decoded = jwt.verify(token, secretKey);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).send("Invalid token");
+  }
+};
+
+
 app.use(cors());
 app.use(bodyParser.json());
+app.use(verifyToken);
 
 const taskListFilePath = path.join(__dirname, "taskList.json");
 const userFilePath = path.join(__dirname, "users.json");
 
 let taskList = [];
 let users = [];
+
+const secretKey = "YOUR_SECRET_KEY"
 
 const saveTaskListToFile = () => {
   fs.writeFileSync(taskListFilePath, JSON.stringify(taskList), (err) => {
@@ -54,9 +75,13 @@ loadTaskListFromFile();
 loadUsersFromFile();
 
 const authenticateUser = (username, password) => {
-  const user = users.find((user) => user.username === username && user.password === password);
+  const user = users.find(
+    (user) => user.username === username && user.password === password
+  );
   return user !== undefined;
 };
+
+
 
 app.get("/api/tasks", (req, res) => {
   res.json(taskList);
@@ -87,8 +112,8 @@ app.delete("/api/tasks/:index", (req, res) => {
 app.put("/api/tasks/complete-all", (req, res) => {
   taskList = taskList.map((taskItem) =>
     taskItem.status === TaskStatus.COMPLETED
-    ? taskItem
-    : { ...taskItem, status: TaskStatus.COMPLETED }
+      ? taskItem
+      : { ...taskItem, status: TaskStatus.COMPLETED }
   );
   saveTaskListToFile();
   res.sendStatus(200);
@@ -97,8 +122,8 @@ app.put("/api/tasks/complete-all", (req, res) => {
 app.put("/api/tasks/complete-pending", (req, res) => {
   taskList = taskList.map((taskItem) =>
     taskItem.status === TaskStatus.PENDING
-    ? { ...taskItem, status: TaskStatus.COMPLETED }
-    : taskItem
+      ? { ...taskItem, status: TaskStatus.COMPLETED }
+      : taskItem
   );
   saveTaskListToFile();
   res.sendStatus(200);
@@ -110,28 +135,28 @@ app.delete("/api/tasks", (req, res) => {
   res.sendStatus(200);
 });
 
-app.post("/api/login", (req, res) => {
+app.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
-  const authenticated = authenticateUser(username, password);
-  if (authenticated) {
-    res.sendStatus(200);
+
+  if (authenticateUser(username, password)) {
+    const token = jwt.sign({ username }, secretKey, { expiresIn: "1h" });
+    res.json({ token });
   } else {
-    res.sendStatus(401);
+    res.status(401).send("Invalid username or password");
   }
 });
 
-app.post("/api/signup", (req, res) => {
+app.post("/api/signup", async (req, res) => {
   const { username, password } = req.body;
   const userExists = users.some((user) => user.username === username);
+
   if (userExists) {
-    res.sendStatus(409);
+    res.status(409).send("User already exists");
   } else {
-    users.push({ username, password });
-    saveUsersToFile();
-    res.sendStatus(200);
+    const newUser = createUser(username, password);
+    res.sendStatus(201);
   }
 });
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

@@ -15,20 +15,21 @@ const LoginForm = ({ onSuccess }) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     try {
       const response = await axios.post("http://localhost:5000/api/login", { username, password });
       if (response.status === 200) {
         onSuccess();
       }
     } catch (error) {
-      if (error.response.status === 401) {
+      if (error.response && error.response.status === 401) {
         setErrorMessage("Invalid username or password");
       } else {
         setErrorMessage("An error occurred. Please try again later.");
       }
     }
   };
+  
 
   const handleSignup = async (e) => {
     e.preventDefault();
