@@ -4,6 +4,8 @@ import ApiCalendar from 'react-google-calendar-api';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import styled from "@emotion/styled";
+
 
 const config = {
   "clientId": "CLIENT_ID",
@@ -14,6 +16,23 @@ const config = {
   ]
 }
 
+
+
+export const StyleWrapper = styled.div`
+.fc-event {
+  width: 98px !important;
+}
+
+.fc-view-harness {
+  width: 100%;
+  height: 50vh;
+}
+
+overflow: auto;
+height: 350px;
+
+`
+
 const apiCalendar = new ApiCalendar(config);
 
 const Calendar = () => {
@@ -21,17 +40,28 @@ const Calendar = () => {
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendar, setSelectedCalendar] = useState('');
 
+
   useEffect(() => {
-    apiCalendar.handleClientLoad();
+    const apiCalendar = new ApiCalendar(config);
   }, []);
 
   const handleItemClick = (event: SyntheticEvent<any>, name: string): void => {
     if (name === 'sign-in') {
-      apiCalendar.handleAuthClick();
+      // Call the handleAuthClick method to sign in the user
+      apiCalendar.handleAuthClick()
+        .then((response: any) => {
+          // Handle successful authentication
+          console.log("User successfully signed in");
+        })
+        .catch((error: any) => {
+          // Handle authentication failure
+          console.error("Error signing in:", error);
+        });
     } else if (name === 'sign-out') {
       apiCalendar.handleSignoutClick();
     }
   };
+  
 
   const handleCreateEventFromNow = () => {
     const eventFromNow = {
@@ -118,12 +148,14 @@ const Calendar = () => {
         </button>
       </div>
       <div style={{ padding: "0.5em" }}>
+      <StyleWrapper>
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           events={events}
           dateClick={handleCalendarSelect}
         />
+        </StyleWrapper>
       </div>
     </div>
   );
