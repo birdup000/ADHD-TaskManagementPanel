@@ -15,7 +15,7 @@ The following in the list below are features for sure are gonna be added.
          - Google Auth for login and Microsoft Auth for login (Not Added Yet)
 - [x] Import Task list (Yes if you move the json file from each server from the backend. Will add to web interface soon!)  
 - [ ] DB Support
-- [ ] AI integration (Coming Soon! To enhance productivity and help keep you focused),(Unofficial apis support /v1/chat/completion)
+- [ ] AI integration /w AGiXT
 - [x] Google Calander Integrations (Still in development/Rethinking OAuth Implementation [Replacing Current addition])
 - [ ] Microsoft Office 365 Calender (Outlook Calender)
 - [X] Docker Support /w docker compose (Still in Development. Frontend Working, Backend Broken)
