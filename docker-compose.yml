@@ -2,7 +2,7 @@ version: "3"
 services:
   backend:
     build:
-      context: ./adhdpanel/backend-adhdpanel
+      context: ./backend-adhdpanel
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
