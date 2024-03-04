@@ -26,6 +26,7 @@ const TaskCategories = {
   WORK: "work",
   PERSONAL: "personal",
   SHOPPING: "shopping",
+  SCHOOL: "school",
 };
 
 const TaskManagementPanel = () => {
@@ -106,7 +107,7 @@ const TaskManagementPanel = () => {
     if (selectedTaskIndex !== -1) {
       updatedTaskList[selectedTaskIndex].notes = event.target.value;
       setTaskList(updatedTaskList);
-      setNotes(event.target.value); // Also update the notes state for the selected task
+      setNotes(event.target.value);
     }
   };
   
@@ -202,6 +203,33 @@ const TaskManagementPanel = () => {
     setCategory(category);
     setReminders(reminders);
   };
+
+
+
+  const handleSelectTaskComplete = async (index) => {
+    setSelectedTaskIndex(index);
+    const selectedTask = taskList[index];
+    const updatedTask = { ...selectedTask, status: TaskStatus.COMPLETED };
+  
+    try {
+      const response = await fetch(`${apiUrl}/api/tasks/${index}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedTask),
+      });
+  
+      if (response.ok) {
+        const updatedTaskList = [...taskList];
+        updatedTaskList[index] = updatedTask;
+        setTaskList(updatedTaskList);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
 
   const handleSortOrderChange = (event) => {
     setSortOrder(event.target.value);
@@ -411,6 +439,7 @@ const TaskManagementPanel = () => {
           <option value={TaskCategories.WORK}>Work</option>
           <option value={TaskCategories.PERSONAL}>Personal</option>
           <option value={TaskCategories.SHOPPING}>Shopping</option>
+          <option value={TaskCategories.SCHOOL}>School</option>
         </select>
         <button onClick={handleAddTask} className="add-button">
           Add Task
@@ -492,6 +521,12 @@ const TaskManagementPanel = () => {
                   >
                     Delete
                   </button>
+                  <button
+                    onClick={() => handleSelectTaskComplete(index)}
+                    className="complete-button"
+                    disabled={taskItem.status === TaskStatus.COMPLETED}
+                    >Complete
+                    </button>
                 </div>
               </li>
             ))}
@@ -538,6 +573,7 @@ const TaskManagementPanel = () => {
                   <option value={TaskCategories.WORK}>Work</option>
                   <option value={TaskCategories.PERSONAL}>Personal</option>
                   <option value={TaskCategories.SHOPPING}>Shopping</option>
+                  <option value={TaskCategories.SCHOOL}>School</option>
                 </select>
               </div>
               <div className="reminders-container">

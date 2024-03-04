@@ -79,11 +79,26 @@ app.put("/api/tasks/complete-pending", (req, res) => {
   res.sendStatus(200);
 });
 
+app.put("/api/tasks/:index/complete", (req, res) => {
+  const index = req.params.index;
+  if (index < 0 || index >= taskList.length) {
+    res.status(404).send("Task not found");
+    return;
+  }
+
+  taskList[index].status = "completed";
+  saveTaskListToFile();
+  res.sendStatus(200);
+});
+
+
+
 app.delete("/api/tasks", (req, res) => {
   taskList = [];
   saveTaskListToFile();
   res.sendStatus(200);
 });
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

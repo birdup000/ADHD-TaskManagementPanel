@@ -221,3 +221,14 @@
     background-color: #ccc;
     cursor: default;
   }
+
+  .complete-button {
+    background-color: #3EA055;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+  }
