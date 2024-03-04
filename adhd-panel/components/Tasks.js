@@ -499,6 +499,11 @@ const TaskManagementPanel = () => {
                     className="task-name"
                   />
                 </div>
+                <div className="task-metadata">
+                  <span className="task-priority">Task Priority:{taskItem.priority}</span>
+                  <span className="task-due-date">Due Date:{taskItem.dueDate}</span>
+                  <span className="task-category">Task Category:{taskItem.category}</span>
+                  </div>
                 <div className="task-actions">
                   <button
                     onClick={() =>
