@@ -7,19 +7,20 @@ I plan to create a Android App to also interact with the interface to communicat
 
 The following in the list below are features for sure are gonna be added.
 
-- [x] Backend (Still in development)
-- [x] Web Interface (Still in development)
-- [x] Android App (DONE SWITCHED TO Expo for packaging)
-- [X] Login Page (Overall Still in Development and progress for this is inside Authentication Branch)
-         - Multi-User Support (Still in Development)
-         - Google Auth for login and Microsoft Auth for login (Not Added Yet)
-- [x] Import Task list (Yes if you move the json file from each server from the backend. Will add to web interface soon!)  
-- [ ] DB Support
-- [ ] AI integration /w AGiXT
-- [x] Google Calander Integrations (Still in development/Rethinking OAuth Implementation [Replacing Current addition])
-- [ ] Microsoft Office 365 Calender (Outlook Calender)
+- [x] Backend
+- [x] Web Interface
+- [x] Android App (switched to Expo for packaging)
+- [x] Google Calander Integrations (still refining integrations)
 - [X] Docker Support /w docker compose (Still in Development. Frontend Working, Backend Broken)
 - [ ] Docker Support /w docker image on dockerhub
+- [ ] Login Page
+         - Multi-User Support
+         - Google Auth for login and Microsoft Auth for login
+- [ ] Import Task list from one server to another by loading json in the web ui
+- [ ] DB Support
+- [ ] AI integration /w AGiXT
+- [ ] Microsoft Office 365 Calender (Outlook Calender)
+
 
 # Plans Extra 
 I plan to have the Android app self compile or I could take into consideration of having a part where you would enter the api keys from your Google and or Microsoft Accounts so that the integrations would work which would mean compiled (apk/xapk).
