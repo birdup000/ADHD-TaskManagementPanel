@@ -107,6 +107,7 @@ const Calendar = () => {
 
   return (
     <div>
+      <h2>Calendar-Integration</h2>
       <div style={{ padding: "0.5em" }}>
         <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-in")}>sign-in</button>
         <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-out")}>

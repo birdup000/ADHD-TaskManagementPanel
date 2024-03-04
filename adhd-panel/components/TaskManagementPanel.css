@@ -206,7 +206,7 @@
     margin-top: 20px;
   }
   
-  .complete-pending-button, .complete-all-button, .clear-tasks-button {
+  .complete-pending-button, .complete-all-button, .clear-tasks-button, .apply-button {
     background-color: #3EA055;
     color: #fff;
     border: none;
@@ -221,5 +221,3 @@
     background-color: #ccc;
     cursor: default;
   }
-  
-  

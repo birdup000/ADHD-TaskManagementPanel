@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import TaskManagementPanelCSS from "./TaskManagementPanel.css";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
 
 const TaskStatus = {
   PENDING: "pending",
@@ -37,6 +40,30 @@ const TaskManagementPanel = () => {
   const [priority, setPriority] = useState(TaskPriority.MEDIUM);
   const [category, setCategory] = useState(TaskCategories.WORK);
   const [reminders, setReminders] = useState([]);
+  const [apiUrl, setApiUrl] = useState("");
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const settings = await loadSettings();
+      if (settings) {
+        setApiUrl(settings.apiUrl);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const settingsString = await AsyncStorage.getItem('settings');
+      if (settingsString !== null) {
+        return JSON.parse(settingsString);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const inputRef = taskInputRef.current;
@@ -48,11 +75,13 @@ const TaskManagementPanel = () => {
   useEffect(() => {
     const fetchTaskList = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/tasks");
-
-        if (response.ok) {
-          const taskList = await response.json();
-          setTaskList(taskList);
+        if(apiUrl) {
+          const response = await fetch(`${apiUrl}/api/tasks`);
+  
+          if (response.ok) {
+            const taskList = await response.json();
+            setTaskList(taskList);
+          }
         }
       } catch (error) {
         console.error(error);
@@ -60,7 +89,7 @@ const TaskManagementPanel = () => {
     };
 
     fetchTaskList();
-  }, []);
+  }, [apiUrl]);
 
   const taskInputRef = useRef(null);
 
@@ -73,15 +102,21 @@ const TaskManagementPanel = () => {
   };
 
   const handleNotesChange = (event) => {
-    setNotes(event.target.value);
+    const updatedTaskList = [...taskList];
+    if (selectedTaskIndex !== -1) {
+      updatedTaskList[selectedTaskIndex].notes = event.target.value;
+      setTaskList(updatedTaskList);
+      setNotes(event.target.value); // Also update the notes state for the selected task
+    }
   };
+  
 
   const handleAddTask = async () => {
     if (task.trim() !== "") {
       const newTask = { task, status, dueDate, notes, priority, category, reminders };
 
       try {
-        const response = await fetch("http://localhost:5000/api/tasks", {
+        const response = await fetch(`${apiUrl}/api/tasks`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -101,7 +136,7 @@ const TaskManagementPanel = () => {
 
   const handleDeleteTask = async (index) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tasks/${index}`, {
+      const response = await fetch(`${apiUrl}/api/tasks/${index}`, {
         method: "DELETE",
       });
 
@@ -118,7 +153,7 @@ const TaskManagementPanel = () => {
 
   const handleRenameTask = async (index, newTask) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tasks/${index}`, {
+      const response = await fetch(`${apiUrl}/api/tasks/${index}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -138,7 +173,7 @@ const TaskManagementPanel = () => {
 
   const handleSetTaskStatus = async (index, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tasks/${index}`, {
+      const response = await fetch(`${apiUrl}/api/tasks/${index}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -260,7 +295,7 @@ const TaskManagementPanel = () => {
 
   const handleClearTasks = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/tasks", {
+      const response = await fetch(`${apiUrl}/api/tasks`, {
         method: "DELETE",
       });
 
@@ -275,7 +310,7 @@ const TaskManagementPanel = () => {
 
   const handleCompleteAllTasks = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/tasks/complete-all", {
+      const response = await fetch(`${apiUrl}/api/tasks/complete-all`, {
         method: "PUT",
       });
 
@@ -292,7 +327,7 @@ const TaskManagementPanel = () => {
 
   const handleCompletePendingTasks = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/tasks/complete-pending", {
+      const response = await fetch(`${apiUrl}/api/tasks/complete-pending`, {
         method: "PUT",
       });
 
@@ -302,6 +337,30 @@ const TaskManagementPanel = () => {
             ? { ...taskItem, status: TaskStatus.COMPLETED }
             : taskItem
         );
+        setTaskList(updatedTaskList);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleApplyChanges = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/tasks/${selectedTaskIndex}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...taskList[selectedTaskIndex], dueDate }),
+        body: JSON.stringify({ ...taskList[selectedTaskIndex], notes }),
+        body: JSON.stringify({ ...taskList[selectedTaskIndex], reminders }),
+      });
+
+      if (response.ok) {
+        const updatedTaskList = [...taskList];
+        updatedTaskList[selectedTaskIndex].dueDate = dueDate;
+        updatedTaskList[selectedTaskIndex].notes = notes;
+        updatedTaskList[selectedTaskIndex].reminders = reminders;
         setTaskList(updatedTaskList);
       }
     } catch (error) {
@@ -547,6 +606,9 @@ const TaskManagementPanel = () => {
             >
               Clear Tasks
             </button>
+            <button onClick={handleApplyChanges} className="apply-button">
+                  Apply Changes
+                </button>
           </div>
         </div>
       )}
