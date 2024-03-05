@@ -1,11 +1,18 @@
 .task-management-panel {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    max-width: auto;
-    margin: 0 auto;
-    background-color: #f5f5f5;
-    padding: 20px;
-  }
+  font-family: Arial, sans-serif;
+  text-align: center;
+  max-width: auto;
+  margin: 0 auto;
+  background-color: #f5f5f5;
+  padding: 20px;
+  width: auto;
+  height: 85%; /* Adjust this percentage as needed */
+  max-height: 750px; /* Set a maximum height */
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+
   
   .heading {
     color: #000;
