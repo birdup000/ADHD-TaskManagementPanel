@@ -30,6 +30,7 @@ export default function TabOneScreen() {
           opacity: fadeIn ? 1 : 0,
           transition: "transform 0.5s, opacity 0.5s",
           transitionDelay: "0.2s",
+          color:'white',
         }}
       >
         Welcome to the ADHD Panel
@@ -41,6 +42,7 @@ export default function TabOneScreen() {
           opacity: fadeIn ? 1 : 0,
           transition: "transform 0.5s, opacity 0.5s",
           transitionDelay: "0.4s",
+          color:'white',
         }}
       >
         We're here to help you manage your ADHD and improve your daily life.
