@@ -1,7 +1,6 @@
+import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
-import EditScreenInfo from '@/components/EditScreenInfo';
 import { Text, View } from '@/components/Themed';
-import { useEffect, useState } from 'react';
 
 export default function TabOneScreen() {
   const [fadeIn, setFadeIn] = useState(false);
@@ -15,44 +14,38 @@ export default function TabOneScreen() {
   }, []);
 
   return (
-    <div
-      style={{
-        opacity: fadeIn ? 1 : 0,
-        transition: "opacity 0.5s",
-        textAlign: "center",
-      }}
-    >
-      <h2
-        style={{
-          fontSize: "3rem",
-          marginBottom: "2rem",
-          transform: `translateY(${fadeIn ? "0" : "-50px"})`,
-          opacity: fadeIn ? 1 : 0,
-          transition: "transform 0.5s, opacity 0.5s",
-          transitionDelay: "0.2s",
-          color:'white',
-        }}
+    <View style={styles.container}>
+      <Text
+        style={[
+          styles.title,
+          {
+            opacity: fadeIn ? 1 : 0,
+            transform: [{ translateY: fadeIn ? 0 : -50 }],
+            transition: "opacity 0.5s, transform 0.5s",
+            transitionDelay: "0.2s",
+            color: 'white',
+          },
+        ]}
       >
         Welcome to the ADHD Panel
-      </h2>
-      <p
-        style={{
-          fontSize: "1.5rem",
-          transform: `translateY(${fadeIn ? "0" : "50px"})`,
-          opacity: fadeIn ? 1 : 0,
-          transition: "transform 0.5s, opacity 0.5s",
-          transitionDelay: "0.4s",
-          color:'white',
-        }}
+      </Text>
+      <Text
+        style={[
+          styles.text,
+          {
+            opacity: fadeIn ? 1 : 0,
+            transform: [{ translateY: fadeIn ? 0 : 50 }],
+            transition: "opacity 0.5s, transform 0.5s",
+            transitionDelay: "0.4s",
+            color: 'white',
+          },
+        ]}
       >
         We're here to help you manage your ADHD and improve your daily life.
-      </p>
-    </div>
+      </Text>
+    </View>
   );
 }
-
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -61,12 +54,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: 42,
+    marginBottom: 20,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
+  text: {
+    fontSize: 18,
+    textAlign: 'center',
   },
 });

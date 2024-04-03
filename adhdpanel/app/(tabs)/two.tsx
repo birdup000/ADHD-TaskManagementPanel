@@ -12,6 +12,7 @@ export default function TaskPanel() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [dueDate, setDueDate] = useState(new Date());
+  const [priority, setPriority] = useState('');
 
   useEffect(() => {
     loadTasks();
@@ -38,10 +39,17 @@ export default function TaskPanel() {
 
   const addTask = () => {
     if (taskText.trim().length > 0) {
-      const newTask = { id: Date.now(), text: taskText.trim(), note: '', dueDate: null };
+      const newTask = { 
+        id: Date.now(), 
+        text: taskText.trim(), 
+        note: '', 
+        dueDate: null,
+        priority: priority 
+      };
       setTasks([...tasks, newTask]);
       saveTasks([...tasks, newTask]);
       setTaskText('');
+      setPriority('');
     }
   };
 
@@ -55,13 +63,14 @@ export default function TaskPanel() {
     setSelectedTask(task);
     setNoteText(task.note || '');
     setDueDate(task.dueDate ? new Date(task.dueDate) : new Date());
+    setPriority(task.priority || '');
     setShowEditModal(true);
   };
 
   const saveTaskEdit = () => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === selectedTask.id) {
-        return { ...task, note: noteText, dueDate: dueDate ? dueDate.toISOString().split('T')[0] : null };
+        return { ...task, note: noteText, dueDate: dueDate ? dueDate.toISOString().split('T')[0] : null, priority: priority };
       }
       return task;
     });
@@ -80,6 +89,13 @@ export default function TaskPanel() {
           placeholder="Enter a task"
           placeholderTextColor="#FFFFFF80"
         />
+        <TextInput
+          style={styles.input}
+          value={priority}
+          onChangeText={setPriority}
+          placeholder="Priority (e.g., High, Medium, Low)"
+          placeholderTextColor="#FFFFFF80"
+        />
         <TouchableOpacity style={styles.addButton} onPress={addTask}>
           <Icon name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
@@ -91,11 +107,13 @@ export default function TaskPanel() {
           <TouchableOpacity style={styles.taskContainer} onPress={() => editTask(item)}>
             <Text style={styles.taskText}>{item.text}</Text>
             {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
-            {item.dueDate && <Text style={styles.dueDateText}>Due Date: {item.dueDate}</Text>}
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => removeTask(item.id)}
-            >
+            {item.dueDate && (
+              <Text style={styles.dueDateText}>
+                Due Date: {new Date(item.dueDate).toLocaleString()}
+              </Text>
+            )}
+            {item.priority && <Text style={styles.priorityText}>Priority: {item.priority}</Text>}
+            <TouchableOpacity style={styles.removeButton} onPress={() => removeTask(item.id)}>
               <Icon name="delete" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </TouchableOpacity>
@@ -131,6 +149,13 @@ export default function TaskPanel() {
               dateFormat="yyyy-MM-dd"
               showTimeInput
             />
+            <TextInput
+              style={styles.input}
+              value={priority}
+              onChangeText={setPriority}
+              placeholder="Priority (e.g., High, Medium, Low)"
+              placeholderTextColor="#FFFFFF80"
+            />
             <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
               <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
@@ -160,12 +185,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingHorizontal: 8,
     color: '#FFFFFF',
+    marginRight: 8,
   },
   addButton: {
     backgroundColor: '#007AFF',
     padding: 8,
     borderRadius: 4,
-    marginLeft: 8,
   },
   taskContainer: {
     flexDirection: 'row',
@@ -190,6 +215,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     fontWeight: 'bold',
+    color: '#FFFFFF80',
+  },
+  priorityText: {
+    marginLeft: 8,
+    fontSize: 14,
     color: '#FFFFFF80',
   },
   removeButton: {
@@ -234,5 +264,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 4,
+    width: '40%',
+    marginLeft: 'auto',
+    marginRight:'auto',
   },
 });
