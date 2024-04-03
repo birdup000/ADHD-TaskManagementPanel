@@ -32,4 +32,9 @@ To start you'll want to clone the repo using "git clone https://github.com/green
 # Screenshots of Task Management Page
 ![image](https://github.com/birdup000/ADHD-TaskManagementPanel/assets/34012548/80b4fe75-e2de-47af-8e52-83e0ade508f4)
 
+Tasks Page
+
+![image](https://github.com/birdup000/ADHD-TaskManagementPanel/assets/34012548/271ac12d-0cbc-4c7b-93a8-d755eb8ae8fb)
+![image](https://github.com/birdup000/ADHD-TaskManagementPanel/assets/34012548/9b19ae7b-69e7-4f6a-9bb7-29cc162f60b5)
+
 
