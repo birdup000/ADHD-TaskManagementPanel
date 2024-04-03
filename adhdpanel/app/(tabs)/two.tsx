@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Modal } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Modal, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function TaskPanel() {
   const [taskText, setTaskText] = useState('');
   const [tasks, setTasks] = useState([]);
-  const [showEditOverlay, setShowEditOverlay] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [noteText, setNoteText] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -51,20 +54,31 @@ export default function TaskPanel() {
   const editTask = (task) => {
     setSelectedTask(task);
     setNoteText(task.note || '');
-    setDueDate(task.dueDate || '');
-    setShowEditOverlay(true);
+    setDueDate(task.dueDate ? new Date(task.dueDate) : new Date());
+    setShowEditModal(true);
   };
 
   const saveTaskEdit = () => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === selectedTask.id) {
-        return { ...task, note: noteText, dueDate };
+        return { ...task, note: noteText, dueDate: dueDate.toISOString().split('T')[0] };
       }
       return task;
     });
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
-    setShowEditOverlay(false);
+    setShowEditModal(false);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setDueDate(selectedDate);
+    }
+  };
+
+  const showDateTimePicker = () => {
+    setShowDatePicker(true);
   };
 
   return (
@@ -78,7 +92,7 @@ export default function TaskPanel() {
           placeholderTextColor="#FFFFFF80"
         />
         <TouchableOpacity style={styles.addButton} onPress={addTask}>
-          <Text style={styles.buttonText}>Add</Text>
+          <Icon name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
       <FlatList
@@ -93,15 +107,28 @@ export default function TaskPanel() {
               style={styles.removeButton}
               onPress={() => removeTask(item.id)}
             >
-              <Text style={styles.buttonText}>Remove</Text>
+              <Icon name="delete" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </TouchableOpacity>
         )}
       />
-      {showEditOverlay && (
-        <View style={styles.overlayContainer}>
-          <View style={styles.editContainer}>
-            <Text style={styles.modalTitle}>Edit Task</Text>
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Task</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowEditModal(false)}
+              >
+                <Icon name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
             <TextInput
               style={styles.input}
               value={noteText}
@@ -109,24 +136,25 @@ export default function TaskPanel() {
               placeholder="Enter a note"
               placeholderTextColor="#FFFFFF80"
             />
-            <TextInput
-              style={styles.input}
-              value={dueDate}
-              onChangeText={setDueDate}
-              placeholder="Enter due date (MM/DD/YYYY)"
-              placeholderTextColor="#FFFFFF80"
-            />
+            <TouchableOpacity style={styles.datePickerButton} onPress={showDateTimePicker}>
+              <Text style={styles.buttonText}>Select Due Date</Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={dueDate}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}
+              />
+            )}
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
                 <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setShowEditOverlay(false)}>
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
@@ -153,8 +181,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    padding: 8,
     borderRadius: 4,
     marginLeft: 8,
   },
@@ -185,34 +212,44 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     backgroundColor: '#FF3B30',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    padding: 8,
     borderRadius: 4,
   },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
   },
-  overlayContainer: {
+  modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  editContainer: {
+  modalContent: {
     backgroundColor: '#1E1E1E',
     padding: 16,
     borderRadius: 8,
+    width: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 16,
+  },
+  closeButton: {
+    backgroundColor: '#FF3B30',
+    padding: 8,
+    borderRadius: 4,
   },
   modalButtonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'flex-end',
     marginTop: 16,
   },
   modalButton: {
@@ -221,4 +258,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 4,
   },
-});
+  datePickerButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 4,
+    marginTop: 16,
+    alignSelf: 'flex-start',
+  },
+  });
