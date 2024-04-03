@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Modal, Platform } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, Modal } from 'react-native';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css'; // Import the styles
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function TaskPanel() {
   const [taskText, setTaskText] = useState('');
@@ -11,7 +12,6 @@ export default function TaskPanel() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [noteText, setNoteText] = useState('');
   const [dueDate, setDueDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -38,7 +38,7 @@ export default function TaskPanel() {
 
   const addTask = () => {
     if (taskText.trim().length > 0) {
-      const newTask = { id: Date.now(), text: taskText.trim() };
+      const newTask = { id: Date.now(), text: taskText.trim(), note: '', dueDate: null };
       setTasks([...tasks, newTask]);
       saveTasks([...tasks, newTask]);
       setTaskText('');
@@ -61,24 +61,13 @@ export default function TaskPanel() {
   const saveTaskEdit = () => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === selectedTask.id) {
-        return { ...task, note: noteText, dueDate: dueDate.toISOString().split('T')[0] };
+        return { ...task, note: noteText, dueDate: dueDate ? dueDate.toISOString().split('T')[0] : null };
       }
       return task;
     });
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
     setShowEditModal(false);
-  };
-
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setDueDate(selectedDate);
-    }
-  };
-
-  const showDateTimePicker = () => {
-    setShowDatePicker(true);
   };
 
   return (
@@ -136,22 +125,15 @@ export default function TaskPanel() {
               placeholder="Enter a note"
               placeholderTextColor="#FFFFFF80"
             />
-            <TouchableOpacity style={styles.datePickerButton} onPress={showDateTimePicker}>
-              <Text style={styles.buttonText}>Select Due Date</Text>
+            <DatePicker
+              selected={dueDate}
+              onChange={(date) => setDueDate(date)}
+              dateFormat="yyyy-MM-dd"
+              showTimeInput
+            />
+            <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
+              <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={dueDate}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-              />
-            )}
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
-                <Text style={styles.buttonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
@@ -247,23 +229,10 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 4,
   },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 16,
-  },
   modalButton: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 4,
   },
-  datePickerButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
-    marginTop: 16,
-    alignSelf: 'flex-start',
-  },
-  });
+});

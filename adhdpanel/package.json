@@ -13,7 +13,12 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@emotion/styled": "^11.11.5",
     "@expo/vector-icons": "^14.0.0",
+    "@fullcalendar/daygrid": "^6.1.11",
+    "@fullcalendar/interaction": "^6.1.11",
+    "@fullcalendar/react": "^6.1.11",
+    "@react-native-async-storage/async-storage": "1.21.0",
     "@react-navigation/native": "^6.0.2",
     "expo": "~50.0.14",
     "expo-font": "~11.10.3",
@@ -24,13 +29,13 @@
     "expo-system-ui": "~2.9.3",
     "expo-web-browser": "~12.8.2",
     "react": "18.2.0",
+    "react-datepicker": "^6.6.0",
     "react-dom": "18.2.0",
+    "react-google-calendar-api": "^2.3.0",
     "react-native": "0.73.6",
     "react-native-safe-area-context": "4.8.2",
     "react-native-screens": "~3.29.0",
-    "react-native-web": "~0.19.6",
-    "@react-native-async-storage/async-storage": "1.21.0",
-    "@react-native-community/datetimepicker": "7.6.1"
+    "react-native-web": "~0.19.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
