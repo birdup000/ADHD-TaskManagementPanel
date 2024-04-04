@@ -7,7 +7,7 @@ I plan to add many things a lot of the things I want to add are listed below.
 
 The following in the list below are features for sure are gonna be added.
 
-- [x] Backend
+- [ ] Backend for Self Hosted Instead of Relying on Github Projects
 - [x] Web Interface
 - [x] Android App (switched to Expo for packaging)
 - [x] Google Calander Integrations (still refining integrations)
@@ -17,9 +17,9 @@ The following in the list below are features for sure are gonna be added.
          - Multi-User Support
          - Google Auth for login and Microsoft Auth for login
 - [ ] Import Task list from one server to another by loading json in the web ui
-- [ ] DB Support
+- [ ] DB Support (JQL Implementation would be needed)
 - [ ] AI integration /w AGiXT
-- [ ] Microsoft Office 365 Calender (Outlook Calender)
+- [ ] Microsoft Office 365 Calender (Outlook Calender) GraphQL
 
 # Q/A
 1.Why are you committed into making this project succesful?
