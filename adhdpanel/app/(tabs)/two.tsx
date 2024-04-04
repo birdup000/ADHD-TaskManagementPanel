@@ -59,6 +59,8 @@ export default function TaskPanel() {
     saveTasks(updatedTasks);
   };
 
+  
+
   const editTask = (task) => {
     setSelectedTask(task);
     setNoteText(task.note || '');
@@ -70,7 +72,12 @@ export default function TaskPanel() {
   const saveTaskEdit = () => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === selectedTask.id) {
-        return { ...task, note: noteText, dueDate: dueDate ? dueDate.toISOString().split('T')[0] : null, priority: priority };
+        return {
+          ...task,
+          note: noteText,
+          dueDate: dueDate ? dueDate.toISOString() : null,
+          priority: priority,
+        };
       }
       return task;
     });
@@ -78,6 +85,7 @@ export default function TaskPanel() {
     saveTasks(updatedTasks);
     setShowEditModal(false);
   };
+
 
   return (
     <View style={styles.container}>
@@ -144,11 +152,11 @@ export default function TaskPanel() {
               placeholderTextColor="#FFFFFF80"
             />
             <DatePicker
-              selected={dueDate}
-              onChange={(date) => setDueDate(date)}
-              dateFormat="yyyy-MM-dd"
-              showTimeInput
-            />
+  selected={dueDate}
+  onChange={(date: Date) => setDueDate(date)}
+  showTimeSelect
+  dateFormat="MMMM d, yyyy h:mm aa"
+/>
             <TextInput
               style={styles.input}
               value={priority}
