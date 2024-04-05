@@ -71,10 +71,10 @@ export default function EditScreenInfo({ path }: { path: string }) {
       <View style={styles.helpContainer}>
         <ExternalLink
           style={styles.helpLink}
-          href="https://docs.expo.io/get-started/create-a-new-app/#opening-the-app-on-your-phonetablet"
+          href="https://github.com/birdup000/ADHD-TaskManagementPanel"
         >
           <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
-            Tap here if your app doesn't automatically update after making changes
+            Tap here for documentation 
           </Text>
         </ExternalLink>
       </View>
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     borderColor: 'gray',
     padding: 8,
     marginVertical: 8,
-    width: '80%',
     color: 'white',
+    paddingVertical: 15,
   },
 });
