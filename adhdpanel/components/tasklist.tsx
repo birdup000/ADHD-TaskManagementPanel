@@ -12,11 +12,10 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css"; // Import the styles
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { ApolloClient, InMemoryCache, gql, useMutation, useQuery} from '@apollo/client';
+import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo/client';
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 
 import { Picker } from '@react-native-picker/picker';
-
 
 if (__DEV__) {
   // Adds messages only in a dev environment
@@ -39,9 +38,6 @@ const GET_USER_REPOSITORIES = gql`
   }
 `;
 
-
-
-
 export default function TaskPanel() {
   const [taskText, setTaskText] = useState("");
   const [tasks, setTasks] = useState([]);
@@ -55,18 +51,25 @@ export default function TaskPanel() {
   const [githubUsername, setGithubUsername] = useState("");
 
   useEffect(() => {
-    const getGithubUsername = async () => {
+    const getGithubUsernameAndAuthKey = async () => {
       try {
         const storedGithubUsername = await AsyncStorage.getItem('githubUsername');
-        if (storedGithubUsername) {
+        const storedAuthKey = await AsyncStorage.getItem('authKey');
+
+        if (storedGithubUsername && storedAuthKey) {
           setGithubUsername(storedGithubUsername);
+          setAuthKey(storedAuthKey);
+          loadTasks();
+        } else {
+          // Neither GitHub username nor API key is available
+          console.log('GitHub username and/or API key not available');
         }
       } catch (error) {
-        console.log("Error getting GitHub username from AsyncStorage:", error);
+        console.log('Error getting GitHub username and/or API key from AsyncStorage:', error);
       }
     };
-    getGithubUsername();
-    loadTasks();
+
+    getGithubUsernameAndAuthKey();
   }, []);
 
   const { loading, error, data } = useQuery(GET_USER_REPOSITORIES, {
@@ -84,7 +87,7 @@ export default function TaskPanel() {
     }
   };
 
-  const saveTasks = async (updatedTasks: any[]) => { // Declare type for updatedTasks parameter
+  const saveTasks = async (updatedTasks: any[]) => {
     try {
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
     } catch (error) {
@@ -110,11 +113,11 @@ export default function TaskPanel() {
     }
   };
 
-  const handleTaskNameChange = (text: string) => { // Declare type for text parameter
+  const handleTaskNameChange = (text: string) => {
     setTaskName(text);
   };
 
-  const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>(({ value, onClick }, ref) => ( // Declare types for value and onClick properties
+  const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>(({ value, onClick }, ref) => (
     <TouchableOpacity style={styles.input} onPress={onClick} ref={ref}>
       <Text style={{ color: "white" }}>
         {value ? value : "No Due Date Set"}
@@ -122,13 +125,13 @@ export default function TaskPanel() {
     </TouchableOpacity>
   ));
 
-  const removeTask = (id: number) => { // Declare type for id parameter
+  const removeTask = (id: number) => {
     const updatedTasks = tasks.filter((task) => task.id !== id);
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
   };
 
-  const editTask = (task: any) => { // Declare type for task parameter
+  const editTask = (task: any) => {
     setSelectedTask(task);
     setNoteText(task.note || "");
     setDueDate(task.dueDate ? new Date(task.dueDate) : null);
@@ -137,7 +140,6 @@ export default function TaskPanel() {
     setTaskName(task.text);
     setSelectedRepo(task.repo);
   };
-
 
   const removeDueDate = () => {
     setDueDate(null);
@@ -160,15 +162,15 @@ export default function TaskPanel() {
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
     setShowEditModal(false);
-    setSelectedTask(null); // Reset the selectedTask state
+    setSelectedTask(null);
   };
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <Text>Loading...</Text>
-      ) : error ? (
-        <Text>Error: {error.message}</Text>
+      {!githubUsername || !data ? (
+        <View style={styles.repoPickerContainer}>
+          <Text style={styles.repoPickerLabel}>GitHub username and API key not available. Please set them by accessing Home and top right settings icon to be able to use the integration.</Text>
+        </View>
       ) : (
         <View style={styles.repoPickerContainer}>
           <Text style={styles.repoPickerLabel}>Select a Repository:</Text>
@@ -178,7 +180,7 @@ export default function TaskPanel() {
             onValueChange={(value) => setSelectedRepo(value)}
           >
             <Picker.Item label="Select a repository" value={null} />
-            {data && data.user && data.user.repositories.nodes.map((repo: any) => (
+            {data.user.repositories.nodes.map((repo: any) => (
               <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
             ))}
           </Picker>
