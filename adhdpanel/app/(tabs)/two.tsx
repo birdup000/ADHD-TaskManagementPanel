@@ -66,6 +66,14 @@ export default function TaskPanel() {
     setTaskName(text); // Update task name state
   };
 
+  const ExampleCustomInput = ({ value, onClick }) => (
+    <TouchableOpacity style={styles.input} onPress={onClick}>
+      <Text style={{ color: "white" }}>
+        {value ? value : "No Due Date Set"}
+      </Text>
+    </TouchableOpacity>
+  );
+  
   const removeTask = (id) => {
     const updatedTasks = tasks.filter((task) => task.id !== id);
     setTasks(updatedTasks);
@@ -193,6 +201,8 @@ export default function TaskPanel() {
               onChange={(date: Date) => setDueDate(date)}
               showTimeSelect
               dateFormat="MMMM d, yyyy h:mm aa"
+              placeholderText="No Due Date Set"
+              customInput={<ExampleCustomInput />}
             />
             <TouchableOpacity style={styles.removeDueDateButton} onPress={removeDueDate}>
               <Text style={styles.buttonText}>Remove Due Date</Text>
