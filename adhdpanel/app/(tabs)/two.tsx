@@ -144,6 +144,7 @@ export default function TaskPanel() {
                 <Icon name="close" size={24} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
+            <Text style={{ color: 'white' }}>Note:</Text>
             <TextInput
               style={styles.input}
               value={noteText}
@@ -151,12 +152,14 @@ export default function TaskPanel() {
               placeholder="Enter a note"
               placeholderTextColor="#FFFFFF80"
             />
-            <DatePicker
+            <Text style={{ color: 'white' }}>Due Date:</Text>
+            <DatePicker 
   selected={dueDate}
   onChange={(date: Date) => setDueDate(date)}
   showTimeSelect
   dateFormat="MMMM d, yyyy h:mm aa"
 />
+<Text style={{ color: 'white'}}>Priority:</Text>
             <TextInput
               style={styles.input}
               value={priority}
@@ -229,6 +232,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#FFFFFF80',
+    padding: 8,
   },
   removeButton: {
     backgroundColor: '#FF3B30',
@@ -250,6 +254,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     width: '90%',
+    height: '50%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -275,5 +280,7 @@ const styles = StyleSheet.create({
     width: '40%',
     marginLeft: 'auto',
     marginRight:'auto',
+    padding: 8,
+    marginTop: 16,
   },
 });
