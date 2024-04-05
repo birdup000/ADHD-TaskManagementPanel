@@ -149,6 +149,7 @@ export default function TaskPanel() {
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
     setShowEditModal(false);
+    setSelectedTask(null); // Reset the selectedTask state
   };
 
   return (
@@ -193,41 +194,68 @@ export default function TaskPanel() {
         </TouchableOpacity>
       </View>
       <FlatList
-  data={tasks}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={({ item }) => (
-    <TouchableOpacity style={styles.taskContainer} onPress={() => editTask(item)}>
-      <View style={styles.taskInfoContainer}>
-        <Text style={styles.taskText}>{item.text}</Text>
-        {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
-        {item.dueDate && (
-          <Text style={styles.dueDateText}>
-            Due Date: {new Date(item.dueDate).toLocaleString()}
-          </Text>
+        data={tasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.taskContainer,
+              {
+                borderColor:
+                  item.dueDate && new Date(item.dueDate) < new Date()
+                    ? "#FF3B30"
+                    : "transparent",
+                backgroundColor:
+                  selectedTask && selectedTask.id === item.id
+                    ? "#2E2E2E"
+                    : "#1E1E1E",
+              },
+            ]}
+            onPress={() => editTask(item)}
+          >
+            <View style={styles.taskInfoContainer}>
+              <Text
+                style={[
+                  styles.taskText,
+                  {
+                    fontWeight:
+                      item.dueDate && new Date(item.dueDate) < new Date()
+                        ? "bold"
+                        : "normal",
+                  },
+                ]}
+              >
+                {item.text}
+              </Text>
+              {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
+              {item.dueDate && (
+                <Text style={styles.dueDateText}>
+                  Due Date: {new Date(item.dueDate).toLocaleString()}
+                </Text>
+              )}
+              {item.priority && (
+                <Text style={styles.priorityText}>Priority: {item.priority}</Text>
+              )}
+              {item.repo && (
+                <Text style={styles.repoText}>Repository: {item.repo}</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => removeTask(item.id)}
+            >
+              <Icon name="delete" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </TouchableOpacity>
         )}
-        {item.priority && (
-          <Text style={styles.priorityText}>Priority: {item.priority}</Text>
-        )}
-        {item.repo && (
-          <Text style={styles.repoText}>Repository: {item.repo}</Text>
-        )}
-      </View>
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => removeTask(item.id)}
-      >
-        <Icon name="delete" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  )}
-/>
+      />
       <Modal
         visible={showEditModal}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowEditModal(false)}
       >
-        <View style={styles.modalContainer}>
+                <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Task</Text>
@@ -295,6 +323,7 @@ export default function TaskPanel() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -328,10 +357,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
     padding: 8,
     borderRadius: 4,
+    // Add the following styles
+    borderWidth: 2,
+    borderColor: (task) => {
+      if (task.dueDate && new Date(task.dueDate) < new Date()) {
+        return "#FF3B30"; // Red for past due tasks
+      } else {
+        return "transparent"; // No border for tasks with no due date or not past due
+      }
+    },
   },
   taskText: {
     fontSize: 16,
     color: "#FFFFFF",
+    fontWeight: "normal",
+    padding: 8,
   },
   noteText: {
     marginTop: 4,
@@ -386,6 +426,14 @@ const styles = StyleSheet.create({
   },
   taskInfoContainer: {
     flex: 1,
+    // Add the following styles
+    backgroundColor: (task) => {
+      if (task.dueDate && new Date(task.dueDate) < new Date()) {
+        return "#FF3B3020"; // Red background for past due tasks
+      } else {
+        return "#1E1E1E"; // Default background
+      }
+    },
   },
   closeButton: {
     backgroundColor: "#FF3B30",
