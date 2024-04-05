@@ -47,6 +47,16 @@ export default function EditScreenInfo({ path }: { path: string }) {
         >
           Help Details Here
         </Text>
+        <View style={styles.helpContainer}>
+        <ExternalLink
+          style={styles.helpLink}
+          href="https://github.com/birdup000/ADHD-TaskManagementPanel"
+        >
+          <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
+            Tap here for documentation 
+          </Text>
+        </ExternalLink>
+      </View>
         <Text
           style={styles.getStartedText}
           lightColor="rgba(0,0,0,0.8)"
@@ -67,16 +77,6 @@ export default function EditScreenInfo({ path }: { path: string }) {
           onChangeText={(text) => setGithubUsername(text)}
         />
         <Button title="Save Settings" onPress={handleSaveSettings} />
-      </View>
-      <View style={styles.helpContainer}>
-        <ExternalLink
-          style={styles.helpLink}
-          href="https://github.com/birdup000/ADHD-TaskManagementPanel"
-        >
-          <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
-            Tap here for documentation 
-          </Text>
-        </ExternalLink>
       </View>
     </View>
   );
