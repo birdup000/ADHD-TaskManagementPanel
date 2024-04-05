@@ -1,49 +1,78 @@
-import React from 'react';
-import { StyleSheet } from 'react-native';
-
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, TextInput, Button } from 'react-native';
 import { ExternalLink } from './ExternalLink';
 import { MonoText } from './StyledText';
 import { Text, View } from './Themed';
-
 import Colors from '@/constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function EditScreenInfo({ path }: { path: string }) {
+  const [authKey, setAuthKey] = useState('');
+  const [githubUsername, setGithubUsername] = useState('');
+
+  useEffect(() => {
+    const getSettings = async () => {
+      try {
+        const storedAuthKey = await AsyncStorage.getItem('authKey');
+        const storedGithubUsername = await AsyncStorage.getItem('githubUsername');
+        if (storedAuthKey) {
+          setAuthKey(storedAuthKey);
+        }
+        if (storedGithubUsername) {
+          setGithubUsername(storedGithubUsername);
+        }
+      } catch (e) {
+        console.error('Error accessing AsyncStorage:', e);
+      }
+    };
+    getSettings();
+  }, []);
+
+  const handleSaveSettings = async () => {
+    try {
+      await AsyncStorage.setItem('authKey', authKey);
+      await AsyncStorage.setItem('githubUsername', githubUsername);
+    } catch (e) {
+      console.error('Error saving settings to AsyncStorage:', e);
+    }
+  };
+
   return (
     <View>
       <View style={styles.getStartedContainer}>
         <Text
           style={styles.getStartedText}
           lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)">
-         Help and Settings
-        </Text>
-
-        <View
-          style={[styles.codeHighlightContainer, styles.homeScreenFilename]}
-          darkColor="rgba(255,255,255,0.05)"
-          lightColor="rgba(0,0,0,0.05)">
-          <MonoText>{path}</MonoText>
-        </View>
-
-        <Text
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)">
+          darkColor="rgba(255,255,255,0.8)"
+        >
           Help Details Here
         </Text>
-         
         <Text
           style={styles.getStartedText}
           lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)">
-            Settings Details Here
-            </Text>
+          darkColor="rgba(255,255,255,0.8)"
+        >
+          Settings Details Here
+        </Text>
+        <TextInput
+          style={styles.settingsInput}
+          placeholder="Enter Github Personal Access Token"
+          value={authKey}
+          onChangeText={(text) => setAuthKey(text)}
+        />
+        <TextInput
+          style={styles.settingsInput}
+          placeholder="Enter GitHub username"
+          value={githubUsername}
+          onChangeText={(text) => setGithubUsername(text)}
+        />
+        <Button title="Save Settings" onPress={handleSaveSettings} />
       </View>
-
       <View style={styles.helpContainer}>
         <ExternalLink
           style={styles.helpLink}
-          href="https://docs.expo.io/get-started/create-a-new-app/#opening-the-app-on-your-phonetablet">
+          href="https://docs.expo.io/get-started/create-a-new-app/#opening-the-app-on-your-phonetablet"
+        >
           <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
             Tap here if your app doesn't automatically update after making changes
           </Text>
@@ -80,5 +109,13 @@ const styles = StyleSheet.create({
   },
   helpLinkText: {
     textAlign: 'center',
+  },
+  settingsInput: {
+    borderWidth: 1,
+    borderColor: 'gray',
+    padding: 8,
+    marginVertical: 8,
+    width: '80%',
+    color: 'white',
   },
 });

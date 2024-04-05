@@ -52,15 +52,26 @@ export default function TaskPanel() {
   const [priority, setPriority] = useState("");
   const [taskName, setTaskName] = useState("");
   const [selectedRepo, setSelectedRepo] = useState("");
-
-
-  const { loading, error, data } = useQuery(GET_USER_REPOSITORIES, {
-    variables: { username: 'your-username-here' },
-  });
+  const [githubUsername, setGithubUsername] = useState("");
 
   useEffect(() => {
+    const getGithubUsername = async () => {
+      try {
+        const storedGithubUsername = await AsyncStorage.getItem('githubUsername');
+        if (storedGithubUsername) {
+          setGithubUsername(storedGithubUsername);
+        }
+      } catch (error) {
+        console.log("Error getting GitHub username from AsyncStorage:", error);
+      }
+    };
+    getGithubUsername();
     loadTasks();
   }, []);
+
+  const { loading, error, data } = useQuery(GET_USER_REPOSITORIES, {
+    variables: { username: githubUsername },
+  });
 
   const loadTasks = async () => {
     try {
