@@ -62,9 +62,9 @@ export default function TaskPanel() {
     }
   };
 
-const handleTaskNameChange = (text) => {
-  setTaskName(text); // Update task name state
-};
+  const handleTaskNameChange = (text) => {
+    setTaskName(text); // Update task name state
+  };
 
   const removeTask = (id) => {
     const updatedTasks = tasks.filter((task) => task.id !== id);
@@ -81,24 +81,27 @@ const handleTaskNameChange = (text) => {
     setTaskName(task.text);
   };
 
+  const removeDueDate = () => {
+    setDueDate(null);
+  };
 
-const saveTaskEdit = () => {
-  const updatedTasks = tasks.map((task) => {
-    if (task.id === selectedTask.id) {
-      return {
-        ...task,
-        text: taskName, // Update task name
-        note: noteText,
-        dueDate: dueDate ? dueDate.toISOString() : null,
-        priority: priority,
-      };
-    }
-    return task;
-  });
-  setTasks(updatedTasks);
-  saveTasks(updatedTasks);
-  setShowEditModal(false);
-};
+  const saveTaskEdit = () => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === selectedTask.id) {
+        return {
+          ...task,
+          text: taskName, // Update task name
+          note: noteText,
+          dueDate: dueDate ? dueDate.toISOString() : null,
+          priority: priority,
+        };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+    setShowEditModal(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -185,11 +188,15 @@ const saveTaskEdit = () => {
             />
             <Text style={{ color: "white" }}>Due Date:</Text>
             <DatePicker
+              showIcon
               selected={dueDate}
               onChange={(date: Date) => setDueDate(date)}
               showTimeSelect
               dateFormat="MMMM d, yyyy h:mm aa"
             />
+            <TouchableOpacity style={styles.removeDueDateButton} onPress={removeDueDate}>
+              <Text style={styles.buttonText}>Remove Due Date</Text>
+            </TouchableOpacity>
             <Text style={{ color: "white" }}>Priority:</Text>
             <TextInput
               style={styles.input}
@@ -308,7 +315,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 4,
-    width: "40%",
+    width: "25%",
+    marginLeft: "auto",
+    marginRight: "auto",
+    padding: 8,
+    marginTop: 16,
+  },
+  removeDueDateButton: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 4,
+    width: "25%",
     marginLeft: "auto",
     marginRight: "auto",
     padding: 8,
