@@ -13,6 +13,7 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@apollo/client": "^3.9.10",
     "@emotion/styled": "^11.11.5",
     "@expo/vector-icons": "^14.0.0",
     "@fullcalendar/daygrid": "^6.1.11",
@@ -36,7 +37,8 @@
     "react-native-push-notification": "^8.1.1",
     "react-native-safe-area-context": "4.8.2",
     "react-native-screens": "~3.29.0",
-    "react-native-web": "~0.19.6"
+    "react-native-web": "~0.19.6",
+    "@react-native-picker/picker": "2.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
