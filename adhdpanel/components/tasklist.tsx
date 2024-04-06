@@ -9,21 +9,18 @@ import {
   Modal,
 } from "react-native";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css"; // Import the styles
+import "react-datepicker/dist/react-datepicker.css";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo/client';
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
-
 import { Picker } from '@react-native-picker/picker';
 
 if (__DEV__) {
-  // Adds messages only in a dev environment
   loadDevMessages();
   loadErrorMessages();
 }
 
-// Define the GraphQL query to fetch user repositories
 const GET_USER_REPOSITORIES = gql`
   query getRepositories($username: String!) {
     user(login: $username) {
@@ -49,6 +46,7 @@ export default function TaskPanel() {
   const [taskName, setTaskName] = useState("");
   const [selectedRepo, setSelectedRepo] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
+  const [subtaskText, setSubtaskText] = useState("");
 
   useEffect(() => {
     const getGithubUsernameAndAuthKey = async () => {
@@ -61,7 +59,6 @@ export default function TaskPanel() {
           setAuthKey(storedAuthKey);
           loadTasks();
         } else {
-          // Neither GitHub username nor API key is available
           console.log('GitHub username and/or API key not available');
         }
       } catch (error) {
@@ -105,6 +102,7 @@ export default function TaskPanel() {
         dueDate: null,
         priority: priority,
         repo: selectedRepo,
+        subtasks: [],
       };
       setTasks([...tasks, newTask]);
       saveTasks([...tasks, newTask]);
@@ -114,14 +112,51 @@ export default function TaskPanel() {
     }
   };
 
+  const addSubtask = (taskId, subtaskText) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === taskId) {
+        return {
+          ...task,
+          subtasks: task.subtasks ? [...task.subtasks, { id: Date.now(), text: subtaskText }] : [{ id: Date.now(), text: subtaskText }],
+        };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+  };
+
+  const SubtaskTree = ({ task }) => {
+    return (
+      <View style={styles.subtaskTreeContainer}>
+        <View style={styles.subtaskTreeItem}>
+          <Text style={styles.subtaskText}>• {task.text}</Text>
+          <TouchableOpacity
+            style={styles.addSubtaskButton}
+            onPress={() => addSubtask(task.id, subtaskText)}
+          >
+            <Icon name="add" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        {task.subtasks && task.subtasks.length > 0 && (
+          <View style={styles.subtaskTreeChildren}>
+            {task.subtasks.map((subtask) => (
+              <SubtaskTree key={subtask.id} task={subtask} />
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const handleTaskNameChange = (text: string) => {
     setTaskName(text);
   };
 
-  const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>(({ value, onClick }, ref) => (
-    <TouchableOpacity style={styles.input} onPress={onClick} ref={ref}>
+  const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>((props, ref) => (
+    <TouchableOpacity style={styles.input} onPress={props.onClick} ref={ref}>
       <Text style={{ color: "white" }}>
-        {value ? value : "No Due Date Set"}
+        {props.value ? props.value : "No Due Date Set"}
       </Text>
     </TouchableOpacity>
   ));
@@ -253,6 +288,7 @@ export default function TaskPanel() {
               {item.repo && (
                 <Text style={styles.repoText}>Repository: {item.repo}</Text>
               )}
+              <SubtaskTree task={item} />
             </View>
             <TouchableOpacity
               style={styles.removeButton}
@@ -269,7 +305,7 @@ export default function TaskPanel() {
         transparent={true}
         onRequestClose={() => setShowEditModal(false)}
       >
-                <View style={styles.modalContainer}>
+        <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Task</Text>
@@ -337,7 +373,6 @@ export default function TaskPanel() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -371,13 +406,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
     padding: 8,
     borderRadius: 4,
-    // Add the following styles
     borderWidth: 2,
     borderColor: (task) => {
       if (task.dueDate && new Date(task.dueDate) < new Date()) {
         return "#FF3B30"; // Red for past due tasks
       } else {
-        return "transparent"; // No border for tasks with no due date or not past due
+        return "transparent";
       }
     },
   },
@@ -440,12 +474,11 @@ const styles = StyleSheet.create({
   },
   taskInfoContainer: {
     flex: 1,
-    // Add the following styles
     backgroundColor: (task) => {
       if (task.dueDate && new Date(task.dueDate) < new Date()) {
         return "#FF3B3020"; // Red background for past due tasks
       } else {
-        return "#1E1E1E"; // Default background
+        return "#1E1E1E";
       }
     },
   },
@@ -515,5 +548,26 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     color: "#FFFFFF80",
+  },
+  subtaskTreeContainer: {
+    marginTop: 8,
+  },
+  subtaskTreeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  subtaskTreeChildren: {
+    marginLeft: 16,
+  },
+  subtaskText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+  },
+  addSubtaskButton: {
+    backgroundColor: "#007AFF",
+    padding: 4,
+    borderRadius: 4,
+    marginLeft: 8,
   },
 });
