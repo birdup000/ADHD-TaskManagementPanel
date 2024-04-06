@@ -70,6 +70,7 @@ export default function TaskPanel() {
     };
 
     getGithubUsernameAndAuthKey();
+    loadTasks();
   }, []);
 
   const { loading, error, data } = useQuery(GET_USER_REPOSITORIES, {
