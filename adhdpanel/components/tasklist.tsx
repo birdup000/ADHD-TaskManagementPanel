@@ -15,40 +15,6 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo/client';
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 import { Picker } from '@react-native-picker/picker';
-import Graph from "react-graph-vis";
-
-const graph = {
-    nodes: [
-      { id: 1, label: "Node 1", color: "#e04141" },
-      { id: 2, label: "Node 2", color: "#e09c41" },
-      { id: 3, label: "Node 3", color: "#e0df41" },
-      { id: 4, label: "Node 4", color: "#7be041" },
-      { id: 5, label: "Node 5", color: "#41e0c9" }
-    ],
-    edges: [
-      { from: 1, to: 2 },
-      { from: 1, to: 3 },
-      { from: 2, to: 4 },
-      { from: 2, to: 5 }
-    ]
-};
-
-const options = {
-  layout: {
-    hierarchical: true
-  },
-  edges: {
-    color: "lightblue"
-  },
-  height: "100px",
-  width: "100px",
-};
-
-const events = {
-  select: function(event) {
-    var { nodes, edges } = event;
-  }
-};
 
 if (__DEV__) {
   loadDevMessages();
@@ -238,11 +204,6 @@ export default function TaskPanel() {
 
   return (
     <View style={styles.container}>
-      <Graph
-      graph={graph}
-      options={options}
-      events={events}
-    />
       {!githubUsername || !data ? (
         <View style={styles.repoPickerContainer}>
           <Text style={styles.repoPickerLabel}>GitHub username and API key not available. Please set them by accessing Home and top right settings icon to be able to use the integration.</Text>
