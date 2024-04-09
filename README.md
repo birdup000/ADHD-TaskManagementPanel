@@ -7,11 +7,11 @@ I plan to add many things a lot of the things I want to add are listed here and 
 
 The following in the list below are features for sure are gonna be added.
 
-- [ ] Backend for Self Hosted Instead of Relying on Github Projects
 - [x] Web Interface
 - [x] Android App (switched to Expo for packaging)
 - [x] Google Calander Integrations (still refining integrations)
-- [X] Docker Support /w docker compose (Still in Development. Frontend Working, Backend Broken)
+- [ ] Backend for Self Hosted Instead of Relying on Github Projects
+- [ ] Docker Support /w docker compose (Still in Development. Frontend Working, Backend Broken)
 - [ ] Docker Support /w docker image on dockerhub
 - [ ] Login Page
          - Multi-User Support
@@ -20,6 +20,7 @@ The following in the list below are features for sure are gonna be added.
 - [ ] DB Support (JQL Implementation would be needed)
 - [ ] AI integration /w AGiXT
 - [ ] Microsoft Office 365 Calender (Outlook Calender) GraphQL
+- [x] Serverless Task list storing (AsyncStorage)
 
 # Q/A
 1.Why are you committed into making this project succesful?
