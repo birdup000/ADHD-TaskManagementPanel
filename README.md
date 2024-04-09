@@ -3,7 +3,7 @@ Task management fundamentally ensures focused work, better time usage and less p
 
 # Plans
 
-I plan to add many things a lot of the things I want to add are listed below.
+I plan to add many things a lot of the things I want to add are listed here and also scattered in the feature requests.
 
 The following in the list below are features for sure are gonna be added.
 
