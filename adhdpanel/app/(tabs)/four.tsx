@@ -1,11 +1,9 @@
-
 import React, { SyntheticEvent, useState, useEffect } from 'react';
 import ApiCalendar from 'react-google-calendar-api';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import styled from "@emotion/styled";
-
 
 const config = {
   "clientId": "CLIENT_ID",
@@ -16,30 +14,30 @@ const config = {
   ]
 }
 
-
-
 export const StyleWrapper = styled.div`
-.fc-event {
-  width: 98px !important;
-}
+  color: white;
 
-.fc-view-harness {
-  width: 100%;
-  height: 50vh;
-}
+  .fc-event,
+  .fc-daygrid-event,
+  .fc-timegrid-event {
+    color: white !important;
+  }
 
-overflow: auto;
-height: 350px;
+  .fc-view-harness {
+    width: 100%;
+    height: 50vh;
+  }
 
+  overflow: auto;
+  height: 350px;
 `
 
 const apiCalendar = new ApiCalendar(config);
 
-const Calendar = () => {
+const four = () => {
   const [events, setEvents] = useState([]);
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendar, setSelectedCalendar] = useState('');
-
 
   useEffect(() => {
     const apiCalendar = new ApiCalendar(config);
@@ -61,7 +59,6 @@ const Calendar = () => {
       apiCalendar.handleSignoutClick();
     }
   };
-  
 
   const handleCreateEventFromNow = () => {
     const eventFromNow = {
@@ -107,24 +104,24 @@ const Calendar = () => {
 
   return (
     <div>
-      <h2>Calendar-Integration</h2>
+      <h2 style={{ color: 'white' }}>Calendar-Integration</h2>
       <div style={{ padding: "0.5em" }}>
-        <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-in")}>sign-in</button>
-        <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-out")}>
+        <button style={{ color: 'blue' }} onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-in")}>sign-in</button>
+        <button style={{ color: 'blue' }} onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-out")}>
           sign-out
         </button>
       </div>
       <div style={{ padding: "0.5em" }}>
-        <button onClick={handleCreateEventFromNow}>
+        <button style={{ color: 'blue' }} onClick={handleCreateEventFromNow}>
           Create Event from now
         </button>
       </div>
       <div style={{ padding: "0.5em" }}>
-        <button onClick={handleListUpcomingEvents}>
+        <button style={{ color: 'blue' }} onClick={handleListUpcomingEvents}>
           List upcoming events
         </button>
         <div>
-          <h4>Events</h4>
+          <h4 style={{ color: 'white' }}>Events</h4>
           {events.length === 0 && <p>No events to show</p>}
           {events.map((event: any) => (
             <p key={event.id}>{JSON.stringify(event)}</p>
@@ -132,34 +129,35 @@ const Calendar = () => {
         </div>
       </div>
       <div style={{ padding: "0.5em" }}>
-        <button onClick={handleListCalendars}>
+        <button style={{ color: 'blue' }} onClick={handleListCalendars}>
           List calendars
         </button>
         <div>
-          <h4>Calendars</h4>
-          {calendars.length === 0 && <p>No calendars to show</p>}
-          {calendars.map((calendar: any) => (
-            <p key={calendar.id}>{JSON.stringify(calendar)}</p>
-          ))}
-        </div>
+     <h4 style={{ color: 'white' }}>Calendars</h4>
+      {calendars.length === 0 && <p style={{ color: 'white' }}>No calendars to show</p>}
+    {calendars.map((calendar: any) => (
+      <p key={calendar.id}>{JSON.stringify(calendar)}</p>
+        ))}
+    </div>
+
       </div>
       <div style={{ padding: "0.5em" }}>
-        <button onClick={handleCreateCalendar}>
+        <button style={{ color: 'blue' }} onClick={handleCreateCalendar}>
           Create calendar
         </button>
       </div>
       <div style={{ padding: "0.5em" }}>
-      <StyleWrapper>
-        <FullCalendar
-          plugins={[dayGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          events={events}
-          dateClick={handleCalendarSelect}
-        />
+        <StyleWrapper>
+          <FullCalendar
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            events={events}
+            dateClick={handleCalendarSelect}
+          />
         </StyleWrapper>
       </div>
     </div>
   );
 }
 
-export default Calendar;
+export default four;
