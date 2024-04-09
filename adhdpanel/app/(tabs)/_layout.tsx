@@ -57,6 +57,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="three"
         options={{
+          title: 'Task Map',
+          tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="four"
+        options={{
           title: 'Calendar',
           tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
         }}
