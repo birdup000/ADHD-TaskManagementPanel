@@ -15,24 +15,18 @@ import Graph from "react-graph-vis";
 const Three = () => {
   const graph = {
     nodes: [
-      { id: 1, label: "Node 1", color: "#e04141" },
-      { id: 2, label: "Node 2", color: "#e09c41" },
-      { id: 3, label: "Node 3", color: "#e0df41" },
-      { id: 4, label: "Node 4", color: "#7be041" },
-      { id: 5, label: "Node 5", color: "#41e0c9" }
-    ],
-    edges: [
+      { id: 1, label: "Manage subtasks", color: "#e04141" },
+      { id: 2, label: "Integrate JSON/YAML parser", color: "#e09c41" },
+      { id: 3, label: "Integrate AGiXT", color: "#e0df41" }
+  ],
+  edges: [
       { from: 1, to: 2 },
-      { from: 1, to: 3 },
-      { from: 2, to: 4 },
-      { from: 2, to: 5 }
-    ]
+      { from: 2, to: 3 }
+  ]
   };
 
+
   const options = {
-    layout: {
-      hierarchical: true
-    },
     edges: {
       color: "lightblue"
     },
