@@ -204,7 +204,7 @@ const removeSubtask = (tasks, subtaskId) => {
             ]}
             onPress={() => onSubtaskSelect(task)}
           >
-            <Text>{task.text}</Text>
+            <Text style={{ color: '#FFFFFF' }}>{task.text}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.removeSubtaskButton}
@@ -229,7 +229,7 @@ const removeSubtask = (tasks, subtaskId) => {
         )}
         {task.id === tasks[tasks.length - 1].id && (
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: '#FFFFFF' }]}
             value={newSubtaskText}
             onChangeText={setNewSubtaskText}
             placeholder="Add a new subtask"
@@ -240,11 +240,6 @@ const removeSubtask = (tasks, subtaskId) => {
       </View>
     );
   };
-  
-  
-  
-
-  
 
   
 
