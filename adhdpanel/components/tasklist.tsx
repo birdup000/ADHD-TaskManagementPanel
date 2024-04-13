@@ -183,11 +183,15 @@ const removeSubtask = (tasks, subtaskId) => {
 
 
 
-  const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove }) => {
+  const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove, onSubtaskAdd }) => {
     if (!task) return null;
   
     const handleSubtaskRemove = (subtaskId) => {
       onSubtaskRemove(subtaskId);
+    };
+  
+    const handleSubtaskAdd = (subtaskText) => {
+      onSubtaskAdd(task.id, subtaskText);
     };
   
     return (
@@ -218,13 +222,23 @@ const removeSubtask = (tasks, subtaskId) => {
                 selectedSubtask={selectedSubtask}
                 onSubtaskSelect={onSubtaskSelect}
                 onSubtaskRemove={handleSubtaskRemove}
+                onSubtaskAdd={handleSubtaskAdd}
               />
             ))}
           </View>
         )}
+        <TextInput
+          style={styles.input}
+          value={newSubtaskText}
+          onChangeText={setNewSubtaskText}
+          placeholder="Add a new subtask"
+          placeholderTextColor="#FFFFFF80"
+          onSubmitEditing={() => handleSubtaskAdd(newSubtaskText)}
+        />
       </View>
     );
   };
+  
   
 
   
@@ -338,25 +352,25 @@ const removeSubtask = (tasks, subtaskId) => {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.taskContainer,
-              {
-                borderColor:
-                  item.dueDate && new Date(item.dueDate) < new Date()
-                    ? "#FF3B30"
-                    : "transparent",
-                backgroundColor:
-                  selectedTask && selectedTask.id === item.id
-                    ? "#2E2E2E"
-                    : "#1E1E1E",
-              },
-            ]}
-            onPress={() => editTask(item)}
-          >
+      data={tasks}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={[
+            styles.taskContainer,
+            {
+              borderColor:
+                item.dueDate && new Date(item.dueDate) < new Date()
+                  ? "#FF3B30"
+                  : "transparent",
+              backgroundColor:
+                selectedTask && selectedTask.id === item.id
+                  ? "#2E2E2E"
+                  : "#1E1E1E",
+            },
+          ]}
+          onPress={() => editTask(item)}
+        >
             <View style={styles.taskInfoContainer}>
               <Text
                 style={[
@@ -383,7 +397,13 @@ const removeSubtask = (tasks, subtaskId) => {
               {item.repo && (
                 <Text style={styles.repoText}>Repository: {item.repo}</Text>
               )}
-              <SubtaskTree task={item} />
+              <SubtaskTree
+              task={item}
+              selectedSubtask={selectedSubtask}
+              onSubtaskSelect={handleSubtaskSelect}
+              onSubtaskRemove={handleSubtaskRemove}
+              onSubtaskAdd={addSubtask}
+            />
             </View>
             <TouchableOpacity
               style={styles.removeButton}
