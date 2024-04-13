@@ -227,17 +227,20 @@ const removeSubtask = (tasks, subtaskId) => {
             ))}
           </View>
         )}
-        <TextInput
-          style={styles.input}
-          value={newSubtaskText}
-          onChangeText={setNewSubtaskText}
-          placeholder="Add a new subtask"
-          placeholderTextColor="#FFFFFF80"
-          onSubmitEditing={() => handleSubtaskAdd(newSubtaskText)}
-        />
+        {task.id === tasks[tasks.length - 1].id && (
+          <TextInput
+            style={styles.input}
+            value={newSubtaskText}
+            onChangeText={setNewSubtaskText}
+            placeholder="Add a new subtask"
+            placeholderTextColor="#FFFFFF80"
+            onSubmitEditing={() => handleSubtaskAdd(newSubtaskText)}
+          />
+        )}
       </View>
     );
   };
+  
   
   
 
@@ -442,47 +445,48 @@ const removeSubtask = (tasks, subtaskId) => {
       <View>
         <Text style={{ color: "white" }}>Subtasks:</Text>
         <FlatList
-          data={selectedTask?.subtasks || []}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.subtaskContainer}>
-              <TextInput
-                style={[
-                  styles.subtaskText,
-                  item.id === selectedSubtask?.id
-                    ? styles.selectedSubtask
-                    : null,
-                ]}
-                value={item.id === selectedSubtask?.id ? editedSubtaskText : item.text}
-                onChangeText={
-                  item.id === selectedSubtask?.id
-                    ? setEditedSubtaskText
-                    : (text) => {
-                        setNewSubtaskText(text);
-                        setSelectedSubtask(item);
-                      }
-                }
-                placeholder={item.text}
-                placeholderTextColor="#FFFFFF80"
-                onSubmitEditing={() =>
-                  item.id === selectedSubtask?.id
-                    ? editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
-                    : addSubtask(selectedTask.id, newSubtaskText)
-                }
-              />
-              {item.id === selectedSubtask?.id && (
-                <TouchableOpacity
-                  style={styles.saveSubtaskButton}
-                  onPress={() =>
-                    editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
-                  }
-                >
-                  <Icon name="check" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-        />
+  data={selectedTask?.subtasks || []}
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={({ item }) => (
+    <View style={styles.subtaskContainer}>
+      <TextInput
+        style={[
+          styles.subtaskText,
+          { color: '#FFFFFF' }, // Set the color to white
+          item.id === selectedSubtask?.id
+            ? styles.selectedSubtask
+            : null,
+        ]}
+        value={item.id === selectedSubtask?.id ? editedSubtaskText : item.text}
+        onChangeText={
+          item.id === selectedSubtask?.id
+            ? setEditedSubtaskText
+            : (text) => {
+                setNewSubtaskText(text);
+                setSelectedSubtask(item);
+              }
+        }
+        placeholder={item.text}
+        placeholderTextColor="#FFFFFF80"
+        onSubmitEditing={() =>
+          item.id === selectedSubtask?.id
+            ? editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
+            : addSubtask(selectedTask.id, newSubtaskText)
+        }
+      />
+      {item.id === selectedSubtask?.id && (
+        <TouchableOpacity
+          style={styles.saveSubtaskButton}
+          onPress={() =>
+            editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
+          }
+        >
+          <Icon name="check" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
+    </View>
+  )}
+/>
         <TextInput
           style={styles.input}
           value={newSubtaskText}
@@ -592,7 +596,7 @@ const styles = StyleSheet.create({
   },
   taskText: {
     fontSize: 18,
-    color: "#FFFFFF",
+    color: "white",
     fontWeight: "bold",
   },
   noteText: {
@@ -647,6 +651,7 @@ const styles = StyleSheet.create({
   },
   taskInfoContainer: {
     flex: 1,
+    color: "#FFFFFF",
     backgroundColor: (task) => {
       if (task.dueDate && new Date(task.dueDate) < new Date()) {
         return "#FF3B3020"; // Red background for past due tasks
@@ -722,6 +727,7 @@ const styles = StyleSheet.create({
   },
   subtaskTreeContainer: {
     marginTop: 16,
+    color: "#FFFFFF",
   },
   subtaskTreeItem: {
     flexDirection: "row",
@@ -732,7 +738,7 @@ const styles = StyleSheet.create({
     marginLeft: 24,
   },
   subtaskText: {
-    color: "#FFFFFF",
+    color: "white",
     fontSize: 16,
   },
   addSubtaskButton: {
