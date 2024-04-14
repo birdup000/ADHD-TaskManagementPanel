@@ -93,6 +93,7 @@ export default function TaskPanel() {
   const saveTasks = async (updatedTasks: any[]) => {
     try {
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      setTasks(updatedTasks);
     } catch (error) {
       console.log("Error saving tasks:", error);
     }
@@ -134,6 +135,7 @@ export default function TaskPanel() {
     saveTasks(updatedTasks);
     setSubtaskText("");
   };
+  
   
 
 const removeSubtask = (tasks, subtaskId) => {
@@ -182,16 +184,18 @@ const removeSubtask = (tasks, subtaskId) => {
   };
 
 
-
   const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove, onSubtaskAdd }) => {
-    if (!task) return null;
+    const [newSubtaskText, setNewSubtaskText] = useState("");
   
     const handleSubtaskRemove = (subtaskId) => {
       onSubtaskRemove(subtaskId);
     };
   
-    const handleSubtaskAdd = (subtaskText) => {
-      onSubtaskAdd(task.id, subtaskText);
+    const handleSubtaskAdd = () => {
+      if (newSubtaskText.trim().length > 0) {
+        onSubtaskAdd(task.id, newSubtaskText);
+        setNewSubtaskText(""); // Reset the newSubtaskText to an empty string
+      }
     };
   
     return (
@@ -219,16 +223,14 @@ const removeSubtask = (tasks, subtaskId) => {
             ))}
           </View>
         )}
-        {task.id === tasks[tasks.length - 1].id && (
-          <TextInput
-            style={[styles.input, { color: '#FFFFFF' }]}
-            value={newSubtaskText}
-            onChangeText={setNewSubtaskText}
-            placeholder="Add a new subtask"
-            placeholderTextColor="#FFFFFF80"
-            onSubmitEditing={() => handleSubtaskAdd(newSubtaskText)}
-          />
-        )}
+        <TextInput
+          style={[styles.input, { color: '#FFFFFF' }]}
+          value={newSubtaskText}
+          onChangeText={setNewSubtaskText}
+          placeholder="Add a new subtask"
+          placeholderTextColor="#FFFFFF80"
+          onSubmitEditing={handleSubtaskAdd}
+        />
       </View>
     );
   };
