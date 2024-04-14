@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, Button } from 'react-native';
+import { StyleSheet, TextInput, Button, View, Text, ScrollView, Dimensions } from 'react-native';
 import { ExternalLink } from './ExternalLink';
 import { MonoText } from './StyledText';
-import { Text, View } from './Themed';
 import Colors from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const AGIXT_API_URI_KEY = "agixtapi";
+const AGIXT_API_KEY_KEY = "agixtkey";
+const AUTH_KEY_KEY = "authKey";
+const GITHUB_USERNAME_KEY = "githubUsername";
+
 export default function EditScreenInfo({ path }: { path: string }) {
+  const [agixtApiUri, setAgixtApiUri] = useState('');
+  const [agixtApiKey, setAgixtApiKey] = useState('');
   const [authKey, setAuthKey] = useState('');
   const [githubUsername, setGithubUsername] = useState('');
 
   useEffect(() => {
     const getSettings = async () => {
       try {
-        const storedAuthKey = await AsyncStorage.getItem('authKey');
-        const storedGithubUsername = await AsyncStorage.getItem('githubUsername');
+        const storedApiUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
+        const storedApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
+        const storedAuthKey = await AsyncStorage.getItem(AUTH_KEY_KEY);
+        const storedGithubUsername = await AsyncStorage.getItem(GITHUB_USERNAME_KEY);
+        if (storedApiUri) {
+          setAgixtApiUri(storedApiUri);
+        }
+        if (storedApiKey) {
+          setAgixtApiKey(storedApiKey);
+        }
         if (storedAuthKey) {
           setAuthKey(storedAuthKey);
         }
@@ -30,92 +44,112 @@ export default function EditScreenInfo({ path }: { path: string }) {
 
   const handleSaveSettings = async () => {
     try {
-      await AsyncStorage.setItem('authKey', authKey);
-      await AsyncStorage.setItem('githubUsername', githubUsername);
+      await AsyncStorage.setItem(AGIXT_API_URI_KEY, agixtApiUri);
+      await AsyncStorage.setItem(AGIXT_API_KEY_KEY, agixtApiKey);
+      await AsyncStorage.setItem(AUTH_KEY_KEY, authKey);
+      await AsyncStorage.setItem(GITHUB_USERNAME_KEY, githubUsername);
     } catch (e) {
       console.error('Error saving settings to AsyncStorage:', e);
     }
   };
 
   return (
-    <View>
-      <View style={styles.getStartedContainer}>
-        <Text
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)"
-        >
-          Help Details Here
-        </Text>
-        <View style={styles.helpContainer}>
-        <ExternalLink
-          style={styles.helpLink}
-          href="https://github.com/birdup000/ADHD-TaskManagementPanel"
-        >
-          <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
-            Tap here for documentation 
-          </Text>
-        </ExternalLink>
-      </View>
-        <Text
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)"
-        >
-          Settings Details Here
-        </Text>
-        <TextInput
-          style={styles.settingsInput}
-          placeholder="Enter Github Personal Access Token"
-          value={authKey}
-          onChangeText={(text) => setAuthKey(text)}
-        />
-        <TextInput
-          style={styles.settingsInput}
-          placeholder="Enter GitHub username"
-          value={githubUsername}
-          onChangeText={(text) => setGithubUsername(text)}
-        />
-        <Button title="Save Settings" onPress={handleSaveSettings} />
-      </View>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Help</Text>
+          <View style={styles.helpContainer}>
+            <ExternalLink
+              style={styles.helpLink}
+              href="https://github.com/birdup000/ADHD-TaskManagementPanel"
+            >
+              <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
+                Tap here for documentation
+              </Text>
+            </ExternalLink>
+          </View>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          <View style={styles.settingsContainer}>
+            <TextInput
+              style={[styles.settingsInput, styles.inputField]}
+              placeholder="Enter AGiXT API URI"
+              value={agixtApiUri}
+              onChangeText={(text) => setAgixtApiUri(text)}
+              placeholderTextColor="#FFFFFF80"
+            />
+            <TextInput
+              style={[styles.settingsInput, styles.inputField]}
+              placeholder="Enter AGiXT API Key"
+              value={agixtApiKey}
+              onChangeText={(text) => setAgixtApiKey(text)}
+              placeholderTextColor="#FFFFFF80"
+              secureTextEntry
+            />
+            <TextInput
+              style={[styles.settingsInput, styles.inputField]}
+              placeholder="Enter GitHub Personal Access Token"
+              value={authKey}
+              onChangeText={(text) => setAuthKey(text)}
+              placeholderTextColor="#FFFFFF80"
+              secureTextEntry
+            />
+            <TextInput
+              style={[styles.settingsInput, styles.inputField]}
+              placeholder="Enter GitHub username"
+              value={githubUsername}
+              onChangeText={(text) => setGithubUsername(text)}
+              placeholderTextColor="#FFFFFF80"
+            />
+            <Button title="Save Settings" onPress={handleSaveSettings} color="#007AFF" />
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  getStartedContainer: {
-    alignItems: 'center',
-    marginHorizontal: 50,
+  container: {
+    flex: 1,
+    backgroundColor: '#1E1E1E',
   },
-  homeScreenFilename: {
-    marginVertical: 7,
+  contentContainer: {
+    paddingHorizontal: Dimensions.get('window').width * 0.1,
+    paddingVertical: 32,
   },
-  codeHighlightContainer: {
-    borderRadius: 3,
-    paddingHorizontal: 4,
+  section: {
+    marginBottom: 32,
   },
-  getStartedText: {
-    fontSize: 17,
-    lineHeight: 24,
-    textAlign: 'center',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 16,
   },
   helpContainer: {
-    marginTop: 15,
-    marginHorizontal: 20,
-    alignItems: 'center',
+    marginBottom: 24,
   },
   helpLink: {
     paddingVertical: 15,
   },
   helpLinkText: {
     textAlign: 'center',
+    color: '#FFFFFF',
+  },
+  settingsContainer: {
+    marginBottom: 24,
   },
   settingsInput: {
     borderWidth: 1,
-    borderColor: 'gray',
-    padding: 8,
+    borderColor: '#FFFFFF80',
+    padding: 12,
     marginVertical: 8,
-    color: 'white',
-    paddingVertical: 15,
+    color: '#FFFFFF',
+    borderRadius: 8,
+  },
+  inputField: {
+    backgroundColor: '#2E2E2E',
   },
 });
