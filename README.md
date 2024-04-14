@@ -1,40 +1,91 @@
-# ADHD-TaskManagementPanel (Still in Development)
+Sure, here's an updated README with a mission statement about how the ADHD Task Panel app helps people with ADHD:
 
-Task management is a fundamental skill that ensures focused work, better time usage, and reduced procrastination. It also aids memory, boosts efficiency, promotes deadline adherence, tracks goal progression, and reduces stress. While a universal tool beneficial for all, it can be especially helpful for individuals with ADHD and other neurodivergent conditions.
+# ADHD Task Panel
 
-This project aims to create a task management panel tailored to the needs of neurodiverse individuals, while also being useful for neurotypical users. The goal is to develop a comprehensive solution that addresses the unique challenges faced by those with ADHD, such as difficulty with focus, organization, and time management.
+The ADHD Task Panel is a React Native application designed to help individuals with Attention Deficit Hyperactivity Disorder (ADHD) manage their tasks and stay organized. ADHD can make it challenging to maintain focus, prioritize tasks, and keep track of deadlines. This app aims to address these challenges by providing a user-friendly and ADHD-friendly interface to help users stay on top of their responsibilities.
 
-# Why This Project?
+## Mission
 
-Mental health is an important consideration for everyone, and individuals with ADHD or other neurodivergent conditions often face additional challenges in their daily lives. This project was born out of the recognition that a task management tool specifically designed for neurodiverse users could be a game-changer in helping them achieve their goals and improve their overall well-being.
+The mission of the ADHD Task Panel is to empower individuals with ADHD to regain control over their tasks and improve their productivity. ADHD can make it difficult to stay organized and focused, leading to missed deadlines, forgotten tasks, and a sense of constant overwhelm. The ADHD Task Panel aims to alleviate these challenges by providing a visually appealing, distraction-free environment where users can easily create, edit, and track their tasks.
 
-By creating an open-source application, the project aims to provide a transparent and accessible solution that can be customized and improved upon by the community. The code will be available for review, ensuring users can understand what is running and have confidence in the application.
+The app's features, such as the ability to associate tasks with GitHub repositories, visual cues for past-due tasks, and the ability to manage subtasks, are designed to cater to the unique needs of individuals with ADHD. By providing a structured and intuitive task management system, the ADHD Task Panel empowers users to regain control over their workload, reduce stress, and improve their overall well-being.
 
-# Plans
+## Features
 
-The project is currently in development, with the following features planned:
+- Create new tasks with a title, note, due date, priority, and repository
+- View a list of all tasks
+- Edit existing tasks, including updating the title, note, due date, priority, and repository
+- Add and manage subtasks for each task
+- Visually indicate past due tasks
+- Integrate with GitHub repositories to associate tasks with specific repositories
+- Designed with ADHD-friendly features to improve focus and productivity
 
-- [x] Web Interface
-- [x] Android App (switched to Expo for packaging)
-- [x] Google Calendar Integrations (still refining integrations)
-- [x] Serverless Task List Storing (AsyncStorage)
-- [ ] Backend for Self-Hosted Instead of Relying on GitHub Projects
-- [ ] Docker Support with Docker Compose (Still in Development. Frontend Working, Backend Broken)
-- [ ] Docker Support with Docker Image on Docker Hub
-- [ ] Login Page
-  - Multi-User Support
-  - Google Auth and Microsoft Auth for login
-- [ ] Import Task List from one server to another by loading JSON in the web UI
-- [ ] Database Support (JQL Implementation would be needed)
-- [ ] AI integration with AGiXT
-- [ ] Microsoft Office 365 Calendar (Outlook Calendar) GraphQL
+## Prerequisites
 
-# Documentation 
-Coming soon!
+- Node.js and npm installed
+- React Native CLI installed
+- Expo CLI installed
+- A GitHub account and API key
 
+## Installation
 
-# Screenshots of Task Management Page
+1. Clone the repository:
 
-![Tasks Page](https://github.com/birdup000/ADHD-TaskManagementPanel/assets/34012548/80b4fe75-e2de-47af-8e52-83e0ade508f4)
-![Tasks Page](https://github.com/birdup000/ADHD-TaskManagementPanel/assets/34012548/271ac12d-0cbc-4c7b-93a8-d755eb8ae8fb)
-![Tasks Page](https://github.com/birdup000/ADHD-TaskManagementPanel/assets/34012548/9b19ae7b-69e7-4f6a-9bb7-29cc162f60b5)
+```
+git clone https://github.com/your-username/adhd-task-panel.git
+```
+
+2. Navigate to the repo directory
+
+```
+cd ADHD-TaskManagementPanel
+```
+
+3. Navigate to the repo directory
+
+```
+cd adhdpanel
+```
+
+4. Install the dependencies:
+
+```
+npm install
+```
+
+4. Start the development server:
+
+```
+expo start
+```
+
+## Configuration
+
+1. Set up your GitHub API key:
+   - Go to the GitHub Developer Settings and generate a new personal access token.
+   - Save the token in your device's AsyncStorage using the key `authKey`.
+   - Save your GitHub username in AsyncStorage using the key `githubUsername`.
+
+## Usage
+
+1. When you first launch the app, you'll be prompted to enter your GitHub username and API key.
+2. Once you've set up your GitHub credentials, you can start managing your tasks.
+3. To add a new task, enter the task text and optional priority in the input fields, then click the "Add" button.
+4. To edit a task, tap on the task in the list. This will open the task edit modal, where you can update the task name, note, due date, priority, and associated repository.
+5. To add a subtask, tap on the task in the list, then enter the subtask text and press Enter.
+6. To edit a subtask, tap on the subtask in the list, update the text, and press Enter to save the changes.
+7. To remove a task or subtask, tap on the task or subtask and then tap the delete icon.
+
+## Dependencies
+
+- React
+- React Native
+- AsyncStorage
+- React Datepicker
+- React Native Vector Icons
+- Apollo Client
+- GraphQL
+
+## Contributing
+
+If you find any issues or have suggestions for improvements, please feel free to open a new issue or submit a pull request.
