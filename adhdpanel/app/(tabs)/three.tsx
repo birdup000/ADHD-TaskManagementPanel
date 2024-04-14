@@ -30,6 +30,7 @@ const TaskMap = () => {
         from: task.id,
         to: subtask.id,
       }))
+          color: "lightblue",
     ),
   };
 

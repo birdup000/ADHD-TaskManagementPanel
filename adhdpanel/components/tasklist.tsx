@@ -138,20 +138,19 @@ export default function TaskPanel() {
   
   
 
-const removeSubtask = (tasks, subtaskId) => {
-  return tasks.map((task) => {
-    if (task.id === subtaskId) {
-      return null; // Remove the subtask
-    }
-    if (task.subtasks && task.subtasks.length > 0) {
-      return {
-        ...task,
-        subtasks: removeSubtask(task.subtasks, subtaskId),
-      };
-    }
-    return task;
-  }).filter(Boolean); // Remove any null values (removed subtasks)
-};
+  const removeSubtask = (tasks, subtaskId) => {
+    return tasks.map((task) => {
+      if (task.subtasks && task.subtasks.length > 0) {
+        const updatedSubtasks = task.subtasks.filter((subtask) => subtask.id !== subtaskId);
+        return {
+          ...task,
+          subtasks: updatedSubtasks,
+        };
+      }
+      return task;
+    });
+  };
+  
 
 
   const editSubtask = (taskId, subtaskId, subtaskText) => {
@@ -181,7 +180,9 @@ const removeSubtask = (tasks, subtaskId) => {
   const handleSubtaskRemove = (subtaskId) => {
     const updatedTasks = removeSubtask(tasks, subtaskId);
     setTasks(updatedTasks);
+    saveTasks(updatedTasks);
   };
+  
 
 
   const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove, onSubtaskAdd }) => {
