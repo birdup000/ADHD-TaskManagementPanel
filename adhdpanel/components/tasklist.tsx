@@ -15,6 +15,8 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo/client';
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 import { Picker } from '@react-native-picker/picker';
+import AGiXTComponent from '@/components/AGiXTComponent';
+
 
 if (__DEV__) {
   loadDevMessages();
@@ -306,6 +308,9 @@ export default function TaskPanel() {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
+      <AGiXTComponent />
+    </View>
       {!githubUsername || !data ? (
         <View style={styles.repoPickerContainer}>
           <Text style={styles.repoPickerLabel}>GitHub username and API key not available. Please set them by accessing Home and top right settings icon to be able to use the integration.</Text>
@@ -737,5 +742,24 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginLeft: 16,
+  },
+  agixtComponentContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: '25%',
+    height: '25%',
+    backgroundColor: 'transparent',
+  },
+  toggleButton: {
+    backgroundColor: '#2E2E2E',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  toggleButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
