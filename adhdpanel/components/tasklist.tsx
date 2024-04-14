@@ -196,34 +196,26 @@ const removeSubtask = (tasks, subtaskId) => {
   
     return (
       <View style={styles.subtaskTreeContainer}>
-        <View style={styles.subtaskTreeItem}>
-          <TouchableOpacity
-            style={[
-              styles.subtaskText,
-              selectedSubtask?.id === task.id ? styles.selectedSubtask : null,
-            ]}
-            onPress={() => onSubtaskSelect(task)}
-          >
-            <Text style={{ color: '#FFFFFF' }}>{task.text}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.removeSubtaskButton}
-            onPress={() => handleSubtaskRemove(task.id)}
-          >
-            <Icon name="delete" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
         {task.subtasks && task.subtasks.length > 0 && (
           <View style={styles.subtaskTreeChildren}>
             {task.subtasks.map((subtask) => (
-              <SubtaskTree
-                key={subtask.id}
-                task={subtask}
-                selectedSubtask={selectedSubtask}
-                onSubtaskSelect={onSubtaskSelect}
-                onSubtaskRemove={handleSubtaskRemove}
-                onSubtaskAdd={handleSubtaskAdd}
-              />
+              <View key={subtask.id} style={styles.subtaskTreeItem}>
+                <TouchableOpacity
+                  style={[
+                    styles.subtaskText,
+                    selectedSubtask?.id === subtask.id ? styles.selectedSubtask : null,
+                  ]}
+                  onPress={() => onSubtaskSelect(subtask)}
+                >
+                  <Text style={{ color: '#FFFFFF' }}>{subtask.text}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeSubtaskButton}
+                  onPress={() => handleSubtaskRemove(subtask.id)}
+                >
+                  <Icon name="delete" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
@@ -240,6 +232,7 @@ const removeSubtask = (tasks, subtaskId) => {
       </View>
     );
   };
+  
 
   
 
