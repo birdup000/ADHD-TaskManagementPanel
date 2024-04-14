@@ -30,7 +30,7 @@ The app's features, such as the ability to associate tasks with GitHub repositor
 1. Clone the repository:
 
 ```
-git clone https://github.com/your-username/adhd-task-panel.git](https://github.com/birdup000/ADHD-TaskManagementPanel
+git clone https://github.com/birdup000/ADHD-TaskManagementPanel
 ```
 
 2. Navigate to the repo directory
