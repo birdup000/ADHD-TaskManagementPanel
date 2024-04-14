@@ -48,6 +48,10 @@ export default function TaskPanel() {
   const [selectedRepo, setSelectedRepo] = useState("");
   const [githubUsername, setGithubUsername] = useState("");
   const [subtaskText, setSubtaskText] = useState("");
+  const [selectedSubtask, setSelectedSubtask] = useState(null);
+  const [editedSubtaskText, setEditedSubtaskText] = useState("");
+  const [newSubtaskText, setNewSubtaskText] = useState("");
+
 
   useEffect(() => {
     const getGithubUsernameAndAuthKey = async () => {
@@ -89,6 +93,7 @@ export default function TaskPanel() {
   const saveTasks = async (updatedTasks: any[]) => {
     try {
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      setTasks(updatedTasks);
     } catch (error) {
       console.log("Error saving tasks:", error);
     }
@@ -109,46 +114,130 @@ export default function TaskPanel() {
       saveTasks([...tasks, newTask]);
       setTaskText("");
       setPriority("");
-      setSelectedRepo(null);
+      setSelectedRepo("");
+      setSubtaskText("");
     }
   };
+  
 
   const addSubtask = (taskId, subtaskText) => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === taskId) {
+        const newSubtask = { id: Date.now(), text: subtaskText };
         return {
           ...task,
-          subtasks: task.subtasks ? [...task.subtasks, { id: Date.now(), text: subtaskText }] : [{ id: Date.now(), text: subtaskText }],
+          subtasks: task.subtasks ? [...task.subtasks, newSubtask] : [newSubtask],
         };
       }
       return task;
     });
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
+    setSubtaskText("");
+  };
+  
+  
+
+  const removeSubtask = (tasks, subtaskId) => {
+    return tasks.map((task) => {
+      if (task.subtasks && task.subtasks.length > 0) {
+        const updatedSubtasks = task.subtasks.filter((subtask) => subtask.id !== subtaskId);
+        return {
+          ...task,
+          subtasks: updatedSubtasks,
+        };
+      }
+      return task;
+    });
+  };
+  
+
+
+  const editSubtask = (taskId, subtaskId, subtaskText) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === taskId) {
+        const updatedSubtasks = task.subtasks.map((subtask) => {
+          if (subtask.id === subtaskId) {
+            return { ...subtask, text: subtaskText };
+          }
+          return subtask;
+        });
+        return { ...task, subtasks: updatedSubtasks };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+    setSelectedSubtask(updatedTasks.find((task) => task.id === taskId).subtasks.find((subtask) => subtask.id === subtaskId));
+    setEditedSubtaskText(subtaskText);
+  };
+  
+  
+  const handleSubtaskSelect = (subtask) => {
+    setSelectedSubtask(subtask);
   };
 
-  const SubtaskTree = ({ task }) => {
+  const handleSubtaskRemove = (subtaskId) => {
+    const updatedTasks = removeSubtask(tasks, subtaskId);
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+  };
+  
+
+
+  const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove, onSubtaskAdd }) => {
+    const [newSubtaskText, setNewSubtaskText] = useState("");
+  
+    const handleSubtaskRemove = (subtaskId) => {
+      onSubtaskRemove(subtaskId);
+    };
+  
+    const handleSubtaskAdd = () => {
+      if (newSubtaskText.trim().length > 0) {
+        onSubtaskAdd(task.id, newSubtaskText);
+        setNewSubtaskText(""); // Reset the newSubtaskText to an empty string
+      }
+    };
+  
     return (
       <View style={styles.subtaskTreeContainer}>
-        <View style={styles.subtaskTreeItem}>
-          <Text style={styles.subtaskText}>• {task.text}</Text>
-          <TouchableOpacity
-            style={styles.addSubtaskButton}
-            onPress={() => addSubtask(task.id, subtaskText)}
-          >
-            <Icon name="add" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
         {task.subtasks && task.subtasks.length > 0 && (
           <View style={styles.subtaskTreeChildren}>
             {task.subtasks.map((subtask) => (
-              <SubtaskTree key={subtask.id} task={subtask} />
+              <View key={subtask.id} style={styles.subtaskTreeItem}>
+                <TouchableOpacity
+                  style={[
+                    styles.subtaskText,
+                    selectedSubtask?.id === subtask.id ? styles.selectedSubtask : null,
+                  ]}
+                  onPress={() => onSubtaskSelect(subtask)}
+                >
+                  <Text style={{ color: '#FFFFFF' }}>{subtask.text}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeSubtaskButton}
+                  onPress={() => handleSubtaskRemove(subtask.id)}
+                >
+                  <Icon name="delete" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
+        <TextInput
+          style={[styles.input, { color: '#FFFFFF' }]}
+          value={newSubtaskText}
+          onChangeText={setNewSubtaskText}
+          placeholder="Add a new subtask"
+          placeholderTextColor="#FFFFFF80"
+          onSubmitEditing={handleSubtaskAdd}
+        />
       </View>
     );
   };
+  
+
+  
 
   const handleTaskNameChange = (text: string) => {
     setTaskName(text);
@@ -182,9 +271,10 @@ export default function TaskPanel() {
     setDueDate(null);
   };
 
+
   const saveTaskEdit = () => {
     const updatedTasks = tasks.map((task) => {
-      if (task.id === selectedTask.id) {
+      if (task.id === selectedTask?.id) {
         return {
           ...task,
           text: taskName,
@@ -192,6 +282,12 @@ export default function TaskPanel() {
           dueDate: dueDate ? dueDate.toISOString() : null,
           priority: priority,
           repo: selectedRepo,
+          subtasks: task.subtasks.map((subtask) => {
+            if (subtask.id === selectedSubtask?.id) {
+              return { ...subtask, text: editedSubtaskText };
+            }
+            return subtask;
+          }),
         };
       }
       return task;
@@ -200,7 +296,13 @@ export default function TaskPanel() {
     saveTasks(updatedTasks);
     setShowEditModal(false);
     setSelectedTask(null);
+    setSelectedSubtask(null);
+    setEditedSubtaskText("");
   };
+  
+  
+  
+  
 
   return (
     <View style={styles.container}>
@@ -244,25 +346,25 @@ export default function TaskPanel() {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.taskContainer,
-              {
-                borderColor:
-                  item.dueDate && new Date(item.dueDate) < new Date()
-                    ? "#FF3B30"
-                    : "transparent",
-                backgroundColor:
-                  selectedTask && selectedTask.id === item.id
-                    ? "#2E2E2E"
-                    : "#1E1E1E",
-              },
-            ]}
-            onPress={() => editTask(item)}
-          >
+      data={tasks}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={[
+            styles.taskContainer,
+            {
+              borderColor:
+                item.dueDate && new Date(item.dueDate) < new Date()
+                  ? "#FF3B30"
+                  : "transparent",
+              backgroundColor:
+                selectedTask && selectedTask.id === item.id
+                  ? "#2E2E2E"
+                  : "#1E1E1E",
+            },
+          ]}
+          onPress={() => editTask(item)}
+        >
             <View style={styles.taskInfoContainer}>
               <Text
                 style={[
@@ -289,7 +391,13 @@ export default function TaskPanel() {
               {item.repo && (
                 <Text style={styles.repoText}>Repository: {item.repo}</Text>
               )}
-              <SubtaskTree task={item} />
+              <SubtaskTree
+              task={item}
+              selectedSubtask={selectedSubtask}
+              onSubtaskSelect={handleSubtaskSelect}
+              onSubtaskRemove={handleSubtaskRemove}
+              onSubtaskAdd={addSubtask}
+            />
             </View>
             <TouchableOpacity
               style={styles.removeButton}
@@ -301,75 +409,136 @@ export default function TaskPanel() {
         )}
       />
       <Modal
-        visible={showEditModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowEditModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Task</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowEditModal(false)}
-              >
-                <Icon name="close" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-            <Text style={{ color: "white" }}>Task Name:</Text>
-            <TextInput
-              style={styles.input}
-              value={taskName}
-              onChangeText={handleTaskNameChange}
-              placeholder="Enter a task"
-              placeholderTextColor="#FFFFFF80"
-            />
-            <Text style={{ color: "white" }}>Note:</Text>
-            <TextInput
-              style={styles.input}
-              value={noteText}
-              onChangeText={setNoteText}
-              placeholder="Enter a note"
-              placeholderTextColor="#FFFFFF80"
-            />
-            <Text style={{ color: "white" }}>Due Date:</Text>
-            <DatePicker
-              selected={dueDate}
-              onChange={(date: Date) => setDueDate(date)}
-              showTimeSelect
-              dateFormat="MMMM d, yyyy h:mm aa"
-              placeholderText="No Due Date Set"
-              customInput={<ExampleCustomInput />}
-            />
-            <TouchableOpacity style={styles.removeDueDateButton} onPress={removeDueDate}>
-              <Text style={styles.buttonText}>Remove Due Date</Text>
-            </TouchableOpacity>
-            <Text style={{ color: "white" }}>Priority:</Text>
-            <TextInput
-              style={styles.input}
-              value={priority}
-              onChangeText={setPriority}
-              placeholder="Priority (e.g., High, Medium, Low)"
-              placeholderTextColor="#FFFFFF80"
-            />
-            <Text style={{ color: "white" }}>Repository:</Text>
-            <Picker
-              style={styles.repoPicker}
-              selectedValue={selectedRepo}
-              onValueChange={(value) => setSelectedRepo(value)}
-            >
-              <Picker.Item label="Select a repository" value={null} />
-              {data && data.user && data.user.repositories.nodes.map((repo: any) => (
-                <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
-              ))}
-            </Picker>
-            <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
-              <Text style={styles.buttonText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+  visible={showEditModal}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setShowEditModal(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Edit Task</Text>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setShowEditModal(false)}
+        >
+          <Icon name="close" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+      <Text style={{ color: "white" }}>Task Name:</Text>
+      <TextInput
+        style={styles.input}
+        value={taskName}
+        onChangeText={handleTaskNameChange}
+        placeholder="Enter a task"
+        placeholderTextColor="#FFFFFF80"
+      />
+      <View>
+        <Text style={{ color: "white" }}>Subtasks:</Text>
+        <FlatList
+  data={selectedTask?.subtasks || []}
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={({ item }) => (
+    <View style={styles.subtaskContainer}>
+      <TextInput
+        style={[
+          styles.subtaskText,
+          { color: '#FFFFFF' }, // Set the color to white
+          item.id === selectedSubtask?.id
+            ? styles.selectedSubtask
+            : null,
+        ]}
+        value={item.id === selectedSubtask?.id ? editedSubtaskText : item.text}
+        onChangeText={
+          item.id === selectedSubtask?.id
+            ? setEditedSubtaskText
+            : (text) => {
+                setNewSubtaskText(text);
+                setSelectedSubtask(item);
+              }
+        }
+        placeholder={item.text}
+        placeholderTextColor="#FFFFFF80"
+        onSubmitEditing={() =>
+          item.id === selectedSubtask?.id
+            ? editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
+            : addSubtask(selectedTask.id, newSubtaskText)
+        }
+      />
+      {item.id === selectedSubtask?.id && (
+        <TouchableOpacity
+          style={styles.saveSubtaskButton}
+          onPress={() =>
+            editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
+          }
+        >
+          <Icon name="check" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
+    </View>
+  )}
+/>
+        <TextInput
+          style={styles.input}
+          value={newSubtaskText}
+          onChangeText={setNewSubtaskText}
+          placeholder="Add a new subtask"
+          placeholderTextColor="#FFFFFF80"
+          onSubmitEditing={() => addSubtask(selectedTask.id, newSubtaskText)}
+        />
+      </View>
+      <View>
+        <Text style={{ color: "white" }}>Note:</Text>
+        <TextInput
+          style={styles.input}
+          value={noteText}
+          onChangeText={setNoteText}
+          placeholder="Enter a note"
+          placeholderTextColor="#FFFFFF80"
+        />
+        <Text style={{ color: "white" }}>Due Date:</Text>
+        <DatePicker
+          selected={dueDate}
+          onChange={(date: Date) => setDueDate(date)}
+          showTimeSelect
+          dateFormat="MMMM d, yyyy h:mm aa"
+          placeholderText="No Due Date Set"
+          customInput={<ExampleCustomInput />}
+        />
+        <TouchableOpacity
+          style={styles.removeDueDateButton}
+          onPress={removeDueDate}
+        >
+          <Text style={styles.buttonText}>Remove Due Date</Text>
+        </TouchableOpacity>
+        <Text style={{ color: "white" }}>Priority:</Text>
+        <TextInput
+          style={styles.input}
+          value={priority}
+          onChangeText={setPriority}
+          placeholder="Priority (e.g., High, Medium, Low)"
+          placeholderTextColor="#FFFFFF80"
+        />
+        <Text style={{ color: "white" }}>Repository:</Text>
+        <Picker
+          style={styles.repoPicker}
+          selectedValue={selectedRepo}
+          onValueChange={(value) => setSelectedRepo(value)}
+        >
+          <Picker.Item label="Select a repository" value={null} />
+          {data &&
+            data.user &&
+            data.user.repositories.nodes.map((repo: any) => (
+              <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
+            ))}
+        </Picker>
+        <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
     </View>
   );
 }
@@ -377,36 +546,36 @@ export default function TaskPanel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 24,
     backgroundColor: "#121212",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 24,
   },
   input: {
     flex: 1,
-    height: 40,
+    height: 48,
     borderWidth: 1,
     borderColor: "#FFFFFF80",
-    borderRadius: 4,
-    paddingHorizontal: 8,
+    borderRadius: 8,
+    paddingHorizontal: 16,
     color: "#FFFFFF",
-    marginRight: 8,
+    marginRight: 16,
   },
   addButton: {
     backgroundColor: "#007AFF",
-    padding: 8,
-    borderRadius: 4,
+    padding: 12,
+    borderRadius: 8,
   },
   taskContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 16,
     backgroundColor: "#1E1E1E",
-    padding: 8,
-    borderRadius: 4,
+    padding: 16,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: (task) => {
       if (task.dueDate && new Date(task.dueDate) < new Date()) {
@@ -417,33 +586,31 @@ const styles = StyleSheet.create({
     },
   },
   taskText: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    fontWeight: "normal",
-    padding: 8,
+    fontSize: 18,
+    color: "white",
+    fontWeight: "bold",
   },
   noteText: {
-    marginTop: 4,
-    fontSize: 14,
+    marginTop: 8,
+    fontSize: 16,
     fontStyle: "italic",
     color: "#FFFFFF80",
   },
   dueDateText: {
-    marginTop: 4,
-    fontSize: 14,
+    marginTop: 8,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#FFFFFF80",
   },
   priorityText: {
-    marginTop: 4,
-    fontSize: 14,
+    marginTop: 8,
+    fontSize: 16,
     color: "#FFFFFF80",
-    padding: 8,
   },
   removeButton: {
     backgroundColor: "#FF3B30",
-    padding: 8,
-    borderRadius: 4,
+    padding: 12,
+    borderRadius: 8,
   },
   buttonText: {
     color: "#fff",
@@ -457,8 +624,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#1E1E1E",
-    padding: 16,
-    borderRadius: 8,
+    padding: 24,
+    borderRadius: 16,
     width: "90%",
     height: "50%",
   },
@@ -466,15 +633,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#FFFFFF",
   },
   taskInfoContainer: {
     flex: 1,
+    color: "#FFFFFF",
     backgroundColor: (task) => {
       if (task.dueDate && new Date(task.dueDate) < new Date()) {
         return "#FF3B3020"; // Red background for past due tasks
@@ -485,90 +653,89 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     backgroundColor: "#FF3B30",
-    padding: 8,
-    borderRadius: 4,
+    padding: 12,
+    borderRadius: 8,
   },
   modalButton: {
     backgroundColor: "#007AFF",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
     width: "25%",
     marginLeft: "auto",
     marginRight: "auto",
-    padding: 8,
-    marginTop: 16,
+    marginTop: 24,
   },
   removeDueDateButton: {
     backgroundColor: "#FF3B30",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
     width: "25%",
     marginLeft: "auto",
     marginRight: "auto",
-    padding: 8,
-    marginTop: 16,
+    marginTop: 24,
   },
   repoContainer: {
-    backgroundColor: '#1E1E1E',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: "#1E1E1E",
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 24,
   },
   repoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 12,
   },
   repoDescription: {
-    fontSize: 14,
-    color: '#FFFFFF80',
-    marginBottom: 8,
+    fontSize: 16,
+    color: "#FFFFFF80",
+    marginBottom: 12,
   },
   repoUrl: {
-    fontSize: 14,
-    color: '#007AFF',
+    fontSize: 16,
+    color: "#007AFF",
   },
   repoPickerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    color: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+    color: "#FFFFFF",
   },
   repoPickerLabel: {
-    color: '#FFFFFF',
-    marginRight: 8,
+    color: "#FFFFFF",
+    marginRight: 16,
   },
   repoPicker: {
     flex: 1,
-    color: 'black',
+    color: "black",
   },
   repoText: {
-    marginTop: 4,
-    fontSize: 14,
+    marginTop: 8,
+    fontSize: 16,
     color: "#FFFFFF80",
   },
   subtaskTreeContainer: {
-    marginTop: 8,
+    marginTop: 16,
+    color: "#FFFFFF",
   },
   subtaskTreeItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 8,
   },
   subtaskTreeChildren: {
-    marginLeft: 16,
+    marginLeft: 24,
   },
   subtaskText: {
-    color: "#FFFFFF",
-    fontSize: 14,
+    color: "white",
+    fontSize: 16,
   },
   addSubtaskButton: {
     backgroundColor: "#007AFF",
-    padding: 4,
-    borderRadius: 4,
-    marginLeft: 8,
+    padding: 12,
+    borderRadius: 8,
+    marginLeft: 16,
   },
 });
