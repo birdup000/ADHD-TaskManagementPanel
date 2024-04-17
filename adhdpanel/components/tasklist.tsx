@@ -53,6 +53,7 @@ export default function TaskPanel() {
   const [selectedSubtask, setSelectedSubtask] = useState(null);
   const [editedSubtaskText, setEditedSubtaskText] = useState("");
   const [newSubtaskText, setNewSubtaskText] = useState("");
+  const [showAGiXTModal, setShowAGiXTModal] = useState(false);
 
 
   useEffect(() => {
@@ -308,8 +309,36 @@ export default function TaskPanel() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+  style={styles.toggleButton}
+  onPress={() => setShowAGiXTModal(true)}
+>
+  <Text style={styles.toggleButtonText}>Open AGiXT</Text>
+</TouchableOpacity>
+
       <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
+      <Modal
+  visible={showAGiXTModal}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setShowAGiXTModal(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>AGiXT Component</Text>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setShowAGiXTModal(false)}
+        >
+          <Icon name="close" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
       <AGiXTComponent />
+    </View>
+  </View>
+</Modal>
+
     </View>
       {!githubUsername || !data ? (
         <View style={styles.repoPickerContainer}>

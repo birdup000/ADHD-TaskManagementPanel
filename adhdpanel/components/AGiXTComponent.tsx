@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  Picker,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AGiXTSDK from "agixt";
@@ -15,7 +16,7 @@ const AGIXT_API_KEY_KEY = "agixtkey";
 
 const AGiXTComponent = ({ agixtApiUri, agixtApiKey }) => {
   const [providers, setProviders] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("");
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey }) => {
 
         const providers = await agixt.getProviders();
         setProviders(providers);
+        setSelectedProvider(providers[0] || "");
         setError(null);
       } catch (error) {
         console.error("Error fetching providers:", error);
@@ -38,53 +40,54 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey }) => {
     fetchProviders();
   }, [agixtApiUri, agixtApiKey]);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   const { width, height } = Dimensions.get("window");
 
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.sidebar,
-          isSidebarOpen ? styles.sidebarOpen : styles.sidebarClosed,
-        ]}
-      >
-        <ScrollView>
-          {providers.length > 0 && (
-            <View style={styles.providersContainer}>
-              <Text style={styles.providersLabel}>Available Providers:</Text>
-              <View style={styles.providersList}>
-                {providers.map((provider) => (
-                  <View key={provider} style={styles.providerItem}>
-                    <Text style={styles.providerText}>{provider}</Text>
-                  </View>
-                ))}
+      {providers.length > 0 && (
+        <View style={styles.providersContainer}>
+          <Text style={styles.providersLabel}>Select a Provider:</Text>
+          <Picker
+            selectedValue={selectedProvider}
+            onValueChange={(value) => setSelectedProvider(value)}
+            style={styles.providerPicker}
+          >
+            <Picker.Item label="Select a provider" value="" />
+            {providers.map((provider) => (
+              <Picker.Item key={provider} label={provider} value={provider} />
+            ))}
+          </Picker>
+          <View style={styles.providersList}>
+            {providers.map((provider) => (
+              <View
+                key={provider}
+                style={[
+                  styles.providerItem,
+                  provider === selectedProvider
+                    ? [styles.selectedProviderItem, styles.selectedProviderText]
+                    : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.providerText,
+                    provider === selectedProvider
+                      ? styles.selectedProviderText
+                      : null,
+                  ]}
+                >
+                  {provider}
+                </Text>
               </View>
-            </View>
-          )}
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-        </ScrollView>
-      </View>
-      <TouchableOpacity
-        style={[
-          styles.toggleButton,
-          {
-            position: "absolute",
-            top: 24,
-            left: isSidebarOpen ? 24 : 12,
-          },
-        ]}
-        onPress={toggleSidebar}
-      >
-        <Text style={styles.toggleButtonText}>{isSidebarOpen ? ">" : "<"}</Text>
-      </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -93,34 +96,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1E1E1E",
-  },
-  sidebar: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: "70%",
-    backgroundColor: "#1E1E1E",
     padding: 24,
-    borderLeftWidth: 1,
-    borderLeftColor: "#FFFFFF20",
-  },
-  sidebarOpen: {
-    transform: [{ translateX: 0 }],
-  },
-  sidebarClosed: {
-    transform: [{ translateX: Dimensions.get("window").width }],
-  },
-  toggleButton: {
-    backgroundColor: "#2E2E2E",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  toggleButtonText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "bold",
   },
   providersContainer: {
     marginTop: 24,
@@ -130,9 +106,14 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginBottom: 8,
   },
+  providerPicker: {
+    color: "#FFFFFF",
+    marginBottom: 16,
+  },
   providersList: {
     flexDirection: "row",
     flexWrap: "wrap",
+    color: "black",
   },
   providerItem: {
     backgroundColor: "#2E2E2E",
@@ -142,8 +123,17 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-  providerText: {
+  selectedProviderItem: {
+    backgroundColor: "#4E4E4E",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  selectedProviderText: {
     color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  providerText: {
+    color: "black",
   },
   errorContainer: {
     flex: 1,
