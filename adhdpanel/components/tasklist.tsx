@@ -59,7 +59,9 @@ export default function TaskPanel() {
   const [selectedChain, setSelectedChain] = useState(null);
   const [showChainDropdown, setShowChainDropdown] = useState(false);
   const [showDependenciesModal, setShowDependenciesModal] = useState(false);
-  const [showGuidance, setShowGuidance] = useState(false); // Add this line
+  const [showGuidance, setShowGuidance] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState("");
+  const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
 
 
   useEffect(() => {
@@ -246,6 +248,30 @@ export default function TaskPanel() {
   };
   
 
+  function parseTaskDescription(taskDescription) {
+    const sections = taskDescription.split('\n\n');
+    const subtasks = [];
+  
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i].trim();
+      if (section.startsWith(`${i + 1}.`)) {
+        const [subtaskName, ...subtaskDescription] = section.split(': ');
+        const subtaskNameParts = subtaskName.split('. ');
+        const subtaskNumber = parseInt(subtaskNameParts[0], 10);
+        const subtaskTitle = subtaskNameParts[1].trim();
+        const subtaskText = subtaskDescription.join(': ').trim();
+  
+        subtasks.push({
+          number: subtaskNumber,
+          title: subtaskTitle,
+          description: subtaskText,
+        });
+      }
+    }
+  
+    return subtasks;
+  }
+
   
 
   const handleTaskNameChange = (text: string) => {
@@ -312,8 +338,12 @@ export default function TaskPanel() {
   
   const handleChainSelect = (chain) => {
     setSelectedChain(chain);
-    // Add your logic to run the selected chain here
-    console.log('Running chain:', chain);
+    if (alwaysUseAgent && selectedAgent) {
+      // Run the selected chain using the selected agent
+      console.log('Running chain:', chain, 'with agent:', selectedAgent);
+    } else {
+      setShowAGiXTModal(true);
+    }
   };
   
   const handleDependencySelect = (taskId) => {
@@ -331,15 +361,6 @@ export default function TaskPanel() {
 
   return (
     <View style={styles.container}>
-
-      
-      <TouchableOpacity
-  style={styles.toggleButton}
-  onPress={() => setShowAGiXTModal(true)}
->
-  <Text style={styles.toggleButtonText}>Manage AGiXT</Text>
-</TouchableOpacity>
-
       <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
       <Modal
   visible={showAGiXTModal}
@@ -350,7 +371,7 @@ export default function TaskPanel() {
   <View style={styles.modalContainer}>
     <View style={styles.modalContent}>
       <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Manage AGiXT</Text>
+        <Text style={styles.modalTitle}>Select Agent</Text>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={() => setShowAGiXTModal(false)}

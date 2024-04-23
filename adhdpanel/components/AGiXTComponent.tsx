@@ -13,74 +13,110 @@ import AGiXTSDK from "agixt";
 
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
+const ALWAYS_USE_AGENT_KEY = "alwaysUseAgent";
 
 const AGiXTComponent = ({ agixtApiUri, agixtApiKey }) => {
-  const [providers, setProviders] = useState([]);
-  const [selectedProvider, setSelectedProvider] = useState("");
+  const [agents, setAgents] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState("");
+  const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchProviders = async () => {
+    const fetchAgents = async () => {
       try {
         const agixt = new AGiXTSDK({
           baseUri: agixtApiUri,
           apiKey: agixtApiKey,
         });
 
-        const providers = await agixt.getProviders();
-        setProviders(providers);
-        setSelectedProvider(providers[0] || "");
+        const agentsData = await agixt.getAgents();
+        const agentsList = Object.values(agentsData);
+        setAgents(agentsList);
+        setSelectedAgent(agentsList[0]?.name || "");
+
+        // Check if "alwaysUseAgent" is stored in AsyncStorage
+        const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
+        if (storedAlwaysUseAgent !== null) {
+          setAlwaysUseAgent(JSON.parse(storedAlwaysUseAgent));
+        }
+
         setError(null);
       } catch (error) {
-        console.error("Error fetching providers:", error);
-        setError("Error fetching providers");
+        console.error("Error fetching agents:", error);
+        setError("Error fetching agents");
       }
     };
 
-    fetchProviders();
+    fetchAgents();
   }, [agixtApiUri, agixtApiKey]);
 
   const { width, height } = Dimensions.get("window");
 
+  const handleAlwaysUseAgentChange = async (value) => {
+    setAlwaysUseAgent(value);
+    await AsyncStorage.setItem(ALWAYS_USE_AGENT_KEY, JSON.stringify(value));
+  };
+
+  const handleOk = () => {
+    // Perform the task that requires the selected agent
+    console.log("Selected agent:", selectedAgent);
+    console.log("Always use agent:", alwaysUseAgent);
+  };
+
   return (
     <View style={styles.container}>
-      {providers.length > 0 && (
-        <View style={styles.providersContainer}>
-          <Text style={styles.providersLabel}>Select a Provider:</Text>
+      {agents.length > 0 && (
+        <View style={styles.agentsContainer}>
+          <Text style={styles.agentsLabel}>Select an Agent:</Text>
           <Picker
-            selectedValue={selectedProvider}
-            onValueChange={(value) => setSelectedProvider(value)}
-            style={styles.providerPicker}
+            selectedValue={selectedAgent}
+            onValueChange={(value) => setSelectedAgent(value)}
+            style={styles.agentPicker}
           >
-            <Picker.Item label="Select a provider" value="" />
-            {providers.map((provider) => (
-              <Picker.Item key={provider} label={provider} value={provider} />
+            <Picker.Item label="Select an agent" value="" />
+            {agents.map((agent) => (
+              <Picker.Item key={agent.name} label={agent.name} value={agent.name} />
             ))}
           </Picker>
-          <View style={styles.providersList}>
-            {providers.map((provider) => (
+          <View style={styles.agentsList}>
+            {agents.map((agent) => (
               <View
-                key={provider}
+                key={agent.name}
                 style={[
-                  styles.providerItem,
-                  provider === selectedProvider
-                    ? [styles.selectedProviderItem, styles.selectedProviderText]
+                  styles.agentItem,
+                  agent.name === selectedAgent
+                    ? [styles.selectedAgentItem, styles.selectedAgentText]
                     : null,
                 ]}
               >
                 <Text
                   style={[
-                    styles.providerText,
-                    provider === selectedProvider
-                      ? styles.selectedProviderText
+                    styles.agentText,
+                    agent.name === selectedAgent
+                      ? styles.selectedAgentText
                       : null,
                   ]}
                 >
-                  {provider}
+                  {agent.name}
                 </Text>
               </View>
             ))}
           </View>
+          <View style={styles.alwaysUseAgentContainer}>
+            <Text style={styles.alwaysUseAgentLabel}>Always use this agent:</Text>
+            <TouchableOpacity
+              style={[
+                styles.alwaysUseAgentCheckbox,
+                alwaysUseAgent ? styles.alwaysUseAgentChecked : null,
+              ]}
+              onPress={() => handleAlwaysUseAgentChange(!alwaysUseAgent)}
+            >
+              {alwaysUseAgent && <Text style={styles.alwaysUseAgentCheckboxText}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.okButton} onPress={handleOk}>
+            <Text style={styles.okButtonText}>OK</Text>
+          </TouchableOpacity>
         </View>
       )}
       {error && (
@@ -98,24 +134,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
     padding: 24,
   },
-  providersContainer: {
+  agentsContainer: {
     marginTop: 24,
   },
-  providersLabel: {
+  agentsLabel: {
     fontSize: 16,
     color: "#FFFFFF",
     marginBottom: 8,
   },
-  providerPicker: {
-    color: "#FFFFFF",
+  agentPicker: {
+    color: "black",
     marginBottom: 16,
   },
-  providersList: {
+  agentsList: {
     flexDirection: "row",
     flexWrap: "wrap",
     color: "black",
   },
-  providerItem: {
+  agentItem: {
     backgroundColor: "#2E2E2E",
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -123,17 +159,55 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-  selectedProviderItem: {
+  selectedAgentItem: {
     backgroundColor: "#4E4E4E",
     borderWidth: 2,
     borderColor: "#FFFFFF",
   },
-  selectedProviderText: {
+  selectedAgentText: {
     color: "#FFFFFF",
     fontWeight: "bold",
   },
-  providerText: {
+  agentText: {
     color: "black",
+  },
+  alwaysUseAgentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  alwaysUseAgentLabel: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    marginRight: 8,
+  },
+  alwaysUseAgentCheckbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alwaysUseAgentChecked: {
+    backgroundColor: "#FFFFFF",
+  },
+  alwaysUseAgentCheckboxText: {
+    color: "#1E1E1E",
+    fontWeight: "bold",
+  },
+  okButton: {
+    backgroundColor: "#4E4E4E",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  okButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   errorContainer: {
     flex: 1,
