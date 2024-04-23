@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
+  ScrollView,
 } from "react-native";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -16,6 +17,7 @@ import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 import { Picker } from '@react-native-picker/picker';
 import AGiXTComponent from '@/components/AGiXTComponent';
+
 
 
 if (__DEV__) {
@@ -54,6 +56,10 @@ export default function TaskPanel() {
   const [editedSubtaskText, setEditedSubtaskText] = useState("");
   const [newSubtaskText, setNewSubtaskText] = useState("");
   const [showAGiXTModal, setShowAGiXTModal] = useState(false);
+  const [selectedChain, setSelectedChain] = useState(null);
+  const [showChainDropdown, setShowChainDropdown] = useState(false);
+  const [showDependenciesModal, setShowDependenciesModal] = useState(false);
+  const [showGuidance, setShowGuidance] = useState(false); // Add this line
 
 
   useEffect(() => {
@@ -304,16 +310,34 @@ export default function TaskPanel() {
   };
   
   
+  const handleChainSelect = (chain) => {
+    setSelectedChain(chain);
+    // Add your logic to run the selected chain here
+    console.log('Running chain:', chain);
+  };
   
+  const handleDependencySelect = (taskId) => {
+    if (dependencies.includes(taskId)) {
+      setDependencies(dependencies.filter((id) => id !== taskId));
+    } else {
+      setDependencies([...dependencies, taskId]);
+    }
+  };
   
+  const toggleGuidance = () => {
+    setShowGuidance(!showGuidance);
+  };
+
 
   return (
     <View style={styles.container}>
+
+      
       <TouchableOpacity
   style={styles.toggleButton}
   onPress={() => setShowAGiXTModal(true)}
 >
-  <Text style={styles.toggleButtonText}>Open AGiXT</Text>
+  <Text style={styles.toggleButtonText}>Manage AGiXT</Text>
 </TouchableOpacity>
 
       <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
@@ -326,7 +350,7 @@ export default function TaskPanel() {
   <View style={styles.modalContainer}>
     <View style={styles.modalContent}>
       <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>AGiXT Component</Text>
+        <Text style={styles.modalTitle}>Manage AGiXT</Text>
         <TouchableOpacity
           style={styles.closeButton}
           onPress={() => setShowAGiXTModal(false)}
@@ -340,6 +364,18 @@ export default function TaskPanel() {
 </Modal>
 
     </View>
+    <View style={styles.aiGuidanceContainer}>
+        <TouchableOpacity style={styles.toggleGuidanceButton} onPress={toggleGuidance}>
+          <Icon name={showGuidance ? 'arrow-drop-up' : 'arrow-drop-down'} size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+        {showGuidance && (
+          <View style={styles.guidanceContainer}>
+            <Text style={styles.guidanceText}>
+              AI Task Guidance
+            </Text>
+          </View>
+        )}
+      </View>
       {!githubUsername || !data ? (
         <View style={styles.repoPickerContainer}>
           <Text style={styles.repoPickerLabel}>GitHub username and API key not available. Please set them by accessing Home and top right settings icon to be able to use the integration.</Text>
@@ -380,202 +416,256 @@ export default function TaskPanel() {
         </TouchableOpacity>
       </View>
       <FlatList
-      data={tasks}
-      keyExtractor={(item) => item.id.toString()}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={[
-            styles.taskContainer,
-            {
-              borderColor:
-                item.dueDate && new Date(item.dueDate) < new Date()
-                  ? "#FF3B30"
-                  : "transparent",
-              backgroundColor:
-                selectedTask && selectedTask.id === item.id
-                  ? "#2E2E2E"
-                  : "#1E1E1E",
-            },
-          ]}
-          onPress={() => editTask(item)}
-        >
-            <View style={styles.taskInfoContainer}>
-              <Text
-                style={[
-                  styles.taskText,
-                  {
-                    fontWeight:
-                      item.dueDate && new Date(item.dueDate) < new Date()
-                        ? "bold"
-                        : "normal",
-                  },
-                ]}
-              >
-                {item.text}
-              </Text>
-              {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
-              {item.dueDate && (
-                <Text style={styles.dueDateText}>
-                  Due Date: {new Date(item.dueDate).toLocaleString()}
-                </Text>
-              )}
-              {item.priority && (
-                <Text style={styles.priorityText}>Priority: {item.priority}</Text>
-              )}
-              {item.repo && (
-                <Text style={styles.repoText}>Repository: {item.repo}</Text>
-              )}
-              <SubtaskTree
-              task={item}
-              selectedSubtask={selectedSubtask}
-              onSubtaskSelect={handleSubtaskSelect}
-              onSubtaskRemove={handleSubtaskRemove}
-              onSubtaskAdd={addSubtask}
-            />
-            </View>
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => removeTask(item.id)}
-            >
-              <Icon name="delete" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        )}
-      />
-      <Modal
-  visible={showEditModal}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setShowEditModal(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Edit Task</Text>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setShowEditModal(false)}
-        >
-          <Icon name="close" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-      <Text style={{ color: "white" }}>Task Name:</Text>
-      <TextInput
-        style={styles.input}
-        value={taskName}
-        onChangeText={handleTaskNameChange}
-        placeholder="Enter a task"
-        placeholderTextColor="#FFFFFF80"
-      />
-      <View>
-        <Text style={{ color: "white" }}>Subtasks:</Text>
-        <FlatList
-  data={selectedTask?.subtasks || []}
+  data={tasks}
   keyExtractor={(item) => item.id.toString()}
   renderItem={({ item }) => (
-    <View style={styles.subtaskContainer}>
-      <TextInput
-        style={[
-          styles.subtaskText,
-          { color: '#FFFFFF' }, // Set the color to white
-          item.id === selectedSubtask?.id
-            ? styles.selectedSubtask
-            : null,
-        ]}
-        value={item.id === selectedSubtask?.id ? editedSubtaskText : item.text}
-        onChangeText={
-          item.id === selectedSubtask?.id
-            ? setEditedSubtaskText
-            : (text) => {
-                setNewSubtaskText(text);
-                setSelectedSubtask(item);
-              }
-        }
-        placeholder={item.text}
-        placeholderTextColor="#FFFFFF80"
-        onSubmitEditing={() =>
-          item.id === selectedSubtask?.id
-            ? editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
-            : addSubtask(selectedTask.id, newSubtaskText)
-        }
-      />
-      {item.id === selectedSubtask?.id && (
-        <TouchableOpacity
-          style={styles.saveSubtaskButton}
-          onPress={() =>
-            editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
-          }
+    <TouchableOpacity
+      style={[
+        styles.taskContainer,
+        {
+          borderColor:
+            item.dueDate && new Date(item.dueDate) < new Date()
+              ? "#FF3B30"
+              : "transparent",
+          backgroundColor:
+            selectedTask && selectedTask.id === item.id
+              ? "#2E2E2E"
+              : "#1E1E1E",
+        },
+      ]}
+      onPress={() => editTask(item)}
+    >
+      <View style={styles.taskInfoContainer}>
+        <Text
+          style={[
+            styles.taskText,
+            {
+              fontWeight:
+                item.dueDate && new Date(item.dueDate) < new Date()
+                  ? "bold"
+                  : "normal",
+            },
+          ]}
         >
-          <Icon name="check" size={20} color="#FFFFFF" />
+          {item.text}
+        </Text>
+        {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
+        {item.dueDate && (
+          <Text style={styles.dueDateText}>
+            Due Date: {new Date(item.dueDate).toLocaleString()}
+          </Text>
+        )}
+        {item.priority && (
+          <Text style={styles.priorityText}>Priority: {item.priority}</Text>
+        )}
+        {item.repo && (
+          <Text style={styles.repoText}>Repository: {item.repo}</Text>
+        )}
+        <SubtaskTree
+          task={item}
+          selectedSubtask={selectedSubtask}
+          onSubtaskSelect={handleSubtaskSelect}
+          onSubtaskRemove={handleSubtaskRemove}
+          onSubtaskAdd={addSubtask}
+        />
+      </View>
+      <View style={styles.taskButtonsContainer}>
+        <TouchableOpacity
+          style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
+          onPress={() => {
+            setShowChainDropdown(!showChainDropdown);
+          }}
+        >
+          <Icon name="play-arrow" size={24} color="#FFFFFF" />
+          <Text style={styles.runChainButtonText}>
+            {selectedChain ? selectedChain : 'Run Chain'}
+          </Text>
+          {showChainDropdown && (
+            <View style={styles.chainDropdownContainer}>
+              <TouchableOpacity
+                style={styles.chainDropdownItem}
+                onPress={() => handleChainSelect('Chain 1')}
+              >
+                <Text style={styles.chainDropdownText}>Chain 1</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.chainDropdownItem}
+                onPress={() => handleChainSelect('Chain 2')}
+              >
+                <Text style={styles.chainDropdownText}>Chain 2</Text>
+              </TouchableOpacity>
+              {/* Add more chain options as needed */}
+            </View>
+          )}
         </TouchableOpacity>
-      )}
-    </View>
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={() => removeTask(item.id)}
+        >
+          <Icon name="delete" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   )}
 />
-        <TextInput
-          style={styles.input}
-          value={newSubtaskText}
-          onChangeText={setNewSubtaskText}
-          placeholder="Add a new subtask"
-          placeholderTextColor="#FFFFFF80"
-          onSubmitEditing={() => addSubtask(selectedTask.id, newSubtaskText)}
-        />
-      </View>
-      <View>
-        <Text style={{ color: "white" }}>Note:</Text>
-        <TextInput
-          style={styles.input}
-          value={noteText}
-          onChangeText={setNoteText}
-          placeholder="Enter a note"
-          placeholderTextColor="#FFFFFF80"
-        />
-        <Text style={{ color: "white" }}>Due Date:</Text>
-        <DatePicker
-          selected={dueDate}
-          onChange={(date: Date) => setDueDate(date)}
-          showTimeSelect
-          dateFormat="MMMM d, yyyy h:mm aa"
-          placeholderText="No Due Date Set"
-          customInput={<ExampleCustomInput />}
-        />
-        <TouchableOpacity
-          style={styles.removeDueDateButton}
-          onPress={removeDueDate}
-        >
-          <Text style={styles.buttonText}>Remove Due Date</Text>
-        </TouchableOpacity>
-        <Text style={{ color: "white" }}>Priority:</Text>
-        <TextInput
-          style={styles.input}
-          value={priority}
-          onChangeText={setPriority}
-          placeholder="Priority (e.g., High, Medium, Low)"
-          placeholderTextColor="#FFFFFF80"
-        />
-        <Text style={{ color: "white" }}>Repository:</Text>
-        <Picker
-          style={styles.repoPicker}
-          selectedValue={selectedRepo}
-          onValueChange={(value) => setSelectedRepo(value)}
-        >
-          <Picker.Item label="Select a repository" value={null} />
-          {data &&
-            data.user &&
-            data.user.repositories.nodes.map((repo: any) => (
-              <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
-            ))}
-        </Picker>
-        <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
-          <Text style={styles.buttonText}>Save</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+<Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Task</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowEditModal(false)}
+              >
+                <Icon name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <Text style={{ color: "white" }}>Task Name:</Text>
+              <TextInput
+                style={styles.input}
+                value={taskName}
+                onChangeText={handleTaskNameChange}
+                placeholder="Enter a task"
+                placeholderTextColor="#FFFFFF80"
+              />
+              <View>
+                <Text style={{ color: "white" }}>Subtasks:</Text>
+                <FlatList
+                  data={selectedTask?.subtasks || []}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <View style={styles.subtaskContainer}>
+                      <TextInput
+                        style={[
+                          styles.subtaskText,
+                          { color: '#FFFFFF' },
+                          item.id === selectedSubtask?.id
+                            ? styles.selectedSubtask
+                            : null,
+                        ]}
+                        value={
+                          item.id === selectedSubtask?.id
+                            ? editedSubtaskText
+                            : item.text
+                        }
+                        onChangeText={
+                          item.id === selectedSubtask?.id
+                            ? setEditedSubtaskText
+                            : (text) => {
+                                setNewSubtaskText(text);
+                                setSelectedSubtask(item);
+                              }
+                        }
+                        placeholder={item.text}
+                        placeholderTextColor="#FFFFFF80"
+                        onSubmitEditing={() =>
+                          item.id === selectedSubtask?.id
+                            ? editSubtask(
+                                selectedTask.id,
+                                selectedSubtask.id,
+                                editedSubtaskText
+                              )
+                            : addSubtask(selectedTask.id, newSubtaskText)
+                        }
+                      />
+                      {item.id === selectedSubtask?.id && (
+                        <TouchableOpacity
+                          style={styles.saveSubtaskButton}
+                          onPress={() =>
+                            editSubtask(
+                              selectedTask.id,
+                              selectedSubtask.id,
+                              editedSubtaskText
+                            )
+                          }
+                        >
+                          <Icon name="check" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                />
+                <TextInput
+                  style={styles.input}
+                  value={newSubtaskText}
+                  onChangeText={setNewSubtaskText}
+                  placeholder="Add a new subtask"
+                  placeholderTextColor="#FFFFFF80"
+                  onSubmitEditing={() =>
+                    addSubtask(selectedTask.id, newSubtaskText)
+                  }
+                />
+              </View>
+              <View>
+                <Text style={{ color: "white" }}>Note:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={noteText}
+                  onChangeText={setNoteText}
+                  placeholder="Enter a note"
+                  placeholderTextColor="#FFFFFF80"
+                />
+                <Text style={{ color: "white" }}>Due Date:</Text>
+                <DatePicker
+                  selected={dueDate}
+                  onChange={(date: Date) => setDueDate(date)}
+                  showTimeSelect
+                  dateFormat="MMMM d, yyyy h:mm aa"
+                  placeholderText="No Due Date Set"
+                  customInput={<ExampleCustomInput />}
+                />
+                <TouchableOpacity
+                  style={styles.removeDueDateButton}
+                  onPress={removeDueDate}
+                >
+                  <Text style={styles.buttonText}>Remove Due Date</Text>
+                </TouchableOpacity>
+                <Text style={{ color: "white" }}>Priority:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={priority}
+                  onChangeText={setPriority}
+                  placeholder="Priority (e.g., High, Medium, Low)"
+                  placeholderTextColor="#FFFFFF80"
+                />
+                <Text style={{ color: "white" }}>Repository:</Text>
+                <Picker
+                  style={styles.repoPicker}
+                  selectedValue={selectedRepo}
+                  onValueChange={(value) => setSelectedRepo(value)}
+                >
+                  <Picker.Item label="Select a repository" value={null} />
+                  {data &&
+                    data.user &&
+                    data.user.repositories.nodes.map((repo: any) => (
+                      <Picker.Item
+                        key={repo.name}
+                        label={repo.name}
+                        value={repo.name}
+                      />
+                    ))}
+                </Picker>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={saveTaskEdit}
+                >
+                  <Text style={styles.buttonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -641,6 +731,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#FFFFFF80",
   },
+  repoText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: "#FFFFFF80",
+  },
   removeButton: {
     backgroundColor: "#FF3B30",
     padding: 12,
@@ -661,7 +756,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 16,
     width: "90%",
-    height: "50%",
+    maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -673,6 +768,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#FFFFFF",
+  },
+  modalBody: {
+    maxHeight: "80%",
+    paddingBottom: 24,
   },
   taskInfoContainer: {
     flex: 1,
@@ -745,11 +844,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "black",
   },
-  repoText: {
-    marginTop: 8,
-    fontSize: 16,
-    color: "#FFFFFF80",
-  },
   subtaskTreeContainer: {
     marginTop: 16,
     color: "#FFFFFF",
@@ -763,14 +857,26 @@ const styles = StyleSheet.create({
     marginLeft: 24,
   },
   subtaskText: {
-    color: "white",
+    flex: 1,
     fontSize: 16,
-  },
-  addSubtaskButton: {
-    backgroundColor: "#007AFF",
-    padding: 12,
+    color: "white",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
-    marginLeft: 16,
+  },
+  selectedSubtask: {
+    backgroundColor: "#2E2E2E",
+  },
+  saveSubtaskButton: {
+    backgroundColor: "#007AFF",
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  subtaskContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
   agixtComponentContainer: {
     position: 'absolute',
@@ -790,5 +896,62 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  taskButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 16,
+  },
+  runChainButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 16,
+  },
+  runChainButtonText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontWeight: 'bold',
+  },
+  chainDropdownContainer: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    backgroundColor: '#2E2E2E',
+    borderRadius: 8,
+    padding: 8,
+    zIndex: 1,
+  },
+  chainDropdownItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  chainDropdownText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  aiGuidanceContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: '25%',
+    backgroundColor: '#2E2E2E',
+    borderRadius: 8,
+    padding: 16,
+  },
+  toggleGuidanceButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+  },
+  guidanceContainer: {
+    backgroundColor: '#1E1E1E',
+    padding: 16,
+    borderRadius: 8,
+  },
+  guidanceText: {
+    color: '#FFFFFF',
+    fontSize: 16,
   },
 });
