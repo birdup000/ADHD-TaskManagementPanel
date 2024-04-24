@@ -8,6 +8,7 @@ import {
   FlatList,
   Modal,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -17,8 +18,7 @@ import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 import { Picker } from '@react-native-picker/picker';
 import AGiXTComponent from '@/components/AGiXTComponent';
-
-
+import AGiXTSDK from "agixt";
 
 if (__DEV__) {
   loadDevMessages();
@@ -38,7 +38,6 @@ const GET_USER_REPOSITORIES = gql`
     }
   }
 `;
-
 
 export default function TaskPanel() {
   const [taskText, setTaskText] = useState("");
@@ -62,6 +61,8 @@ export default function TaskPanel() {
   const [showGuidance, setShowGuidance] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState("");
   const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
+  const [chains, setChains] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export default function TaskPanel() {
           setGithubUsername(storedGithubUsername);
           setAuthKey(storedAuthKey);
           loadTasks();
+          getChains();
         } else {
           console.log('GitHub username and/or API key not available');
         }
@@ -84,6 +86,7 @@ export default function TaskPanel() {
 
     getGithubUsernameAndAuthKey();
     loadTasks();
+    getChains(); 
   }, []);
 
   const { loading, error, data } = useQuery(GET_USER_REPOSITORIES, {
@@ -110,6 +113,23 @@ export default function TaskPanel() {
     }
   };
 
+  const getChains = async () => {
+    try {
+      setIsLoading(true);
+      const ApiClient = new AGiXTSDK({
+        baseUri: 'http://localhost:7437',
+        apiKey: '',
+      });
+      const chains = await ApiClient.getChains();
+      setChains(chains);
+    } catch (error) {
+      console.log("Error getting chains:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   const addTask = () => {
     if (taskText.trim().length > 0) {
       const newTask = {
@@ -129,7 +149,6 @@ export default function TaskPanel() {
       setSubtaskText("");
     }
   };
-  
 
   const addSubtask = (taskId, subtaskText) => {
     const updatedTasks = tasks.map((task) => {
@@ -146,8 +165,6 @@ export default function TaskPanel() {
     saveTasks(updatedTasks);
     setSubtaskText("");
   };
-  
-  
 
   const removeSubtask = (tasks, subtaskId) => {
     return tasks.map((task) => {
@@ -161,8 +178,6 @@ export default function TaskPanel() {
       return task;
     });
   };
-  
-
 
   const editSubtask = (taskId, subtaskId, subtaskText) => {
     const updatedTasks = tasks.map((task) => {
@@ -182,8 +197,7 @@ export default function TaskPanel() {
     setSelectedSubtask(updatedTasks.find((task) => task.id === taskId).subtasks.find((subtask) => subtask.id === subtaskId));
     setEditedSubtaskText(subtaskText);
   };
-  
-  
+
   const handleSubtaskSelect = (subtask) => {
     setSelectedSubtask(subtask);
   };
@@ -193,23 +207,21 @@ export default function TaskPanel() {
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
   };
-  
-
 
   const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove, onSubtaskAdd }) => {
     const [newSubtaskText, setNewSubtaskText] = useState("");
-  
+
     const handleSubtaskRemove = (subtaskId) => {
       onSubtaskRemove(subtaskId);
     };
-  
+
     const handleSubtaskAdd = () => {
       if (newSubtaskText.trim().length > 0) {
         onSubtaskAdd(task.id, newSubtaskText);
         setNewSubtaskText(""); // Reset the newSubtaskText to an empty string
       }
     };
-  
+
     return (
       <View style={styles.subtaskTreeContainer}>
         {task.subtasks && task.subtasks.length > 0 && (
@@ -246,12 +258,11 @@ export default function TaskPanel() {
       </View>
     );
   };
-  
 
   function parseTaskDescription(taskDescription) {
     const sections = taskDescription.split('\n\n');
     const subtasks = [];
-  
+
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i].trim();
       if (section.startsWith(`${i + 1}.`)) {
@@ -260,7 +271,7 @@ export default function TaskPanel() {
         const subtaskNumber = parseInt(subtaskNameParts[0], 10);
         const subtaskTitle = subtaskNameParts[1].trim();
         const subtaskText = subtaskDescription.join(': ').trim();
-  
+
         subtasks.push({
           number: subtaskNumber,
           title: subtaskTitle,
@@ -268,11 +279,9 @@ export default function TaskPanel() {
         });
       }
     }
-  
+
     return subtasks;
   }
-
-  
 
   const handleTaskNameChange = (text: string) => {
     setTaskName(text);
@@ -306,7 +315,6 @@ export default function TaskPanel() {
     setDueDate(null);
   };
 
-
   const saveTaskEdit = () => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === selectedTask?.id) {
@@ -334,8 +342,7 @@ export default function TaskPanel() {
     setSelectedSubtask(null);
     setEditedSubtaskText("");
   };
-  
-  
+
   const handleChainSelect = (chain) => {
     setSelectedChain(chain);
     if (alwaysUseAgent && selectedAgent) {
@@ -345,7 +352,7 @@ export default function TaskPanel() {
       setShowAGiXTModal(true);
     }
   };
-  
+
   const handleDependencySelect = (taskId) => {
     if (dependencies.includes(taskId)) {
       setDependencies(dependencies.filter((id) => id !== taskId));
@@ -353,39 +360,37 @@ export default function TaskPanel() {
       setDependencies([...dependencies, taskId]);
     }
   };
-  
+
   const toggleGuidance = () => {
     setShowGuidance(!showGuidance);
   };
 
-
   return (
     <View style={styles.container}>
       <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
-      <Modal
-  visible={showAGiXTModal}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setShowAGiXTModal(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Select Agent</Text>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setShowAGiXTModal(false)}
+        <Modal
+          visible={showAGiXTModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowAGiXTModal(false)}
         >
-          <Icon name="close" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Agent</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowAGiXTModal(false)}
+                >
+                  <Icon name="close" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <AGiXTComponent />
+            </View>
+          </View>
+        </Modal>
       </View>
-      <AGiXTComponent />
-    </View>
-  </View>
-</Modal>
-
-    </View>
-    <View style={styles.aiGuidanceContainer}>
+      <View style={styles.aiGuidanceContainer}>
         <TouchableOpacity style={styles.toggleGuidanceButton} onPress={toggleGuidance}>
           <Icon name={showGuidance ? 'arrow-drop-up' : 'arrow-drop-down'} size={24} color="#FFFFFF" />
         </TouchableOpacity>
@@ -416,7 +421,7 @@ export default function TaskPanel() {
           </Picker>
         </View>
       )}
-
+  
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -437,99 +442,104 @@ export default function TaskPanel() {
         </TouchableOpacity>
       </View>
       <FlatList
-  data={tasks}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.taskContainer,
-        {
-          borderColor:
-            item.dueDate && new Date(item.dueDate) < new Date()
-              ? "#FF3B30"
-              : "transparent",
-          backgroundColor:
-            selectedTask && selectedTask.id === item.id
-              ? "#2E2E2E"
-              : "#1E1E1E",
-        },
-      ]}
-      onPress={() => editTask(item)}
-    >
-      <View style={styles.taskInfoContainer}>
-        <Text
-          style={[
-            styles.taskText,
-            {
-              fontWeight:
-                item.dueDate && new Date(item.dueDate) < new Date()
-                  ? "bold"
-                  : "normal",
-            },
-          ]}
-        >
-          {item.text}
-        </Text>
-        {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
-        {item.dueDate && (
-          <Text style={styles.dueDateText}>
-            Due Date: {new Date(item.dueDate).toLocaleString()}
-          </Text>
-        )}
-        {item.priority && (
-          <Text style={styles.priorityText}>Priority: {item.priority}</Text>
-        )}
-        {item.repo && (
-          <Text style={styles.repoText}>Repository: {item.repo}</Text>
-        )}
-        <SubtaskTree
-          task={item}
-          selectedSubtask={selectedSubtask}
-          onSubtaskSelect={handleSubtaskSelect}
-          onSubtaskRemove={handleSubtaskRemove}
-          onSubtaskAdd={addSubtask}
-        />
-      </View>
-      <View style={styles.taskButtonsContainer}>
-        <TouchableOpacity
-          style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
-          onPress={() => {
-            setShowChainDropdown(!showChainDropdown);
-          }}
-        >
-          <Icon name="play-arrow" size={24} color="#FFFFFF" />
-          <Text style={styles.runChainButtonText}>
-            {selectedChain ? selectedChain : 'Run Chain'}
-          </Text>
-          {showChainDropdown && (
-            <View style={styles.chainDropdownContainer}>
-              <TouchableOpacity
-                style={styles.chainDropdownItem}
-                onPress={() => handleChainSelect('Chain 1')}
+        data={tasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.taskContainer,
+              {
+                borderColor:
+                  item.dueDate && new Date(item.dueDate) < new Date()
+                    ? "#FF3B30"
+                    : "transparent",
+                backgroundColor:
+                  selectedTask && selectedTask.id === item.id
+                    ? "#2E2E2E"
+                    : "#1E1E1E",
+              },
+            ]}
+            onPress={() => editTask(item)}
+          >
+            <View style={styles.taskInfoContainer}>
+              <Text
+                style={[
+                  styles.taskText,
+                  {
+                    fontWeight:
+                      item.dueDate && new Date(item.dueDate) < new Date()
+                        ? "bold"
+                        : "normal",
+                  },
+                ]}
               >
-                <Text style={styles.chainDropdownText}>Chain 1</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.chainDropdownItem}
-                onPress={() => handleChainSelect('Chain 2')}
-              >
-                <Text style={styles.chainDropdownText}>Chain 2</Text>
-              </TouchableOpacity>
-              {/* Add more chain options as needed */}
+                {item.text}
+              </Text>
+              {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
+              {item.dueDate && (
+                <Text style={styles.dueDateText}>
+                  Due Date: {new Date(item.dueDate).toLocaleString()}
+                </Text>
+              )}
+              {item.priority && (
+                <Text style={styles.priorityText}>Priority: {item.priority}</Text>
+              )}
+              {item.repo && (
+                <Text style={styles.repoText}>Repository: {item.repo}</Text>
+              )}
+              <SubtaskTree
+                task={item}
+                selectedSubtask={selectedSubtask}
+                onSubtaskSelect={handleSubtaskSelect}
+                onSubtaskRemove={handleSubtaskRemove}
+                onSubtaskAdd={addSubtask}
+              />
             </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => removeTask(item.id)}
-        >
-          <Icon name="delete" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+            <View style={styles.taskButtonsContainer}>
+  {isLoading ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="small" color="#FFFFFF" />
+      <Text style={styles.loadingText}>Loading chains...</Text>
+    </View>
+  ) : (
+    <>
+      <TouchableOpacity
+        style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
+        onPress={() => {
+          setShowChainDropdown(!showChainDropdown);
+        }}
+      >
+        <Icon name="play-arrow" size={24} color="#FFFFFF" />
+        <Text style={styles.runChainButtonText}>
+          {selectedChain ? selectedChain : 'Run Chain'}
+        </Text>
+        {showChainDropdown && (
+          <View style={styles.chainDropdownContainer}>
+            {chains.map((chain) => (
+              <TouchableOpacity
+                key={chain}
+                style={styles.chainDropdownItem}
+                onPress={() => handleChainSelect(chain)}
+              >
+                <Text style={styles.chainDropdownText}>{chain}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => removeTask(item.id)}
+      >
+        <Icon name="delete" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+    </>
   )}
-/>
-<Modal
+</View>
+          </TouchableOpacity>
+        )}
+      />
+      <Modal
         visible={showEditModal}
         animationType="slide"
         transparent={true}
@@ -686,8 +696,6 @@ export default function TaskPanel() {
     </View>
   );
 }
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -708,6 +716,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     color: "#FFFFFF",
     marginRight: 16,
+    backgroundColor: "#1E1E1E",
   },
   addButton: {
     backgroundColor: "#007AFF",
@@ -730,9 +739,20 @@ const styles = StyleSheet.create({
       }
     },
   },
+  taskInfoContainer: {
+    flex: 1,
+    color: "#FFFFFF",
+    backgroundColor: (task) => {
+      if (task.dueDate && new Date(task.dueDate) < new Date()) {
+        return "#FF3B3020"; // Red background for past due tasks
+      } else {
+        return "#1E1E1E";
+      }
+    },
+  },
   taskText: {
     fontSize: 18,
-    color: "white",
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
   noteText: {
@@ -794,17 +814,6 @@ const styles = StyleSheet.create({
     maxHeight: "80%",
     paddingBottom: 24,
   },
-  taskInfoContainer: {
-    flex: 1,
-    color: "#FFFFFF",
-    backgroundColor: (task) => {
-      if (task.dueDate && new Date(task.dueDate) < new Date()) {
-        return "#FF3B3020"; // Red background for past due tasks
-      } else {
-        return "#1E1E1E";
-      }
-    },
-  },
   closeButton: {
     backgroundColor: "#FF3B30",
     padding: 12,
@@ -829,27 +838,6 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
     marginRight: "auto",
     marginTop: 24,
-  },
-  repoContainer: {
-    backgroundColor: "#1E1E1E",
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 24,
-  },
-  repoTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 12,
-  },
-  repoDescription: {
-    fontSize: 16,
-    color: "#FFFFFF80",
-    marginBottom: 12,
-  },
-  repoUrl: {
-    fontSize: 16,
-    color: "#007AFF",
   },
   repoPickerContainer: {
     flexDirection: "row",
@@ -880,13 +868,14 @@ const styles = StyleSheet.create({
   subtaskText: {
     flex: 1,
     fontSize: 16,
-    color: "white",
+    color: "#FFFFFF",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
+    backgroundColor: "#2E2E2E",
   },
   selectedSubtask: {
-    backgroundColor: "#2E2E2E",
+    backgroundColor: "#3E3E3E",
   },
   saveSubtaskButton: {
     backgroundColor: "#007AFF",
@@ -900,47 +889,48 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   agixtComponentContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 24,
     right: 24,
-    width: '25%',
-    height: '25%',
-    backgroundColor: 'transparent',
+    width: "25%",
+    height: "25%",
+    backgroundColor: "transparent",
   },
   toggleButton: {
-    backgroundColor: '#2E2E2E',
+    backgroundColor: "#2E2E2E",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
   toggleButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   taskButtonsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginLeft: 16,
   },
   runChainButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 16,
+    backgroundColor: "#007AFF",
   },
   runChainButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     marginLeft: 8,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   chainDropdownContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 48,
     left: 0,
-    backgroundColor: '#2E2E2E',
+    backgroundColor: "#2E2E2E",
     borderRadius: 8,
     padding: 8,
     zIndex: 1,
@@ -950,29 +940,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   chainDropdownText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
   },
   aiGuidanceContainer: {
-    position: 'absolute',
-    bottom: 24,
+    position: "absolute",
+    top: 24,
     right: 24,
-    width: '25%',
-    backgroundColor: '#2E2E2E',
-    borderRadius: 8,
-    padding: 16,
+    zIndex: 1,
   },
   toggleGuidanceButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 8,
-  },
-  guidanceContainer: {
-    backgroundColor: '#1E1E1E',
-    padding: 16,
+    backgroundColor: "#2E2E2E",
+    padding: 12,
     borderRadius: 8,
   },
+  guidanceContainer: {
+    backgroundColor: "#2E2E2E",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+  },
   guidanceText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: "#FFFFFF",
+    marginLeft: 16,
+    fontSize: 18,
   },
 });
