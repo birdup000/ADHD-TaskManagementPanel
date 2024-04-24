@@ -8,6 +8,7 @@ import {
   FlatList,
   Modal,
   ScrollView,
+  Dimensions,
   ActivityIndicator,
 } from "react-native";
 import DatePicker from "react-datepicker";
@@ -17,8 +18,124 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo/client';
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 import { Picker } from '@react-native-picker/picker';
-import AGiXTComponent from '@/components/AGiXTComponent';
 import AGiXTSDK from "agixt";
+
+const AGIXT_API_URI_KEY = "agixtapi";
+const AGIXT_API_KEY_KEY = "agixtkey";
+const ALWAYS_USE_AGENT_KEY = "alwaysUseAgent";
+
+const AGiXTComponent = ({ agixtApiUri, agixtApiKey }) => {
+  const [agents, setAgents] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState("");
+  const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const agixt = new AGiXTSDK({
+          baseUri: agixtApiUri,
+          apiKey: agixtApiKey,
+        });
+
+        const agentsData = await agixt.getAgents();
+        const agentsList = Object.values(agentsData);
+        setAgents(agentsList);
+        setSelectedAgent(agentsList[0]?.name || "");
+
+        // Check if "alwaysUseAgent" is stored in AsyncStorage
+        const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
+        if (storedAlwaysUseAgent !== null) {
+          setAlwaysUseAgent(JSON.parse(storedAlwaysUseAgent));
+        }
+
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+        setError("Error fetching agents");
+      }
+    };
+
+    fetchAgents();
+  }, [agixtApiUri, agixtApiKey]);
+
+  const { width, height } = Dimensions.get("window");
+
+  const handleAlwaysUseAgentChange = async (value) => {
+    setAlwaysUseAgent(value);
+    await AsyncStorage.setItem(ALWAYS_USE_AGENT_KEY, JSON.stringify(value));
+  };
+
+  const handleOk = () => {
+    // Perform the task that requires the selected agent
+    console.log("Selected agent:", selectedAgent);
+    console.log("Always use agent:", alwaysUseAgent);
+  };
+
+  return (
+    <View style={styles.agixtComponentContainer}>
+      {agents.length > 0 && (
+        <View style={styles.agentsContainer}>
+          <Text style={styles.agentsLabel}>Select an Agent:</Text>
+          <Picker
+            selectedValue={selectedAgent}
+            onValueChange={(value) => setSelectedAgent(value)}
+            style={styles.agentPicker}
+          >
+            <Picker.Item label="Select an agent" value="" />
+            {agents.map((agent) => (
+              <Picker.Item key={agent.name} label={agent.name} value={agent.name} />
+            ))}
+          </Picker>
+          <View style={styles.agentsList}>
+            {agents.map((agent) => (
+              <View
+                key={agent.name}
+                style={[
+                  styles.agentItem,
+                  agent.name === selectedAgent
+                    ? [styles.selectedAgentItem, styles.selectedAgentText]
+                    : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.agentText,
+                    agent.name === selectedAgent
+                      ? styles.selectedAgentText
+                      : null,
+                  ]}
+                >
+                  {agent.name}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.alwaysUseAgentContainer}>
+            <Text style={styles.alwaysUseAgentLabel}>Always use this agent:</Text>
+            <TouchableOpacity
+              style={[
+                styles.alwaysUseAgentCheckbox,
+                alwaysUseAgent ? styles.alwaysUseAgentChecked : null,
+              ]}
+              onPress={() => handleAlwaysUseAgentChange(!alwaysUseAgent)}
+            >
+              {alwaysUseAgent && <Text style={styles.alwaysUseAgentCheckboxText}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.okButton} onPress={handleOk}>
+            <Text style={styles.okButtonText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
 
 if (__DEV__) {
   loadDevMessages();
@@ -63,7 +180,6 @@ export default function TaskPanel() {
   const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
   const [chains, setChains] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-
 
   useEffect(() => {
     const getGithubUsernameAndAuthKey = async () => {
@@ -128,7 +244,6 @@ export default function TaskPanel() {
       setIsLoading(false);
     }
   };
-
 
   const addTask = () => {
     if (taskText.trim().length > 0) {
@@ -294,13 +409,13 @@ export default function TaskPanel() {
       </Text>
     </TouchableOpacity>
   ));
-
+  
   const removeTask = (id: number) => {
     const updatedTasks = tasks.filter((task) => task.id !== id);
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
   };
-
+  
   const editTask = (task: any) => {
     setSelectedTask(task);
     setNoteText(task.note || "");
@@ -310,11 +425,11 @@ export default function TaskPanel() {
     setTaskName(task.text);
     setSelectedRepo(task.repo);
   };
-
+  
   const removeDueDate = () => {
     setDueDate(null);
   };
-
+  
   const saveTaskEdit = () => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === selectedTask?.id) {
@@ -342,7 +457,7 @@ export default function TaskPanel() {
     setSelectedSubtask(null);
     setEditedSubtaskText("");
   };
-
+  
   const handleChainSelect = (chain) => {
     setSelectedChain(chain);
     if (alwaysUseAgent && selectedAgent) {
@@ -352,7 +467,7 @@ export default function TaskPanel() {
       setShowAGiXTModal(true);
     }
   };
-
+  
   const handleDependencySelect = (taskId) => {
     if (dependencies.includes(taskId)) {
       setDependencies(dependencies.filter((id) => id !== taskId));
@@ -360,11 +475,11 @@ export default function TaskPanel() {
       setDependencies([...dependencies, taskId]);
     }
   };
-
+  
   const toggleGuidance = () => {
     setShowGuidance(!showGuidance);
   };
-
+  
   return (
     <View style={styles.container}>
       <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
@@ -496,46 +611,46 @@ export default function TaskPanel() {
               />
             </View>
             <View style={styles.taskButtonsContainer}>
-  {isLoading ? (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="small" color="#FFFFFF" />
-      <Text style={styles.loadingText}>Loading chains...</Text>
-    </View>
-  ) : (
-    <>
-      <TouchableOpacity
-        style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
-        onPress={() => {
-          setShowChainDropdown(!showChainDropdown);
-        }}
-      >
-        <Icon name="play-arrow" size={24} color="#FFFFFF" />
-        <Text style={styles.runChainButtonText}>
-          {selectedChain ? selectedChain : 'Run Chain'}
-        </Text>
-        {showChainDropdown && (
-          <View style={styles.chainDropdownContainer}>
-            {chains.map((chain) => (
-              <TouchableOpacity
-                key={chain}
-                style={styles.chainDropdownItem}
-                onPress={() => handleChainSelect(chain)}
-              >
-                <Text style={styles.chainDropdownText}>{chain}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => removeTask(item.id)}
-      >
-        <Icon name="delete" size={24} color="#FFFFFF" />
-      </TouchableOpacity>
-    </>
-  )}
-</View>
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.loadingText}>Loading chains...</Text>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
+                    onPress={() => {
+                      setShowChainDropdown(!showChainDropdown);
+                    }}
+                  >
+                    <Icon name="play-arrow" size={24} color="#FFFFFF" />
+                    <Text style={styles.runChainButtonText}>
+                      {selectedChain ? selectedChain : 'Run Chain'}
+                    </Text>
+                    {showChainDropdown && (
+                      <View style={styles.chainDropdownContainer}>
+                        {chains.map((chain) => (
+                          <TouchableOpacity
+                            key={chain}
+                            style={styles.chainDropdownItem}
+                            onPress={() => handleChainSelect(chain)}
+                          >
+                            <Text style={styles.chainDropdownText}>{chain}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => removeTask(item.id)}
+                  >
+                    <Icon name="delete" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
           </TouchableOpacity>
         )}
       />
@@ -696,6 +811,7 @@ export default function TaskPanel() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -895,6 +1011,92 @@ const styles = StyleSheet.create({
     width: "25%",
     height: "25%",
     backgroundColor: "transparent",
+  },
+  agentsContainer: {
+    marginTop: 24,
+  },
+  agentsLabel: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    marginBottom: 8,
+  },
+  agentPicker: {
+    color: "black",
+    marginBottom: 16,
+  },
+  agentsList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    color: "black",
+  },
+  agentItem: {
+    backgroundColor: "#2E2E2E",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  selectedAgentItem: {
+    backgroundColor: "#4E4E4E",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  selectedAgentText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  agentText: {
+    color: "black",
+  },
+  alwaysUseAgentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  alwaysUseAgentLabel: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    marginRight: 8,
+  },
+  alwaysUseAgentCheckbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alwaysUseAgentChecked: {
+    backgroundColor: "#FFFFFF",
+  },
+  alwaysUseAgentCheckboxText: {
+    color: "#1E1E1E",
+    fontWeight: "bold",
+  },
+  okButton: {
+    backgroundColor: "#4E4E4E",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  okButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1E1E1E",
+  },
+  errorText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   toggleButton: {
     backgroundColor: "#2E2E2E",
