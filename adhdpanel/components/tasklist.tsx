@@ -180,6 +180,8 @@ export default function TaskPanel() {
   const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
   const [chains, setChains] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [agixtApiUri, setAgixtApiUri] = useState("");
+  const [agixtApiKey, setAgixtApiKey] = useState("");
 
   useEffect(() => {
     const getGithubUsernameAndAuthKey = async () => {
@@ -200,7 +202,24 @@ export default function TaskPanel() {
       }
     };
 
+    const getAgixtApiUriAndKey = async () => {
+      try {
+        const storedAgixtApiUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
+        const storedAgixtApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
+
+        if (storedAgixtApiUri && storedAgixtApiKey) {
+          setAgixtApiUri(storedAgixtApiUri);
+          setAgixtApiKey(storedAgixtApiKey);
+        } else {
+          console.log('AGiXT API URI and/or API key not available');
+        }
+      } catch (error) {
+        console.log('Error getting AGiXT API URI and/or API key from AsyncStorage:', error);
+      }
+    };
+
     getGithubUsernameAndAuthKey();
+    getAgixtApiUriAndKey();
     loadTasks();
     getChains(); 
   }, []);
@@ -236,8 +255,9 @@ export default function TaskPanel() {
         baseUri: 'http://localhost:7437',
         apiKey: '',
       });
-      const chains = await ApiClient.getChains();
-      setChains(chains);
+      const chainsObject = await ApiClient.getChains();
+      const chainsArray = Object.values(chainsObject);
+      setChains(chainsArray);
     } catch (error) {
       console.log("Error getting chains:", error);
     } finally {
@@ -374,6 +394,7 @@ export default function TaskPanel() {
     );
   };
 
+
   function parseTaskDescription(taskDescription) {
     const sections = taskDescription.split('\n\n');
     const subtasks = [];
@@ -482,29 +503,29 @@ export default function TaskPanel() {
   
   return (
     <View style={styles.container}>
-      <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
-        <Modal
-          visible={showAGiXTModal}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowAGiXTModal(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Agent</Text>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setShowAGiXTModal(false)}
-                >
-                  <Icon name="close" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-              <AGiXTComponent />
+    <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
+      <Modal
+        visible={showAGiXTModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAGiXTModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Agent</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowAGiXTModal(false)}
+              >
+                <Icon name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
+            <AGiXTComponent agixtApiUri={agixtApiUri} agixtApiKey={agixtApiKey} />
           </View>
-        </Modal>
-      </View>
+        </View>
+      </Modal>
+    </View>
       <View style={styles.aiGuidanceContainer}>
         <TouchableOpacity style={styles.toggleGuidanceButton} onPress={toggleGuidance}>
           <Icon name={showGuidance ? 'arrow-drop-up' : 'arrow-drop-down'} size={24} color="#FFFFFF" />
@@ -812,6 +833,7 @@ export default function TaskPanel() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1005,11 +1027,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   agixtComponentContainer: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    width: "25%",
-    height: "25%",
+    width: "100%",
+    height: "auto",
     backgroundColor: "transparent",
   },
   agentsContainer: {
