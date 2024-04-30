@@ -156,6 +156,30 @@ const GET_USER_REPOSITORIES = gql`
   }
 `;
 
+function parseTaskDescription(taskDescription) {
+  const sections = taskDescription.split('\n\n');
+  const subtasks = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i].trim();
+    if (section.startsWith(`${i + 1}.`)) {
+      const [subtaskName, ...subtaskDescription] = section.split(': ');
+      const subtaskNameParts = subtaskName.split('. ');
+      const subtaskNumber = parseInt(subtaskNameParts[0], 10);
+      const subtaskTitle = subtaskNameParts[1].trim();
+      const subtaskText = subtaskDescription.join(': ').trim();
+
+      subtasks.push({
+        number: subtaskNumber,
+        title: subtaskTitle,
+        description: subtaskText,
+      });
+    }
+  }
+
+  return subtasks;
+}
+
 export default function TaskPanel() {
   const [taskText, setTaskText] = useState("");
   const [tasks, setTasks] = useState([]);
@@ -182,6 +206,8 @@ export default function TaskPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [agixtApiUri, setAgixtApiUri] = useState("");
   const [agixtApiKey, setAgixtApiKey] = useState("");
+  const [dependencies, setDependencies] = useState([]);
+  const [userInput, setUserInput] = useState("");
 
   useEffect(() => {
     const getGithubUsernameAndAuthKey = async () => {
@@ -285,6 +311,14 @@ export default function TaskPanel() {
     }
   };
 
+  const taskdetails = {
+    taskName: taskName,
+    note: noteText ? true : false,
+    dependencies: dependencies,
+    dueDate: dueDate,
+  };
+
+
   const addSubtask = (taskId, subtaskText) => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === taskId) {
@@ -345,18 +379,18 @@ export default function TaskPanel() {
 
   const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove, onSubtaskAdd }) => {
     const [newSubtaskText, setNewSubtaskText] = useState("");
-
+  
     const handleSubtaskRemove = (subtaskId) => {
       onSubtaskRemove(subtaskId);
     };
-
+  
     const handleSubtaskAdd = () => {
       if (newSubtaskText.trim().length > 0) {
         onSubtaskAdd(task.id, newSubtaskText);
         setNewSubtaskText(""); // Reset the newSubtaskText to an empty string
       }
     };
-
+  
     return (
       <View style={styles.subtaskTreeContainer}>
         {task.subtasks && task.subtasks.length > 0 && (
@@ -393,36 +427,11 @@ export default function TaskPanel() {
       </View>
     );
   };
-
-
-  function parseTaskDescription(taskDescription) {
-    const sections = taskDescription.split('\n\n');
-    const subtasks = [];
-
-    for (let i = 0; i < sections.length; i++) {
-      const section = sections[i].trim();
-      if (section.startsWith(`${i + 1}.`)) {
-        const [subtaskName, ...subtaskDescription] = section.split(': ');
-        const subtaskNameParts = subtaskName.split('. ');
-        const subtaskNumber = parseInt(subtaskNameParts[0], 10);
-        const subtaskTitle = subtaskNameParts[1].trim();
-        const subtaskText = subtaskDescription.join(': ').trim();
-
-        subtasks.push({
-          number: subtaskNumber,
-          title: subtaskTitle,
-          description: subtaskText,
-        });
-      }
-    }
-
-    return subtasks;
-  }
-
+  
   const handleTaskNameChange = (text: string) => {
     setTaskName(text);
   };
-
+  
   const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>((props, ref) => (
     <TouchableOpacity style={styles.input} onPress={props.onClick} ref={ref}>
       <Text style={{ color: "white" }}>
@@ -501,31 +510,36 @@ export default function TaskPanel() {
     setShowGuidance(!showGuidance);
   };
   
+  const getSubtasks = (taskDescription) => {
+    const subtasks = parseTaskDescription(taskDescription);
+    return subtasks;
+  };
+  
   return (
     <View style={styles.container}>
-    <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
-      <Modal
-        visible={showAGiXTModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowAGiXTModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Agent</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowAGiXTModal(false)}
-              >
-                <Icon name="close" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
+      <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
+        <Modal
+          visible={showAGiXTModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowAGiXTModal(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Agent</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowAGiXTModal(false)}
+                >
+                  <Icon name="close" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <AGiXTComponent agixtApiUri={agixtApiUri} agixtApiKey={agixtApiKey} />
             </View>
-            <AGiXTComponent agixtApiUri={agixtApiUri} agixtApiKey={agixtApiKey} />
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
       <View style={styles.aiGuidanceContainer}>
         <TouchableOpacity style={styles.toggleGuidanceButton} onPress={toggleGuidance}>
           <Icon name={showGuidance ? 'arrow-drop-up' : 'arrow-drop-down'} size={24} color="#FFFFFF" />
@@ -630,6 +644,17 @@ export default function TaskPanel() {
                 onSubtaskRemove={handleSubtaskRemove}
                 onSubtaskAdd={addSubtask}
               />
+              <TouchableOpacity
+                style={styles.getSubtasksButton}
+                onPress={() => {
+                  const subtasks = getSubtasks(item.text);
+                  subtasks.forEach((subtask) => {
+                    addSubtask(item.id, subtask.description);
+                  });
+                }}
+              >
+                <Text style={styles.getSubtasksButtonText}>Get Subtasks</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.taskButtonsContainer}>
               {isLoading ? (
@@ -833,7 +858,6 @@ export default function TaskPanel() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -844,6 +868,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 24,
+    padding: 16,
   },
   input: {
     flex: 1,
@@ -864,9 +889,9 @@ const styles = StyleSheet.create({
   taskContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     backgroundColor: "#1E1E1E",
-    padding: 16,
+    padding: 8,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: (task) => {
@@ -898,6 +923,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontStyle: "italic",
     color: "#FFFFFF80",
+    padding: 2,
   },
   dueDateText: {
     marginTop: 8,
@@ -932,10 +958,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#1E1E1E",
-    padding: 24,
+    padding: 75,
     borderRadius: 16,
     width: "90%",
     maxHeight: "80%",
+    marginBottom: 24,
   },
   modalHeader: {
     flexDirection: "row",
@@ -947,6 +974,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#FFFFFF",
+    padding: 12,
   },
   modalBody: {
     maxHeight: "80%",
@@ -1194,5 +1222,16 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginLeft: 16,
     fontSize: 18,
+  },
+  getSubtasksButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  getSubtasksButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
