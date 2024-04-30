@@ -1183,6 +1183,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 8,
     zIndex: 1,
+    maxHeight: 200,
+    overflow: "scroll",
   },
   chainDropdownItem: {
     paddingVertical: 8,
