@@ -14,27 +14,129 @@ const config = {
   ]
 }
 
-export const StyleWrapper = styled.div`
-  color: white;
+const apiCalendar = new ApiCalendar(config);
+
+const CalendarWrapper = styled.div`
+  background-color: #1e1e1e;
+  color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 
   .fc-event,
   .fc-daygrid-event,
   .fc-timegrid-event {
-    color: white !important;
+    background-color: #2d2d2d !important;
+    border-color: #3d3d3d !important;
+    color: #fff !important;
+    padding: 0.5rem !important;
+    border-radius: 4px !important;
   }
 
   .fc-view-harness {
     width: 100%;
-    height: 50vh;
+    height: 70vh;
+  }
+
+  .fc-toolbar-title {
+    font-size: 1.5rem !important;
+    font-weight: bold !important;
+  }
+
+  .fc-button {
+    background-color: #2d2d2d !important;
+    border-color: #3d3d3d !important;
+    color: #fff !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 4px !important;
+    font-size: 1rem !important;
+    transition: background-color 0.3s ease !important;
+
+    &:hover {
+      background-color: #3d3d3d !important;
+    }
   }
 
   overflow: auto;
-  height: 350px;
-`
+  height: auto;
 
-const apiCalendar = new ApiCalendar(config);
+  @media (max-width: 768px) {
+    padding: 1rem;
 
-const four = () => {
+    .fc-view-harness {
+      height: 60vh;
+    }
+
+    .fc-toolbar-title {
+      font-size: 1.25rem !important;
+    }
+
+    .fc-button {
+      font-size: 0.875rem !important;
+      padding: 0.25rem 0.5rem !important;
+    }
+  }
+`;
+
+const ButtonWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  button {
+    background-color: #2d2d2d;
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 0.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: #3d3d3d;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+      padding: 0.5rem 1rem;
+    }
+  }
+`;
+
+const EventsWrapper = styled.div`
+  margin-top: 2rem;
+
+  h4 {
+    color: #fff;
+    margin-bottom: 0.75rem;
+  }
+
+  p {
+    color: #ccc;
+    margin-bottom: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    h4 {
+      font-size: 1.1rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+    }
+  }
+`;
+
+const CalendarApp = () => {
   const [events, setEvents] = useState([]);
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendar, setSelectedCalendar] = useState('');
@@ -45,14 +147,11 @@ const four = () => {
 
   const handleItemClick = (event: SyntheticEvent<any>, name: string): void => {
     if (name === 'sign-in') {
-      // Call the handleAuthClick method to sign in the user
       apiCalendar.handleAuthClick()
         .then((response: any) => {
-          // Handle successful authentication
           console.log("User successfully signed in");
         })
         .catch((error: any) => {
-          // Handle authentication failure
           console.error("Error signing in:", error);
         });
     } else if (name === 'sign-out') {
@@ -77,14 +176,12 @@ const four = () => {
 
   const handleListUpcomingEvents = () => {
     apiCalendar.listUpcomingEvents(10).then(({ result }: any) => {
-      console.log(result.items);
       setEvents(result.items);
     });
   };
 
   const handleListCalendars = () => {
     apiCalendar.listCalendars().then(({ result }: any) => {
-      console.log(result.items);
       setCalendars(result.items);
     });
   };
@@ -103,61 +200,50 @@ const four = () => {
   };
 
   return (
-    <div>
-      <h2 style={{ color: 'white' }}>Calendar-Integration</h2>
-      <div style={{ padding: "0.5em" }}>
-        <button style={{ color: 'blue' }} onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-in")}>sign-in</button>
-        <button style={{ color: 'blue' }} onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-out")}>
-          sign-out
-        </button>
-      </div>
-      <div style={{ padding: "0.5em" }}>
-        <button style={{ color: 'blue' }} onClick={handleCreateEventFromNow}>
-          Create Event from now
-        </button>
-      </div>
-      <div style={{ padding: "0.5em" }}>
-        <button style={{ color: 'blue' }} onClick={handleListUpcomingEvents}>
-          List upcoming events
-        </button>
-        <div>
-          <h4 style={{ color: 'white' }}>Events</h4>
-          {events.length === 0 && <p>No events to show</p>}
-          {events.map((event: any) => (
-            <p key={event.id}>{JSON.stringify(event)}</p>
-          ))}
-        </div>
-      </div>
-      <div style={{ padding: "0.5em" }}>
-        <button style={{ color: 'blue' }} onClick={handleListCalendars}>
-          List calendars
-        </button>
-        <div>
-     <h4 style={{ color: 'white' }}>Calendars</h4>
-      {calendars.length === 0 && <p style={{ color: 'white' }}>No calendars to show</p>}
-    {calendars.map((calendar: any) => (
-      <p key={calendar.id}>{JSON.stringify(calendar)}</p>
+    <CalendarWrapper>
+      <h1>Calendar Integration</h1>
+      <ButtonWrapper>
+        <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-in")}>Sign In</button>
+        <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-out")}>Sign Out</button>
+        <button onClick={handleCreateEventFromNow}>Create Event</button>
+        <button onClick={handleListUpcomingEvents}>List Events</button>
+        <button onClick={handleListCalendars}>List Calendars</button>
+        <button onClick={handleCreateCalendar}>Create Calendar</button>
+      </ButtonWrapper>
+      <FullCalendar
+        plugins={[dayGridPlugin, interactionPlugin]}
+        initialView="dayGridMonth"
+        events={events}
+        dateClick={handleCalendarSelect}
+        eventColor="#2d2d2d"
+        eventBorderColor="#3d3d3d"
+        eventTextColor="#fff"
+        headerToolbar={{
+          left: 'prev,next today addEventButton',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        }}
+        customButtons={{
+          addEventButton: {
+            text: 'Add Event',
+            click: handleCreateEventFromNow
+          }
+        }}
+      />
+      <EventsWrapper>
+        <h4>Events</h4>
+        {events.length === 0 && <p>No events to show</p>}
+        {events.map((event: any) => (
+          <p key={event.id}>{event.summary}</p>
         ))}
-    </div>
-
-      </div>
-      <div style={{ padding: "0.5em" }}>
-        <button style={{ color: 'blue' }} onClick={handleCreateCalendar}>
-          Create calendar
-        </button>
-      </div>
-      <div style={{ padding: "0.5em" }}>
-        <StyleWrapper>
-          <FullCalendar
-            plugins={[dayGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            events={events}
-            dateClick={handleCalendarSelect}
-          />
-        </StyleWrapper>
-      </div>
-    </div>
+        <h4>Calendars</h4>
+        {calendars.length === 0 && <p>No calendars to show</p>}
+        {calendars.map((calendar: any) => (
+          <p key={calendar.id}>{calendar.summary}</p>
+        ))}
+      </EventsWrapper>
+    </CalendarWrapper>
   );
 }
 
-export default four;
+export default CalendarApp;
