@@ -33,7 +33,7 @@ async function getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, 
 
     const prompt = await agixt.getPrompt('Get Task List');
     const userInput = `Task Name: ${taskName}\nTask Description: ${taskDescription}\nTask Details: ${JSON.stringify(taskDetails)}`;
-    const subtaskResponse = await agixt.promptAgent('gpt4free', 'Get Task List', {
+    const subtaskResponse = await agixt.promptAgent('ezlocal', 'Get Task List', {
       user_input: userInput,
     });
 
@@ -51,18 +51,20 @@ function parseTaskDescription(taskDescription) {
 
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i].trim();
-    if (section.startsWith(`${i + 1}.`)) {
-      const [subtaskName, ...subtaskDescription] = section.split(': ');
-      const subtaskNameParts = subtaskName.split('. ');
-      const subtaskNumber = parseInt(subtaskNameParts[0], 10);
-      const subtaskTitle = subtaskNameParts[1].trim();
-      const subtaskText = subtaskDescription.join(': ').trim();
-
+    if (section.startsWith(`**Task ${i + 1}:`)) {
+      const subtaskTitle = section.split(': ')[1].trim();
+      let subtaskDescription = '';
+      let j = i + 1;
+      while (j < sections.length && !sections[j].startsWith(`**Task ${j + 1}:`)) {
+        subtaskDescription += sections[j].trim() + '\n';
+        j++;
+      }
       subtasks.push({
-        number: subtaskNumber,
+        number: i + 1,
         title: subtaskTitle,
-        description: subtaskText,
+        description: subtaskDescription.trim(),
       });
+      i = j - 1;
     }
   }
 
