@@ -24,7 +24,7 @@ const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
 const ALWAYS_USE_AGENT_KEY = "alwaysUseAgent";
 
-async function getSubtasks(taskDescription, agixtApiUri, agixtApiKey) {
+async function getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, agixtApiKey) {
   try {
     const agixt = new AGiXTSDK({
       baseUri: agixtApiUri,
@@ -32,8 +32,8 @@ async function getSubtasks(taskDescription, agixtApiUri, agixtApiKey) {
     });
 
     const prompt = await agixt.getPrompt('Get Task List');
-    const userInput = taskDescription;
-    const subtaskResponse = await agixt.promptAgent('New Test Agent', 'Get Task List', {
+    const userInput = `Task Name: ${taskName}\nTask Description: ${taskDescription}\nTask Details: ${JSON.stringify(taskDetails)}`;
+    const subtaskResponse = await agixt.promptAgent('gpt4free', 'Get Task List', {
       user_input: userInput,
     });
 
@@ -229,6 +229,7 @@ export default function TaskPanel() {
   const [agixtApiKey, setAgixtApiKey] = useState("");
   const [dependencies, setDependencies] = useState([]);
   const [userInput, setUserInput] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
 
   useEffect(() => {
     const getGithubUsernameAndAuthKey = async () => {
@@ -337,6 +338,7 @@ export default function TaskPanel() {
     note: noteText ? true : false,
     dependencies: dependencies,
     dueDate: dueDate,
+    description: taskDescription,
   };
 
 
@@ -481,6 +483,10 @@ export default function TaskPanel() {
       setDueDate(null);
     };
     
+    const handleTaskDescriptionChange = (text: string) => {
+      setTaskDescription(text);
+    };
+
     const saveTaskEdit = () => {
       const updatedTasks = tasks.map((task) => {
         if (task.id === selectedTask?.id) {
@@ -488,6 +494,7 @@ export default function TaskPanel() {
             ...task,
             text: taskName,
             note: noteText,
+            description: taskDescription, // Add the description to the task
             dueDate: dueDate ? dueDate.toISOString() : null,
             priority: priority,
             repo: selectedRepo,
@@ -531,8 +538,8 @@ export default function TaskPanel() {
       setShowGuidance(!showGuidance);
     };
     
-    const handleGetSubtasks = async (taskDescription) => {
-      const subtasks = await getSubtasks(taskDescription, agixtApiUri, agixtApiKey);
+    const handleGetSubtasks = async (taskDescription, taskName, taskDetails) => {
+      const subtasks = await getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, agixtApiKey);
       // Update the task's subtasks here
       console.log(subtasks);
     };
@@ -667,11 +674,11 @@ export default function TaskPanel() {
                   onSubtaskAdd={addSubtask}
                 />
                 <TouchableOpacity
-                  style={styles.getSubtasksButton}
-                  onPress={() => handleGetSubtasks(item.text)}
-                >
-                  <Text style={styles.getSubtasksButtonText}>Get Subtasks</Text>
-                </TouchableOpacity>
+      style={styles.getSubtasksButton}
+      onPress={() => handleGetSubtasks(taskDescription, taskName, taskdetails)}
+    >
+      <Text style={styles.getSubtasksButtonText}>Get Subtasks</Text>
+    </TouchableOpacity>
               </View>
               <View style={styles.taskButtonsContainer}>
                 {isLoading ? (
@@ -723,26 +730,34 @@ export default function TaskPanel() {
           transparent={true}
           onRequestClose={() => setShowEditModal(false)}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Task</Text>
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setShowEditModal(false)}
-                >
-                  <Icon name="close" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.modalBody}>
-                <Text style={{ color: "white" }}>Task Name:</Text>
-                <TextInput
-                  style={styles.input}
-                  value={taskName}
-                  onChangeText={handleTaskNameChange}
-                  placeholder="Enter a task"
-                  placeholderTextColor="#FFFFFF80"
-                />
+                <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit Task</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowEditModal(false)}
+            >
+              <Icon name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalBody}>
+            <Text style={{ color: "white" }}>Task Name:</Text>
+            <TextInput
+              style={styles.input}
+              value={taskName}
+              onChangeText={handleTaskNameChange}
+              placeholder="Enter a task"
+              placeholderTextColor="#FFFFFF80"
+            />
+            <Text style={{ color: "white" }}>Task Description:</Text>
+            <TextInput
+              style={styles.input}
+              value={taskDescription}
+              onChangeText={handleTaskDescriptionChange}
+              placeholder="Enter a task description"
+              placeholderTextColor="#FFFFFF80"
+            />
                 <View>
                   <Text style={{ color: "white" }}>Subtasks:</Text>
                   <FlatList
