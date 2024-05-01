@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, Button, View, Text, ScrollView, Dimensions } from 'react-native';
+import { StyleSheet, TextInput, Button, View, Text, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { ExternalLink } from './ExternalLink';
 import { MonoText } from './StyledText';
 import Colors from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
 const AUTH_KEY_KEY = "authKey";
 const GITHUB_USERNAME_KEY = "githubUsername";
+const IS_LOCKED_KEY = "isLocked";
 
 export default function EditScreenInfo({ path }: { path: string }) {
   const [agixtApiUri, setAgixtApiUri] = useState('');
   const [agixtApiKey, setAgixtApiKey] = useState('');
   const [authKey, setAuthKey] = useState('');
   const [githubUsername, setGithubUsername] = useState('');
+  const [isLocked, setIsLocked] = useState(true);
 
   useEffect(() => {
     const getSettings = async () => {
@@ -23,6 +26,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
         const storedApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
         const storedAuthKey = await AsyncStorage.getItem(AUTH_KEY_KEY);
         const storedGithubUsername = await AsyncStorage.getItem(GITHUB_USERNAME_KEY);
+        const storedIsLocked = await AsyncStorage.getItem(IS_LOCKED_KEY);
         if (storedApiUri) {
           setAgixtApiUri(storedApiUri);
         }
@@ -34,6 +38,9 @@ export default function EditScreenInfo({ path }: { path: string }) {
         }
         if (storedGithubUsername) {
           setGithubUsername(storedGithubUsername);
+        }
+        if (storedIsLocked) {
+          setIsLocked(JSON.parse(storedIsLocked));
         }
       } catch (e) {
         console.error('Error accessing AsyncStorage:', e);
@@ -48,6 +55,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
       await AsyncStorage.setItem(AGIXT_API_KEY_KEY, agixtApiKey);
       await AsyncStorage.setItem(AUTH_KEY_KEY, authKey);
       await AsyncStorage.setItem(GITHUB_USERNAME_KEY, githubUsername);
+      await AsyncStorage.setItem(IS_LOCKED_KEY, JSON.stringify(isLocked));
     } catch (e) {
       console.error('Error saving settings to AsyncStorage:', e);
     }
@@ -102,6 +110,22 @@ export default function EditScreenInfo({ path }: { path: string }) {
               onChangeText={(text) => setGithubUsername(text)}
               placeholderTextColor="#FFFFFF80"
             />
+            <View style={styles.lockContainer}>
+              <Text style={styles.lockText}>Lock/Unlock Task Map</Text>
+              <TouchableOpacity
+                style={[
+                  styles.lockButton,
+                  { backgroundColor: isLocked ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.8)' },
+                ]}
+                onPress={() => setIsLocked(!isLocked)}
+              >
+                <FontAwesome5
+                  name={isLocked ? 'lock' : 'unlock'}
+                  size={24}
+                  color="white"
+                />
+              </TouchableOpacity>
+            </View>
             <Button title="Save Settings" onPress={handleSaveSettings} color="#007AFF" />
           </View>
         </View>
@@ -151,5 +175,21 @@ const styles = StyleSheet.create({
   },
   inputField: {
     backgroundColor: '#2E2E2E',
+  },
+  lockContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 16,
+  },
+  lockText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  lockButton: {
+    padding: 12,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
