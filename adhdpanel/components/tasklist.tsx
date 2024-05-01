@@ -623,109 +623,109 @@ export default function TaskPanel() {
           </TouchableOpacity>
         </View>
         <FlatList
-          data={tasks}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
+      data={tasks}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={[
+            styles.taskContainer,
+            {
+              borderColor:
+                item.dueDate && new Date(item.dueDate) < new Date()
+                  ? "#FF3B30"
+                  : "transparent",
+              backgroundColor:
+                selectedTask && selectedTask.id === item.id
+                  ? "#2E2E2E"
+                  : "#1E1E1E",
+            },
+          ]}
+          onPress={() => editTask(item)}
+        >
+          <View style={styles.taskInfoContainer}>
+            <Text
               style={[
-                styles.taskContainer,
+                styles.taskText,
                 {
-                  borderColor:
+                  fontWeight:
                     item.dueDate && new Date(item.dueDate) < new Date()
-                      ? "#FF3B30"
-                      : "transparent",
-                  backgroundColor:
-                    selectedTask && selectedTask.id === item.id
-                      ? "#2E2E2E"
-                      : "#1E1E1E",
+                      ? "bold"
+                      : "normal",
                 },
               ]}
-              onPress={() => editTask(item)}
             >
-              <View style={styles.taskInfoContainer}>
-                <Text
-                  style={[
-                    styles.taskText,
-                    {
-                      fontWeight:
-                        item.dueDate && new Date(item.dueDate) < new Date()
-                          ? "bold"
-                          : "normal",
-                    },
-                  ]}
-                >
-                  {item.text}
-                </Text>
-                {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
-                {item.dueDate && (
-                  <Text style={styles.dueDateText}>
-                    Due Date: {new Date(item.dueDate).toLocaleString()}
-                  </Text>
-                )}
-                {item.priority && (
-                  <Text style={styles.priorityText}>Priority: {item.priority}</Text>
-                )}
-                {item.repo && (
-                  <Text style={styles.repoText}>Repository: {item.repo}</Text>
-                )}
-                <SubtaskTree
-                  task={item}
-                  selectedSubtask={selectedSubtask}
-                  onSubtaskSelect={handleSubtaskSelect}
-                  onSubtaskRemove={handleSubtaskRemove}
-                  onSubtaskAdd={addSubtask}
-                />
+              {item.text}
+            </Text>
+            {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
+            {item.dueDate && (
+              <Text style={styles.dueDateText}>
+                Due Date: {new Date(item.dueDate).toLocaleString()}
+              </Text>
+            )}
+            {item.priority && (
+              <Text style={styles.priorityText}>Priority: {item.priority}</Text>
+            )}
+            {item.repo && (
+              <Text style={styles.repoText}>Repository: {item.repo}</Text>
+            )}
+            <SubtaskTree
+              task={item}
+              selectedSubtask={selectedSubtask}
+              onSubtaskSelect={handleSubtaskSelect}
+              onSubtaskRemove={handleSubtaskRemove}
+              onSubtaskAdd={addSubtask}
+            />
+          </View>
+          <View style={styles.taskButtonsContainer}>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.loadingText}>Loading chains...</Text>
+              </View>
+            ) : (
+              <>
                 <TouchableOpacity
-      style={styles.getSubtasksButton}
-      onPress={() => handleGetSubtasks(taskDescription, taskName, taskdetails)}
-    >
-      <Text style={styles.getSubtasksButtonText}>Get Subtasks</Text>
-    </TouchableOpacity>
-              </View>
-              <View style={styles.taskButtonsContainer}>
-                {isLoading ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                    <Text style={styles.loadingText}>Loading chains...</Text>
-                  </View>
-                ) : (
-                  <>
-                    <TouchableOpacity
-                      style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
-                      onPress={() => {
-                        setShowChainDropdown(!showChainDropdown);
-                      }}
-                    >
-                      <Icon name="play-arrow" size={24} color="#FFFFFF" />
-                      <Text style={styles.runChainButtonText}>
-                        {selectedChain ? selectedChain : 'Run Chain'}
-                      </Text>
-                      {showChainDropdown && (
-                        <View style={styles.chainDropdownContainer}>
-                          {chains.map((chain) => (
-                            <TouchableOpacity
-                              key={chain}
-                              style={styles.chainDropdownItem}
-                              onPress={() => handleChainSelect(chain)}
-                            >
-                              <Text style={styles.chainDropdownText}>{chain}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => removeTask(item.id)}
-                    >
-                      <Icon name="delete" size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
-        />
+                  style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
+                  onPress={() => {
+                    setShowChainDropdown(!showChainDropdown);
+                  }}
+                >
+                  <Icon name="play-arrow" size={24} color="#FFFFFF" />
+                  <Text style={styles.runChainButtonText}>
+                    {selectedChain ? selectedChain : 'Run Chain'}
+                  </Text>
+                  {showChainDropdown && (
+                    <View style={styles.chainDropdownContainer}>
+                      {chains.map((chain) => (
+                        <TouchableOpacity
+                          key={chain}
+                          style={styles.chainDropdownItem}
+                          onPress={() => handleChainSelect(chain)}
+                        >
+                          <Text style={styles.chainDropdownText}>{chain}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
+                  onPress={() => handleGetSubtasks(taskDescription, taskName, taskdetails)}
+                >
+                  <Text style={styles.runChainButtonText}>Get Subtasks</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => removeTask(item.id)}
+                >
+                  <Icon name="delete" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      )}
+    />
         <Modal
           visible={showEditModal}
           animationType="slide"
@@ -1231,7 +1231,7 @@ const styles = StyleSheet.create({
   },
   aiGuidanceContainer: {
     position: "absolute",
-    top: 24,
+    bottom: 24,
     right: 24,
     zIndex: 1,
   },
