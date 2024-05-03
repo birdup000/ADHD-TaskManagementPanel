@@ -9,10 +9,9 @@ jobs:
     passwordSecret: access-token
     force: false
     condition: ALWAYS
-  paramSpecs:
-  - !CommitParam
-    name: commit
-    allowEmpty: false
+  triggers:
+  - !BranchUpdateTrigger
+    projects: ADHD-Panel
   retryCondition: never
   maxRetries: 3
   retryDelay: 30
