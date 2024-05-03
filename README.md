@@ -1,6 +1,6 @@
 # ADHD Task (Mirror)
 
-The ADHD Task Panel is a React Native application designed to help individuals with Attention Deficit Hyperactivity Disorder (ADHD) manage their tasks and stay organized. ADHD can make it challenging to maintain focus, prioritize tasks, and keep track of deadlines. This app aims to address these challenges by providing a user-friendly and ADHD-friendly interface to help users stay on top of their responsibilities.
+The ADHD Task is a React Native application designed to help individuals with Attention Deficit Hyperactivity Disorder (ADHD) manage their tasks and stay organized. ADHD can make it challenging to maintain focus, prioritize tasks, and keep track of deadlines. This app aims to address these challenges by providing a user-friendly and ADHD-friendly interface to help users stay on top of their responsibilities.
 
 ## Mission
 
