@@ -1,0 +1,15 @@
+version: 33
+jobs:
+- name: Push to Github
+  steps:
+  - !PushRepository
+    name: push
+    remoteUrl: https://github.com/birdup000/ADHD-TaskManagementPanel
+    userName: birdup000
+    passwordSecret: access-token
+    force: false
+    condition: ALWAYS
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 3600
