@@ -8,7 +8,7 @@ jobs:
     userName: birdup000
     passwordSecret: access-token
     force: false
-    condition: ALWAYS
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   triggers:
   - !BranchUpdateTrigger
     projects: ADHD-Panel
