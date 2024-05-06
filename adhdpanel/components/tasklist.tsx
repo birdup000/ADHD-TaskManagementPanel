@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
+  ScrollView,
+  Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -15,6 +18,171 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo/client';
 import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev";
 import { Picker } from '@react-native-picker/picker';
+import AGiXTSDK from "agixt";
+
+const AGIXT_API_URI_KEY = "agixtapi";
+const AGIXT_API_KEY_KEY = "agixtkey";
+const ALWAYS_USE_AGENT_KEY = "alwaysUseAgent";
+
+async function getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, agixtApiKey) {
+  try {
+    const agixt = new AGiXTSDK({
+      baseUri: agixtApiUri,
+      apiKey: agixtApiKey,
+    });
+
+    const prompt = await agixt.getPrompt('Get Task List');
+    const userInput = `Task Name: ${taskName}\nTask Description: ${taskDescription}\nTask Details: ${JSON.stringify(taskDetails)}`;
+    const subtaskResponse = await agixt.promptAgent('ezlocal', 'Get Task List', {
+      user_input: userInput,
+    });
+
+    const subtasks = parseTaskDescription(subtaskResponse);
+    return subtasks;
+  } catch (error) {
+    console.error("Error getting subtasks:", error);
+    return [];
+  }
+}
+
+function parseTaskDescription(taskDescription) {
+  const sections = taskDescription.split('\n\n');
+  const subtasks = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i].trim();
+    if (section.startsWith(`**Task ${i + 1}:`)) {
+      const subtaskTitle = section.split(': ')[1].trim();
+      let subtaskDescription = '';
+      let j = i + 1;
+      while (j < sections.length && !sections[j].startsWith(`**Task ${j + 1}:`)) {
+        subtaskDescription += sections[j].trim() + '\n';
+        j++;
+      }
+      subtasks.push({
+        number: i + 1,
+        title: subtaskTitle,
+        description: subtaskDescription.trim(),
+      });
+      i = j - 1;
+    }
+  }
+
+  return subtasks;
+}
+
+const AGiXTComponent = ({ agixtApiUri, agixtApiKey }) => {
+  const [agents, setAgents] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState("");
+  const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const agixt = new AGiXTSDK({
+          baseUri: agixtApiUri,
+          apiKey: agixtApiKey,
+        });
+
+        const agentsData = await agixt.getAgents();
+        const agentsList = Object.values(agentsData);
+        setAgents(agentsList);
+        setSelectedAgent(agentsList[0]?.name || "");
+
+        // Check if "alwaysUseAgent" is stored in AsyncStorage
+        const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
+        if (storedAlwaysUseAgent !== null) {
+          setAlwaysUseAgent(JSON.parse(storedAlwaysUseAgent));
+        }
+
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+        setError("Error fetching agents");
+      }
+    };
+
+    fetchAgents();
+  }, [agixtApiUri, agixtApiKey]);
+
+  const { width, height } = Dimensions.get("window");
+
+  const handleAlwaysUseAgentChange = async (value) => {
+    setAlwaysUseAgent(value);
+    await AsyncStorage.setItem(ALWAYS_USE_AGENT_KEY, JSON.stringify(value));
+  };
+
+  const handleOk = () => {
+    // Perform the task that requires the selected agent
+    console.log("Selected agent:", selectedAgent);
+    console.log("Always use agent:", alwaysUseAgent);
+  };
+
+  return (
+    <View style={styles.agixtComponentContainer}>
+      {agents.length > 0 && (
+        <View style={styles.agentsContainer}>
+          <Text style={styles.agentsLabel}>Select an Agent:</Text>
+          <Picker
+            selectedValue={selectedAgent}
+            onValueChange={(value) => setSelectedAgent(value)}
+            style={styles.agentPicker}
+          >
+            <Picker.Item label="Select an agent" value="" />
+            {agents.map((agent) => (
+              <Picker.Item key={agent.name} label={agent.name} value={agent.name} />
+            ))}
+          </Picker>
+          <View style={styles.agentsList}>
+            {agents.map((agent) => (
+              <View
+                key={agent.name}
+                style={[
+                  styles.agentItem,
+                  agent.name === selectedAgent
+                    ? [styles.selectedAgentItem, styles.selectedAgentText]
+                    : null,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.agentText,
+                    agent.name === selectedAgent
+                      ? styles.selectedAgentText
+                      : null,
+                  ]}
+                >
+                  {agent.name}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.alwaysUseAgentContainer}>
+            <Text style={styles.alwaysUseAgentLabel}>Always use this agent:</Text>
+            <TouchableOpacity
+              style={[
+                styles.alwaysUseAgentCheckbox,
+                alwaysUseAgent ? styles.alwaysUseAgentChecked : null,
+              ]}
+              onPress={() => handleAlwaysUseAgentChange(!alwaysUseAgent)}
+            >
+              {alwaysUseAgent && <Text style={styles.alwaysUseAgentCheckboxText}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.okButton} onPress={handleOk}>
+            <Text style={styles.okButtonText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
 
 if (__DEV__) {
   loadDevMessages();
@@ -35,7 +203,6 @@ const GET_USER_REPOSITORIES = gql`
   }
 `;
 
-
 export default function TaskPanel() {
   const [taskText, setTaskText] = useState("");
   const [tasks, setTasks] = useState([]);
@@ -51,7 +218,20 @@ export default function TaskPanel() {
   const [selectedSubtask, setSelectedSubtask] = useState(null);
   const [editedSubtaskText, setEditedSubtaskText] = useState("");
   const [newSubtaskText, setNewSubtaskText] = useState("");
-
+  const [showAGiXTModal, setShowAGiXTModal] = useState(false);
+  const [selectedChain, setSelectedChain] = useState(null);
+  const [showChainDropdown, setShowChainDropdown] = useState(false);
+  const [showDependenciesModal, setShowDependenciesModal] = useState(false);
+  const [showGuidance, setShowGuidance] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState("");
+  const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
+  const [chains, setChains] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [agixtApiUri, setAgixtApiUri] = useState("");
+  const [agixtApiKey, setAgixtApiKey] = useState("");
+  const [dependencies, setDependencies] = useState([]);
+  const [userInput, setUserInput] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
 
   useEffect(() => {
     const getGithubUsernameAndAuthKey = async () => {
@@ -63,6 +243,7 @@ export default function TaskPanel() {
           setGithubUsername(storedGithubUsername);
           setAuthKey(storedAuthKey);
           loadTasks();
+          getChains();
         } else {
           console.log('GitHub username and/or API key not available');
         }
@@ -71,8 +252,26 @@ export default function TaskPanel() {
       }
     };
 
+    const getAgixtApiUriAndKey = async () => {
+      try {
+        const storedAgixtApiUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
+        const storedAgixtApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
+
+        if (storedAgixtApiUri && storedAgixtApiKey) {
+          setAgixtApiUri(storedAgixtApiUri);
+          setAgixtApiKey(storedAgixtApiKey);
+        } else {
+          console.log('AGiXT API URI and/or API key not available');
+        }
+      } catch (error) {
+        console.log('Error getting AGiXT API URI and/or API key from AsyncStorage:', error);
+      }
+    };
+
     getGithubUsernameAndAuthKey();
+    getAgixtApiUriAndKey();
     loadTasks();
+    getChains(); 
   }, []);
 
   const { loading, error, data } = useQuery(GET_USER_REPOSITORIES, {
@@ -99,6 +298,23 @@ export default function TaskPanel() {
     }
   };
 
+  const getChains = async () => {
+    try {
+      setIsLoading(true);
+      const ApiClient = new AGiXTSDK({
+        baseUri: 'http://localhost:7437',
+        apiKey: '',
+      });
+      const chainsObject = await ApiClient.getChains();
+      const chainsArray = Object.values(chainsObject);
+      setChains(chainsArray);
+    } catch (error) {
+      console.log("Error getting chains:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addTask = () => {
     if (taskText.trim().length > 0) {
       const newTask = {
@@ -118,7 +334,15 @@ export default function TaskPanel() {
       setSubtaskText("");
     }
   };
-  
+
+  const taskdetails = {
+    taskName: taskName,
+    note: noteText ? true : false,
+    dependencies: dependencies,
+    dueDate: dueDate,
+    description: taskDescription,
+  };
+
 
   const addSubtask = (taskId, subtaskText) => {
     const updatedTasks = tasks.map((task) => {
@@ -135,8 +359,6 @@ export default function TaskPanel() {
     saveTasks(updatedTasks);
     setSubtaskText("");
   };
-  
-  
 
   const removeSubtask = (tasks, subtaskId) => {
     return tasks.map((task) => {
@@ -150,8 +372,6 @@ export default function TaskPanel() {
       return task;
     });
   };
-  
-
 
   const editSubtask = (taskId, subtaskId, subtaskText) => {
     const updatedTasks = tasks.map((task) => {
@@ -171,8 +391,7 @@ export default function TaskPanel() {
     setSelectedSubtask(updatedTasks.find((task) => task.id === taskId).subtasks.find((subtask) => subtask.id === subtaskId));
     setEditedSubtaskText(subtaskText);
   };
-  
-  
+
   const handleSubtaskSelect = (subtask) => {
     setSelectedSubtask(subtask);
   };
@@ -182,8 +401,6 @@ export default function TaskPanel() {
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
   };
-  
-
 
   const SubtaskTree = ({ task, selectedSubtask, onSubtaskSelect, onSubtaskRemove, onSubtaskAdd }) => {
     const [newSubtaskText, setNewSubtaskText] = useState("");
@@ -191,14 +408,14 @@ export default function TaskPanel() {
     const handleSubtaskRemove = (subtaskId) => {
       onSubtaskRemove(subtaskId);
     };
-  
+
     const handleSubtaskAdd = () => {
       if (newSubtaskText.trim().length > 0) {
         onSubtaskAdd(task.id, newSubtaskText);
         setNewSubtaskText(""); // Reset the newSubtaskText to an empty string
       }
     };
-  
+    
     return (
       <View style={styles.subtaskTreeContainer}>
         {task.subtasks && task.subtasks.length > 0 && (
@@ -234,118 +451,178 @@ export default function TaskPanel() {
         />
       </View>
     );
-  };
-  
+    };
+    
+    const handleTaskNameChange = (text: string) => {
+      setTaskName(text);
+    };
+    
+    const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>((props, ref) => (
+      <TouchableOpacity style={styles.input} onPress={props.onClick} ref={ref}>
+        <Text style={{ color: "white" }}>
+          {props.value ? props.value : "No Due Date Set"}
+        </Text>
+      </TouchableOpacity>
+    ));
+    
+    const removeTask = (id: number) => {
+      const updatedTasks = tasks.filter((task) => task.id !== id);
+      setTasks(updatedTasks);
+      saveTasks(updatedTasks);
+    };
+    
+    const editTask = (task: any) => {
+      setSelectedTask(task);
+      setNoteText(task.note || "");
+      setDueDate(task.dueDate ? new Date(task.dueDate) : null);
+      setPriority(task.priority || "");
+      setShowEditModal(true);
+      setTaskName(task.text);
+      setSelectedRepo(task.repo);
+    };
+    
+    const removeDueDate = () => {
+      setDueDate(null);
+    };
+    
+    const handleTaskDescriptionChange = (text: string) => {
+      setTaskDescription(text);
+    };
 
-  
-
-  const handleTaskNameChange = (text: string) => {
-    setTaskName(text);
-  };
-
-  const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>((props, ref) => (
-    <TouchableOpacity style={styles.input} onPress={props.onClick} ref={ref}>
-      <Text style={{ color: "white" }}>
-        {props.value ? props.value : "No Due Date Set"}
-      </Text>
-    </TouchableOpacity>
-  ));
-
-  const removeTask = (id: number) => {
-    const updatedTasks = tasks.filter((task) => task.id !== id);
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
-  };
-
-  const editTask = (task: any) => {
-    setSelectedTask(task);
-    setNoteText(task.note || "");
-    setDueDate(task.dueDate ? new Date(task.dueDate) : null);
-    setPriority(task.priority || "");
-    setShowEditModal(true);
-    setTaskName(task.text);
-    setSelectedRepo(task.repo);
-  };
-
-  const removeDueDate = () => {
-    setDueDate(null);
-  };
-
-
-  const saveTaskEdit = () => {
-    const updatedTasks = tasks.map((task) => {
-      if (task.id === selectedTask?.id) {
-        return {
-          ...task,
-          text: taskName,
-          note: noteText,
-          dueDate: dueDate ? dueDate.toISOString() : null,
-          priority: priority,
-          repo: selectedRepo,
-          subtasks: task.subtasks.map((subtask) => {
-            if (subtask.id === selectedSubtask?.id) {
-              return { ...subtask, text: editedSubtaskText };
-            }
-            return subtask;
-          }),
-        };
+    const saveTaskEdit = () => {
+      const updatedTasks = tasks.map((task) => {
+        if (task.id === selectedTask?.id) {
+          return {
+            ...task,
+            text: taskName,
+            note: noteText,
+            description: taskDescription, // Add the description to the task
+            dueDate: dueDate ? dueDate.toISOString() : null,
+            priority: priority,
+            repo: selectedRepo,
+            subtasks: task.subtasks.map((subtask) => {
+              if (subtask.id === selectedSubtask?.id) {
+                return { ...subtask, text: editedSubtaskText };
+              }
+              return subtask;
+            }),
+          };
+        }
+        return task;
+      });
+      setTasks(updatedTasks);
+      saveTasks(updatedTasks);
+      setShowEditModal(false);
+      setSelectedTask(null);
+      setSelectedSubtask(null);
+      setEditedSubtaskText("");
+    };
+    
+    const handleChainSelect = (chain) => {
+      setSelectedChain(chain);
+      if (alwaysUseAgent && selectedAgent) {
+        // Run the selected chain using the selected agent
+        console.log('Running chain:', chain, 'with agent:', selectedAgent);
+      } else {
+        setShowAGiXTModal(true);
       }
-      return task;
-    });
-    setTasks(updatedTasks);
-    saveTasks(updatedTasks);
-    setShowEditModal(false);
-    setSelectedTask(null);
-    setSelectedSubtask(null);
-    setEditedSubtaskText("");
-  };
-  
-  
-  
-  
-
-  return (
-    <View style={styles.container}>
-      {!githubUsername || !data ? (
-        <View style={styles.repoPickerContainer}>
-          <Text style={styles.repoPickerLabel}>GitHub username and API key not available. Please set them by accessing Home and top right settings icon to be able to use the integration.</Text>
-        </View>
-      ) : (
-        <View style={styles.repoPickerContainer}>
-          <Text style={styles.repoPickerLabel}>Select a Repository:</Text>
-          <Picker
-            style={styles.repoPicker}
-            selectedValue={selectedRepo}
-            onValueChange={(value) => setSelectedRepo(value)}
+    };
+    
+    const handleDependencySelect = (taskId) => {
+      if (dependencies.includes(taskId)) {
+        setDependencies(dependencies.filter((id) => id !== taskId));
+      } else {
+        setDependencies([...dependencies, taskId]);
+      }
+    };
+    
+    const toggleGuidance = () => {
+      setShowGuidance(!showGuidance);
+    };
+    
+    const handleGetSubtasks = async (taskDescription, taskName, taskDetails) => {
+      const subtasks = await getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, agixtApiKey);
+      // Update the task's subtasks here
+      console.log(subtasks);
+    };
+    
+    return (
+      <View style={styles.container}>
+        <View style={[styles.agixtComponentContainer, { position: 'absolute', zIndex: 1 }]}>
+          <Modal
+            visible={showAGiXTModal}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowAGiXTModal(false)}
           >
-            <Picker.Item label="Select a repository" value={null} />
-            {data.user.repositories.nodes.map((repo: any) => (
-              <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
-            ))}
-          </Picker>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Agent</Text>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setShowAGiXTModal(false)}
+                  >
+                    <Icon name="close" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+                <AGiXTComponent agixtApiUri={agixtApiUri} agixtApiKey={agixtApiKey} />
+              </View>
+            </View>
+          </Modal>
         </View>
-      )}
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={taskText}
-          onChangeText={setTaskText}
-          placeholder="Enter a task"
-          placeholderTextColor="#FFFFFF80"
-        />
-        <TextInput
-          style={styles.input}
-          value={priority}
-          onChangeText={setPriority}
-          placeholder="Priority (e.g., High, Medium, Low)"
-          placeholderTextColor="#FFFFFF80"
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addTask}>
-          <Icon name="add" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-      <FlatList
+        <View style={styles.aiGuidanceContainer}>
+          <TouchableOpacity style={styles.toggleGuidanceButton} onPress={toggleGuidance}>
+            <Icon name={showGuidance ? 'arrow-drop-up' : 'arrow-drop-down'} size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          {showGuidance && (
+            <View style={styles.guidanceContainer}>
+              <Text style={styles.guidanceText}>
+                AI Task Guidance
+              </Text>
+            </View>
+          )}
+        </View>
+        {!githubUsername || !data ? (
+          <View style={styles.repoPickerContainer}>
+            <Text style={styles.repoPickerLabel}>GitHub username and API key not available. Please set them by accessing Home and top right settings icon to be able to use the integration.</Text>
+          </View>
+        ) : (
+          <View style={styles.repoPickerContainer}>
+            <Text style={styles.repoPickerLabel}>Select a Repository:</Text>
+            <Picker
+              style={styles.repoPicker}
+              selectedValue={selectedRepo}
+              onValueChange={(value) => setSelectedRepo(value)}
+            >
+              <Picker.Item label="Select a repository" value={null} />
+              {data.user.repositories.nodes.map((repo: any) => (
+                <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
+              ))}
+            </Picker>
+          </View>
+        )}
+    
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={taskText}
+            onChangeText={setTaskText}
+            placeholder="Enter a task"
+            placeholderTextColor="#FFFFFF80"
+          />
+          <TextInput
+            style={styles.input}
+            value={priority}
+            onChangeText={setPriority}
+            placeholder="Priority (e.g., High, Medium, Low)"
+            placeholderTextColor="#FFFFFF80"
+          />
+          <TouchableOpacity style={styles.addButton} onPress={addTask}>
+            <Icon name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        <FlatList
       data={tasks}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
@@ -365,183 +642,256 @@ export default function TaskPanel() {
           ]}
           onPress={() => editTask(item)}
         >
-            <View style={styles.taskInfoContainer}>
-              <Text
-                style={[
-                  styles.taskText,
-                  {
-                    fontWeight:
-                      item.dueDate && new Date(item.dueDate) < new Date()
-                        ? "bold"
-                        : "normal",
-                  },
-                ]}
-              >
-                {item.text}
+          <View style={styles.taskInfoContainer}>
+            <Text
+              style={[
+                styles.taskText,
+                {
+                  fontWeight:
+                    item.dueDate && new Date(item.dueDate) < new Date()
+                      ? "bold"
+                      : "normal",
+                },
+              ]}
+            >
+              {item.text}
+            </Text>
+            {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
+            {item.dueDate && (
+              <Text style={styles.dueDateText}>
+                Due Date: {new Date(item.dueDate).toLocaleString()}
               </Text>
-              {item.note && <Text style={styles.noteText}>Note: {item.note}</Text>}
-              {item.dueDate && (
-                <Text style={styles.dueDateText}>
-                  Due Date: {new Date(item.dueDate).toLocaleString()}
-                </Text>
-              )}
-              {item.priority && (
-                <Text style={styles.priorityText}>Priority: {item.priority}</Text>
-              )}
-              {item.repo && (
-                <Text style={styles.repoText}>Repository: {item.repo}</Text>
-              )}
-              <SubtaskTree
+            )}
+            {item.priority && (
+              <Text style={styles.priorityText}>Priority: {item.priority}</Text>
+            )}
+            {item.repo && (
+              <Text style={styles.repoText}>Repository: {item.repo}</Text>
+            )}
+            <SubtaskTree
               task={item}
               selectedSubtask={selectedSubtask}
               onSubtaskSelect={handleSubtaskSelect}
               onSubtaskRemove={handleSubtaskRemove}
               onSubtaskAdd={addSubtask}
             />
-            </View>
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => removeTask(item.id)}
-            >
-              <Icon name="delete" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        )}
-      />
-      <Modal
-  visible={showEditModal}
-  animationType="slide"
-  transparent={true}
-  onRequestClose={() => setShowEditModal(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Edit Task</Text>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setShowEditModal(false)}
-        >
-          <Icon name="close" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-      <Text style={{ color: "white" }}>Task Name:</Text>
-      <TextInput
-        style={styles.input}
-        value={taskName}
-        onChangeText={handleTaskNameChange}
-        placeholder="Enter a task"
-        placeholderTextColor="#FFFFFF80"
-      />
-      <View>
-        <Text style={{ color: "white" }}>Subtasks:</Text>
-        <FlatList
-  data={selectedTask?.subtasks || []}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={({ item }) => (
-    <View style={styles.subtaskContainer}>
-      <TextInput
-        style={[
-          styles.subtaskText,
-          { color: '#FFFFFF' }, // Set the color to white
-          item.id === selectedSubtask?.id
-            ? styles.selectedSubtask
-            : null,
-        ]}
-        value={item.id === selectedSubtask?.id ? editedSubtaskText : item.text}
-        onChangeText={
-          item.id === selectedSubtask?.id
-            ? setEditedSubtaskText
-            : (text) => {
-                setNewSubtaskText(text);
-                setSelectedSubtask(item);
-              }
-        }
-        placeholder={item.text}
-        placeholderTextColor="#FFFFFF80"
-        onSubmitEditing={() =>
-          item.id === selectedSubtask?.id
-            ? editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
-            : addSubtask(selectedTask.id, newSubtaskText)
-        }
-      />
-      {item.id === selectedSubtask?.id && (
-        <TouchableOpacity
-          style={styles.saveSubtaskButton}
-          onPress={() =>
-            editSubtask(selectedTask.id, selectedSubtask.id, editedSubtaskText)
-          }
-        >
-          <Icon name="check" size={20} color="#FFFFFF" />
+          </View>
+          <View style={styles.taskButtonsContainer}>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.loadingText}>Loading chains...</Text>
+              </View>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
+                  onPress={() => {
+                    setShowChainDropdown(!showChainDropdown);
+                  }}
+                >
+                  <Icon name="play-arrow" size={24} color="#FFFFFF" />
+                  <Text style={styles.runChainButtonText}>
+                    {selectedChain ? selectedChain : 'Run Chain'}
+                  </Text>
+                  {showChainDropdown && (
+                    <View style={styles.chainDropdownContainer}>
+                      {chains.map((chain) => (
+                        <TouchableOpacity
+                          key={chain}
+                          style={styles.chainDropdownItem}
+                          onPress={() => handleChainSelect(chain)}
+                        >
+                          <Text style={styles.chainDropdownText}>{chain}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
+                  onPress={() => handleGetSubtasks(taskDescription, taskName, taskdetails)}
+                >
+                  <Text style={styles.runChainButtonText}>Get Subtasks</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => removeTask(item.id)}
+                >
+                  <Icon name="delete" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </TouchableOpacity>
       )}
-    </View>
-  )}
-/>
-        <TextInput
-          style={styles.input}
-          value={newSubtaskText}
-          onChangeText={setNewSubtaskText}
-          placeholder="Add a new subtask"
-          placeholderTextColor="#FFFFFF80"
-          onSubmitEditing={() => addSubtask(selectedTask.id, newSubtaskText)}
-        />
-      </View>
-      <View>
-        <Text style={{ color: "white" }}>Note:</Text>
-        <TextInput
-          style={styles.input}
-          value={noteText}
-          onChangeText={setNoteText}
-          placeholder="Enter a note"
-          placeholderTextColor="#FFFFFF80"
-        />
-        <Text style={{ color: "white" }}>Due Date:</Text>
-        <DatePicker
-          selected={dueDate}
-          onChange={(date: Date) => setDueDate(date)}
-          showTimeSelect
-          dateFormat="MMMM d, yyyy h:mm aa"
-          placeholderText="No Due Date Set"
-          customInput={<ExampleCustomInput />}
-        />
-        <TouchableOpacity
-          style={styles.removeDueDateButton}
-          onPress={removeDueDate}
+    />
+        <Modal
+          visible={showEditModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowEditModal(false)}
         >
-          <Text style={styles.buttonText}>Remove Due Date</Text>
-        </TouchableOpacity>
-        <Text style={{ color: "white" }}>Priority:</Text>
-        <TextInput
-          style={styles.input}
-          value={priority}
-          onChangeText={setPriority}
-          placeholder="Priority (e.g., High, Medium, Low)"
-          placeholderTextColor="#FFFFFF80"
-        />
-        <Text style={{ color: "white" }}>Repository:</Text>
-        <Picker
-          style={styles.repoPicker}
-          selectedValue={selectedRepo}
-          onValueChange={(value) => setSelectedRepo(value)}
-        >
-          <Picker.Item label="Select a repository" value={null} />
-          {data &&
-            data.user &&
-            data.user.repositories.nodes.map((repo: any) => (
-              <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
-            ))}
-        </Picker>
-        <TouchableOpacity style={styles.modalButton} onPress={saveTaskEdit}>
-          <Text style={styles.buttonText}>Save</Text>
-        </TouchableOpacity>
+                <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit Task</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowEditModal(false)}
+            >
+              <Icon name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalBody}>
+            <Text style={{ color: "white" }}>Task Name:</Text>
+            <TextInput
+              style={styles.input}
+              value={taskName}
+              onChangeText={handleTaskNameChange}
+              placeholder="Enter a task"
+              placeholderTextColor="#FFFFFF80"
+            />
+            <Text style={{ color: "white" }}>Task Description:</Text>
+            <TextInput
+              style={styles.input}
+              value={taskDescription}
+              onChangeText={handleTaskDescriptionChange}
+              placeholder="Enter a task description"
+              placeholderTextColor="#FFFFFF80"
+            />
+                <View>
+                  <Text style={{ color: "white" }}>Subtasks:</Text>
+                  <FlatList
+                    data={selectedTask?.subtasks || []}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                      <View style={styles.subtaskContainer}>
+                        <TextInput
+                          style={[
+                            styles.subtaskText,
+                            { color: '#FFFFFF' },
+                            item.id === selectedSubtask?.id
+                              ? styles.selectedSubtask
+                              : null,
+                          ]}
+                          value={
+                            item.id === selectedSubtask?.id
+                              ? editedSubtaskText
+                              : item.text
+                          }
+                          onChangeText={
+                            item.id === selectedSubtask?.id
+                              ? setEditedSubtaskText
+                              : (text) => {
+                                  setNewSubtaskText(text);
+                                  setSelectedSubtask(item);
+                                }
+                          }
+                          placeholder={item.text}
+                          placeholderTextColor="#FFFFFF80"
+                          onSubmitEditing={() =>
+                            item.id === selectedSubtask?.id
+                              ? editSubtask(
+                                  selectedTask.id,
+                                  selectedSubtask.id,
+                                  editedSubtaskText
+                                )
+                              : addSubtask(selectedTask.id, newSubtaskText)
+                          }
+                        />
+                        {item.id === selectedSubtask?.id && (
+                          <TouchableOpacity
+                            style={styles.saveSubtaskButton}
+                            onPress={() =>
+                              editSubtask(
+                                selectedTask.id,
+                                selectedSubtask.id,
+                                editedSubtaskText
+                              )
+                            }
+                          >
+                            <Icon name="check" size={20} color="#FFFFFF" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={newSubtaskText}
+                    onChangeText={setNewSubtaskText}
+                    placeholder="Add a new subtask"
+                    placeholderTextColor="#FFFFFF80"
+                    onSubmitEditing={() =>
+                      addSubtask(selectedTask.id, newSubtaskText)
+                    }
+                  />
+                </View>
+                <View>
+                  <Text style={{ color: "white" }}>Note:</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={noteText}
+                    onChangeText={setNoteText}
+                    placeholder="Enter a note"
+                    placeholderTextColor="#FFFFFF80"
+                  />
+                  <Text style={{ color: "white" }}>Due Date:</Text>
+                  <DatePicker
+                    selected={dueDate}
+                    onChange={(date: Date) => setDueDate(date)}
+                    showTimeSelect
+                    dateFormat="MMMM d, yyyy h:mm aa"
+                    placeholderText="No Due Date Set"
+                    customInput={<ExampleCustomInput />}
+                  />
+                  <TouchableOpacity
+                    style={styles.removeDueDateButton}
+                    onPress={removeDueDate}
+                  >
+                    <Text style={styles.buttonText}>Remove Due Date</Text>
+                  </TouchableOpacity>
+                  <Text style={{ color: "white" }}>Priority:</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={priority}
+                    onChangeText={setPriority}
+                    placeholder="Priority (e.g., High, Medium, Low)"
+                    placeholderTextColor="#FFFFFF80"
+                  />
+                  <Text style={{ color: "white" }}>Repository:</Text>
+                  <Picker
+                    style={styles.repoPicker}
+                    selectedValue={selectedRepo}
+                    onValueChange={(value) => setSelectedRepo(value)}
+                  >
+                    <Picker.Item label="Select a repository" value={null} />
+                    {data &&
+                      data.user &&
+                      data.user.repositories.nodes.map((repo: any) => (
+                        <Picker.Item
+                          key={repo.name}
+                          label={repo.name}
+                          value={repo.name}
+                        />
+                      ))}
+                  </Picker>
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={saveTaskEdit}
+                  >
+                    <Text style={styles.buttonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </View>
-    </View>
-  </View>
-</Modal>
-    </View>
-  );
-}
+    );
+  }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -553,6 +903,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 24,
+    padding: 16,
   },
   input: {
     flex: 1,
@@ -563,6 +914,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     color: "#FFFFFF",
     marginRight: 16,
+    backgroundColor: "#1E1E1E",
   },
   addButton: {
     backgroundColor: "#007AFF",
@@ -572,9 +924,9 @@ const styles = StyleSheet.create({
   taskContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
     backgroundColor: "#1E1E1E",
-    padding: 16,
+    padding: 8,
     borderRadius: 8,
     borderWidth: 2,
     borderColor: (task) => {
@@ -585,9 +937,20 @@ const styles = StyleSheet.create({
       }
     },
   },
+  taskInfoContainer: {
+    flex: 1,
+    color: "#FFFFFF",
+    backgroundColor: (task) => {
+      if (task.dueDate && new Date(task.dueDate) < new Date()) {
+        return "#FF3B3020"; // Red background for past due tasks
+      } else {
+        return "#1E1E1E";
+      }
+    },
+  },
   taskText: {
     fontSize: 18,
-    color: "white",
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
   noteText: {
@@ -595,6 +958,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontStyle: "italic",
     color: "#FFFFFF80",
+    padding: 2,
   },
   dueDateText: {
     marginTop: 8,
@@ -603,6 +967,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF80",
   },
   priorityText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: "#FFFFFF80",
+  },
+  repoText: {
     marginTop: 8,
     fontSize: 16,
     color: "#FFFFFF80",
@@ -624,10 +993,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#1E1E1E",
-    padding: 24,
+    padding: 75,
     borderRadius: 16,
     width: "90%",
-    height: "50%",
+    maxHeight: "80%",
+    marginBottom: 24,
   },
   modalHeader: {
     flexDirection: "row",
@@ -639,17 +1009,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#FFFFFF",
+    padding: 12,
   },
-  taskInfoContainer: {
-    flex: 1,
-    color: "#FFFFFF",
-    backgroundColor: (task) => {
-      if (task.dueDate && new Date(task.dueDate) < new Date()) {
-        return "#FF3B3020"; // Red background for past due tasks
-      } else {
-        return "#1E1E1E";
-      }
-    },
+  modalBody: {
+    maxHeight: "80%",
+    paddingBottom: 24,
   },
   closeButton: {
     backgroundColor: "#FF3B30",
@@ -676,27 +1040,6 @@ const styles = StyleSheet.create({
     marginRight: "auto",
     marginTop: 24,
   },
-  repoContainer: {
-    backgroundColor: "#1E1E1E",
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 24,
-  },
-  repoTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 12,
-  },
-  repoDescription: {
-    fontSize: 16,
-    color: "#FFFFFF80",
-    marginBottom: 12,
-  },
-  repoUrl: {
-    fontSize: 16,
-    color: "#007AFF",
-  },
   repoPickerContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -711,11 +1054,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "black",
   },
-  repoText: {
-    marginTop: 8,
-    fontSize: 16,
-    color: "#FFFFFF80",
-  },
   subtaskTreeContainer: {
     marginTop: 16,
     color: "#FFFFFF",
@@ -729,13 +1067,208 @@ const styles = StyleSheet.create({
     marginLeft: 24,
   },
   subtaskText: {
-    color: "white",
+    flex: 1,
+    fontSize: 16,
+    color: "#FFFFFF",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#2E2E2E",
+  },
+  selectedSubtask: {
+    backgroundColor: "#3E3E3E",
+  },
+  saveSubtaskButton: {
+    backgroundColor: "#007AFF",
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  subtaskContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  agixtComponentContainer: {
+    width: "100%",
+    height: "auto",
+    backgroundColor: "transparent",
+  },
+  agentsContainer: {
+    marginTop: 24,
+  },
+  agentsLabel: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    marginBottom: 8,
+  },
+  agentPicker: {
+    color: "black",
+    marginBottom: 16,
+  },
+  agentsList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    color: "black",
+  },
+  agentItem: {
+    backgroundColor: "#2E2E2E",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  selectedAgentItem: {
+    backgroundColor: "#4E4E4E",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  selectedAgentText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  agentText: {
+    color: "black",
+  },
+  alwaysUseAgentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  alwaysUseAgentLabel: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    marginRight: 8,
+  },
+  alwaysUseAgentCheckbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  alwaysUseAgentChecked: {
+    backgroundColor: "#FFFFFF",
+  },
+  alwaysUseAgentCheckboxText: {
+    color: "#1E1E1E",
+    fontWeight: "bold",
+  },
+  okButton: {
+    backgroundColor: "#4E4E4E",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  okButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1E1E1E",
+  },
+  errorText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  toggleButton: {
+    backgroundColor: "#2E2E2E",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  toggleButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  taskButtonsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 16,
+  },
+  runChainButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 16,
+    backgroundColor: "#007AFF",
+  },
+  runChainButtonText: {
+    color: "#FFFFFF",
+    marginLeft: 8,
+    fontWeight: "bold",
+  },
+  chainDropdownContainer: {
+    position: "absolute",
+    top: 48,
+    left: 0,
+    backgroundColor: "#2E2E2E",
+    borderRadius: 8,
+    padding: 8,
+    zIndex: 1,
+    maxHeight: 200,
+    overflow: "scroll",
+  },
+  chainDropdownItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  chainDropdownText: {
+    color: "#FFFFFF",
     fontSize: 16,
   },
-  addSubtaskButton: {
-    backgroundColor: "#007AFF",
+  aiGuidanceContainer: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    zIndex: 1,
+  },
+  toggleGuidanceButton: {
+    backgroundColor: "#2E2E2E",
     padding: 12,
     borderRadius: 8,
+  },
+  guidanceContainer: {
+    backgroundColor: "#2E2E2E",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  guidanceText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: "#FFFFFF",
     marginLeft: 16,
+    fontSize: 18,
+  },
+  getSubtasksButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  getSubtasksButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
