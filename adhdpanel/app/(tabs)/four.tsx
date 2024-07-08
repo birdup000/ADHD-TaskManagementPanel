@@ -1,248 +1,333 @@
-import React, { SyntheticEvent, useState, useEffect } from 'react';
-import ApiCalendar from 'react-google-calendar-api';
+import React, { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import styled from "@emotion/styled";
+import AGiXTSDK from "agixt";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const config = {
-  "clientId": "CLIENT_ID",
-  "apiKey": "API_KEY",
-  "scope": "https://www.googleapis.com/auth/calendar",
-  "discoveryDocs": [
-    "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"
-  ]
-}
+const AGIXT_API_URI_KEY = "agixtapi";
+const AGIXT_API_KEY_KEY = "agixtkey";
 
-const apiCalendar = new ApiCalendar(config);
+const AppWrapper = styled.div`
+  background-color: #121212;
+  min-height: 100vh;
+  padding: 1rem;
+  font-family: 'Arial', sans-serif;
+  color: #e0e0e0;
 
-const CalendarWrapper = styled.div`
-  background-color: #1e1e1e;
-  color: #fff;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-
-  .fc-event,
-  .fc-daygrid-event,
-  .fc-timegrid-event {
-    background-color: #2d2d2d !important;
-    border-color: #3d3d3d !important;
-    color: #fff !important;
-    padding: 0.5rem !important;
-    border-radius: 4px !important;
+  @media (min-width: 768px) {
+    padding: 2rem;
   }
+`;
 
-  .fc-view-harness {
-    width: 100%;
-    height: 70vh;
+const Card = styled.div`
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  margin-bottom: 2rem;
+`;
+
+const CardHeader = styled.div`
+  background-color: #2c3e50;
+  color: #ffffff;
+  padding: 1rem;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+`;
+
+const CardContent = styled.div`
+  padding: 1rem;
+
+  @media (min-width: 768px) {
+    padding: 1.5rem;
+  }
+`;
+
+const CalendarTitle = styled.h1`
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #ffffff;
+
+  @media (min-width: 768px) {
+    font-size: 2rem;
+  }
+`;
+
+const CalendarContent = styled(CardContent)`
+  .fc {
+    font-family: 'Arial', sans-serif;
   }
 
   .fc-toolbar-title {
-    font-size: 1.5rem !important;
-    font-weight: bold !important;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #e0e0e0;
+
+    @media (min-width: 768px) {
+      font-size: 1.5rem;
+    }
   }
 
-  .fc-button {
-    background-color: #2d2d2d !important;
-    border-color: #3d3d3d !important;
-    color: #fff !important;
-    padding: 0.5rem 1rem !important;
-    border-radius: 4px !important;
-    font-size: 1rem !important;
-    transition: background-color 0.3s ease !important;
+  .fc-button-primary {
+    background-color: #3498db;
+    border-color: #2980b9;
+    color: #ffffff;
+    transition: all 0.3s ease;
 
     &:hover {
-      background-color: #3d3d3d !important;
+      background-color: #2980b9;
+      border-color: #2980b9;
+    }
+
+    &:not(:disabled):active,
+    &:not(:disabled).fc-button-active {
+      background-color: #2980b9;
+      border-color: #2980b9;
     }
   }
 
-  overflow: auto;
-  height: auto;
+  .fc-prev-button,
+  .fc-next-button {
+    &:after {
+      content: '';
+      border: solid #ffffff;
+      border-width: 0 2px 2px 0;
+      display: inline-block;
+      padding: 3px;
+      transform: rotate(-45deg);
+    }
+  }
 
-  @media (max-width: 768px) {
-    padding: 1rem;
+  .fc-prev-button:after {
+    transform: rotate(135deg);
+  }
 
-    .fc-view-harness {
-      height: 60vh;
+  .fc-day {
+    background-color: #2c3e50;
+    border-color: #34495e;
+  }
+
+  .fc-day-today {
+    background-color: #34495e !important;
+  }
+
+  .fc-daygrid-day-number,
+  .fc-col-header-cell-cushion {
+    color: #e0e0e0;
+  }
+
+  .fc-event {
+    background-color: #3498db;
+    border-color: #2980b9;
+    color: #ffffff;
+    border-radius: 4px;
+    padding: 2px 4px;
+  }
+
+  .fc-view-harness {
+    height: auto !important;
+  }
+
+  .fc-scrollgrid,
+  .fc-theme-standard td,
+  .fc-theme-standard th {
+    border-color: #34495e;
+  }
+
+  .fc-scroller {
+    height: auto !important;
+  }
+
+  .fc-daygrid-body {
+    height: auto !important;
+  }
+
+  @media (max-width: 767px) {
+    .fc-toolbar {
+      flex-direction: column;
+      gap: 1rem;
     }
 
-    .fc-toolbar-title {
-      font-size: 1.25rem !important;
-    }
-
-    .fc-button {
-      font-size: 0.875rem !important;
-      padding: 0.25rem 0.5rem !important;
+    .fc-toolbar-chunk {
+      display: flex;
+      justify-content: center;
     }
   }
 `;
 
-const ButtonWrapper = styled.div`
+const ButtonGroup = styled.div`
   display: flex;
-  justify-content: center;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 
-  button {
-    background-color: #2d2d2d;
-    border: none;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 0.5rem;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-
-    &:hover {
-      background-color: #3d3d3d;
-    }
-
-    @media (max-width: 768px) {
-      font-size: 14px;
-      padding: 0.5rem 1rem;
-    }
+  @media (min-width: 768px) {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
 `;
 
-const EventsWrapper = styled.div`
-  margin-top: 2rem;
+const Button = styled.button`
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 
-  h4 {
-    color: #fff;
-    margin-bottom: 0.75rem;
+  &:hover {
+    background-color: #2980b9;
   }
 
-  p {
-    color: #ccc;
-    margin-bottom: 0.5rem;
+  @media (min-width: 768px) {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
   }
+`;
 
-  @media (max-width: 768px) {
-    h4 {
-      font-size: 1.1rem;
-    }
+const EventsHeader = styled(CardHeader)`
+  background-color: #27ae60;
+`;
 
-    p {
-      font-size: 0.9rem;
-    }
+const EventsTitle = styled.h2`
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+  color: #ffffff;
+
+  @media (min-width: 768px) {
+    font-size: 1.5rem;
   }
+`;
+
+const EventItem = styled.div`
+  background-color: #2c3e50;
+  border-left: 4px solid #3498db;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #e0e0e0;
 `;
 
 const CalendarApp = () => {
   const [events, setEvents] = useState([]);
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendar, setSelectedCalendar] = useState('');
+  const [agixt, setAgixt] = useState(null);
 
   useEffect(() => {
-    const apiCalendar = new ApiCalendar(config);
+    const loadSettings = async () => {
+      try {
+        const agixtApiUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
+        const agixtApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
+
+        if (agixtApiUri && agixtApiKey) {
+          const agixtInstance = new AGiXTSDK({
+            baseUri: agixtApiUri,
+            apiKey: agixtApiKey,
+          });
+          setAgixt(agixtInstance);
+          handleAGiXTGetCalendarItems(agixtInstance);
+        } else {
+          console.error("AGiXT API URI or API Key not found in AsyncStorage");
+        }
+      } catch (error) {
+        console.error("Error loading AGiXT settings from AsyncStorage:", error);
+      }
+    };
+
+    loadSettings();
   }, []);
 
-  const handleItemClick = (event: SyntheticEvent<any>, name: string): void => {
-    if (name === 'sign-in') {
-      apiCalendar.handleAuthClick()
-        .then((response: any) => {
-          console.log("User successfully signed in");
-        })
-        .catch((error: any) => {
-          console.error("Error signing in:", error);
-        });
-    } else if (name === 'sign-out') {
-      apiCalendar.handleSignoutClick();
+  const handleAGiXTGetCalendarItems = async (agixtInstance) => {
+    try {
+      const items = await agixtInstance.getCalendarItems();
+      setEvents(items.map(item => ({
+        id: item.id,
+        title: item.subject,
+        start: item.start_time,
+        end: item.end_time,
+      })));
+    } catch (error) {
+      console.error("Error fetching AGiXT calendar items:", error);
     }
   };
 
-  const handleCreateEventFromNow = () => {
-    const eventFromNow = {
-      summary: "Poc Dev From Now",
-      time: 480,
+  const handleAGiXTAddCalendarItem = async () => {
+    try {
+      if (agixt) {
+        await agixt.addCalendarItem("New Event", new Date().toISOString(), new Date(Date.now() + 3600000).toISOString(), "Online");
+        handleAGiXTGetCalendarItems(agixt);
+      } else {
+        console.error("AGiXT instance is not initialized");
+      }
+    } catch (error) {
+      console.error("Error adding AGiXT calendar item:", error);
+    }
+  };
+
+  const handleTestAddEntry = () => {
+    const newEvent = {
+      id: Date.now(),
+      title: "Test Event",
+      start: new Date(),
+      end: new Date(Date.now() + 3600000),
     };
-
-    apiCalendar.createEventFromNow(eventFromNow)
-      .then((result: any) => {
-        console.log(result);
-      })
-      .catch((error: any) => {
-        console.log(error);
-      });
+    setEvents([...events, newEvent]);
   };
 
-  const handleListUpcomingEvents = () => {
-    apiCalendar.listUpcomingEvents(10).then(({ result }: any) => {
-      setEvents(result.items);
-    });
-  };
-
-  const handleListCalendars = () => {
-    apiCalendar.listCalendars().then(({ result }: any) => {
-      setCalendars(result.items);
-    });
-  };
-
-  const handleCreateCalendar = () => {
-    apiCalendar.createCalendar("myCalendar2").then(({ result }: any) => {
-      console.log(result);
-    });
-  };
-
-  const handleCalendarSelect = (info: any) => {
+  const handleCalendarSelect = (info) => {
     if (info.event) {
       const selectedEvent = info.event;
-      setSelectedCalendar(selectedEvent.id);
+      console.log("Selected event:", selectedEvent);
     }
   };
 
   return (
-    <CalendarWrapper>
-      <h1>Calendar Integration</h1>
-      <ButtonWrapper>
-        <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-in")}>Sign In</button>
-        <button onClick={(e: SyntheticEvent<any>) => handleItemClick(e, "sign-out")}>Sign Out</button>
-        <button onClick={handleCreateEventFromNow}>Create Event</button>
-        <button onClick={handleListUpcomingEvents}>List Events</button>
-        <button onClick={handleListCalendars}>List Calendars</button>
-        <button onClick={handleCreateCalendar}>Create Calendar</button>
-      </ButtonWrapper>
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        events={events}
-        dateClick={handleCalendarSelect}
-        eventColor="#2d2d2d"
-        eventBorderColor="#3d3d3d"
-        eventTextColor="#fff"
-        headerToolbar={{
-          left: 'prev,next today addEventButton',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        }}
-        customButtons={{
-          addEventButton: {
-            text: 'Add Event',
-            click: handleCreateEventFromNow
-          }
-        }}
-      />
-      <EventsWrapper>
-        <h4>Events</h4>
-        {events.length === 0 && <p>No events to show</p>}
-        {events.map((event: any) => (
-          <p key={event.id}>{event.summary}</p>
-        ))}
-        <h4>Calendars</h4>
-        {calendars.length === 0 && <p>No calendars to show</p>}
-        {calendars.map((calendar: any) => (
-          <p key={calendar.id}>{calendar.summary}</p>
-        ))}
-      </EventsWrapper>
-    </CalendarWrapper>
+    <AppWrapper>
+      <Card>
+        <CardHeader>
+          <CalendarTitle>Calendar Integration</CalendarTitle>
+        </CardHeader>
+        <CalendarContent>
+          <ButtonGroup>
+            <Button onClick={() => handleAGiXTGetCalendarItems(agixt)}>List AGiXT Calendar Items</Button>
+            <Button onClick={handleAGiXTAddCalendarItem}>Add AGiXT Calendar Item</Button>
+            <Button onClick={handleTestAddEntry}>Test Add Entry</Button>
+          </ButtonGroup>
+          <FullCalendar
+  plugins={[dayGridPlugin, interactionPlugin]}
+  initialView="dayGridMonth"
+  events={events}
+  dateClick={handleCalendarSelect}
+  headerToolbar={{
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+  }}
+  height="auto"
+/>
+        </CalendarContent>
+      </Card>
+      <Card>
+        <EventsHeader>
+          <EventsTitle>Upcoming Events</EventsTitle>
+        </EventsHeader>
+        <CardContent>
+          {events.length === 0 && <p>No events to show</p>}
+          {events.map((event) => (
+            <EventItem key={event.id}>{event.title}</EventItem>
+          ))}
+        </CardContent>
+      </Card>
+    </AppWrapper>
   );
 }
 
