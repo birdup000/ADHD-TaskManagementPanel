@@ -307,12 +307,31 @@ const CalendarApp = () => {
   initialView="dayGridMonth"
   events={events}
   dateClick={handleCalendarSelect}
+  editable={true}
   headerToolbar={{
     left: 'prev,next today',
     center: 'title',
     right: 'dayGridMonth,dayGridWeek,dayGridDay'
   }}
   height="auto"
+  eventDrop={(info) => {
+    // Update the event's start and end dates
+    const updatedEvent = {
+      ...info.event,
+      start: info.event.start,
+      end: info.event.end,
+    };
+    setEvents(events.map((event) => event.id === updatedEvent.id ? updatedEvent : event));
+  }}
+  eventResize={(info) => {
+    // Update the event's start and end dates
+    const updatedEvent = {
+      ...info.event,
+      start: info.event.start,
+      end: info.event.end,
+    };
+    setEvents(events.map((event) => event.id === updatedEvent.id ? updatedEvent : event));
+  }}
 />
         </CalendarContent>
       </Card>
