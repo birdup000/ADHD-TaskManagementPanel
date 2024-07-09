@@ -214,9 +214,20 @@ const SubmitButton = styled(Button)`
   }
 `;
 
+const ErrorMessage = styled.div`
+  color: #e74c3c;
+  background-color: #2c3e50;
+  border-left: 4px solid #e74c3c;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+`;
+
 const CalendarApp = () => {
   const [events, setEvents] = useState([]);
   const [agixt, setAgixt] = useState(null);
+  const [error, setError] = useState(null);
   const [newEvent, setNewEvent] = useState({
     subject: '',
     start_time: '',
@@ -236,55 +247,106 @@ const CalendarApp = () => {
             apiKey: agixtApiKey,
           });
           setAgixt(agixtInstance);
+          await initializeAGiXTConversation(agixtInstance);
           handleAGiXTGetCalendarItems(agixtInstance);
         } else {
-          console.error("AGiXT API URI or API Key not found in AsyncStorage");
+          setError("AGiXT API URI or API Key not found in AsyncStorage");
         }
       } catch (error) {
-        console.error("Error loading AGiXT settings from AsyncStorage:", error);
+        setError("Error loading AGiXT settings from AsyncStorage: " + error.message);
       }
     };
 
     loadSettings();
   }, []);
 
-  const handleAGiXTGetCalendarItems = async (agixtInstance) => {
+  const initializeAGiXTConversation = async (agixtInstance) => {
     try {
-      const items = await agixtInstance.getCalendarItems();
-      setEvents(items.map(item => ({
-        id: item.id,
-        title: item.subject,
-        start: item.start_time,
-        end: item.end_time,
-      })));
+      await agixtInstance.createConversation('CalendarTaskPanel');
+      const response = await agixtInstance.chat('CalendarTaskPanel', 'READ conversation', 'CalendarTaskPanel', 6);
+      console.log('Conversation initialized:', response);
     } catch (error) {
-      console.error("Error fetching AGiXT calendar items:", error);
+      setError('Error initializing AGiXT conversation: ' + error.message);
     }
   };
 
-  const handleAGiXTAddCalendarItem = async () => {
+  const interactWithAGiXT = async (command, eventDetails = null) => {
+    if (!agixt) {
+      throw new Error("AGiXT instance is not initialized");
+    }
+
     try {
-      if (agixt) {
-        const start_time = newEvent.start_time + 'T00:00:00';
-        const end_time = newEvent.end_time + 'T23:59:59';
-        await agixt.executeCommand('YourAgentName', 'Google - Add Calendar Item', {
-          subject: newEvent.subject,
-          start_time,
-          end_time,
-          location: newEvent.location,
-        });
-        handleAGiXTGetCalendarItems(agixt);
-        setNewEvent({
-          subject: '',
-          start_time: '',
-          end_time: '',
-          location: ''
-        });
+      // Send command to AGiXT
+      const commandResponse = await agixt.chat('CalendarTaskPanel', command, 'CalendarTaskPanel', 6);
+
+      // Check if command execution was successful
+      const checkPrompt = "I would like you to read the most recent command execution if this worked simply type \"True\" and nothing else if it shows that it had an error Simply only type \"False\"";
+      const checkResponse = await agixt.chat('CalendarTaskPanel', checkPrompt, 'CalendarTaskPanel', 6);
+
+      // Parse the response
+      const conversationResponse = await agixt.getConversation('CalendarTaskPanel');
+      const parser = (response) => {
+        if (response.includes('True')) {
+          return true;
+        } else if (response.includes('False')) {
+          return false;
+        } else {
+          throw new Error('Invalid response from AGiXT');
+        }
+      };
+
+      const success = parser(conversationResponse);
+
+      if (success) {
+        console.log('AGiXT operation successful');
+        if (eventDetails) {
+          // If we're adding an event, parse the event details from the conversation
+          const eventResponse = await agixt.chat('CalendarTaskPanel', 'Please provide the exact event name and details that were just added.', 'CalendarTaskPanel', 6);
+          const parsedEvent = JSON.parse(eventResponse);
+          return { success: true, event: parsedEvent };
+        }
+        return { success: true };
       } else {
-        console.error("AGiXT instance is not initialized");
+        console.log('AGiXT operation failed');
+        return { success: false, error: 'Operation failed' };
       }
     } catch (error) {
-      console.error('Error executing command to add calendar item:', error);
+      console.error('Error interacting with AGiXT:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const handleAGiXTGetCalendarItems = async (agixtInstance) => {
+    try {
+      const result = await interactWithAGiXT('Get all calendar items');
+      if (result.success) {
+        const items = result.event || []; // Assuming the event contains the calendar items
+        setEvents(items.map(item => ({
+          id: item.id,
+          title: item.subject,
+          start: item.start_time,
+          end: item.end_time,
+        })));
+      } else {
+        setError("Error fetching AGiXT calendar items: " + result.error);
+      }
+    } catch (error) {
+      setError("Error fetching AGiXT calendar items: " + error.message);
+    }
+  };
+
+  const handleAGiXTAddCalendarItem = async (event) => {
+    try {
+      const result = await interactWithAGiXT(`Add item to calendar: ${JSON.stringify(event)}`, event);
+      if (result.success) {
+        console.log('Item added to calendar successfully');
+        handleAGiXTGetCalendarItems(agixt);
+      } else {
+        throw new Error('Failed to add item to calendar: ' + result.error);
+      }
+    } catch (error) {
+      setError('Error adding calendar item: ' + error.message);
+      throw error;
     }
   };
 
@@ -305,19 +367,32 @@ const CalendarApp = () => {
 
   const handleCalendarSelect = async (info) => {
     if (info.dateStr) {
-      const start_time = info.dateStr + 'T00:00:00';
-      const end_time = info.dateStr + 'T23:59:59';
+      const event = {
+        subject: 'Meeting',
+        start_time: info.dateStr + 'T00:00:00',
+        end_time: info.dateStr + 'T23:59:59',
+        location: 'Office',
+      };
       try {
-        await agixt.executeCommand('YourAgentName', 'Google - Add Calendar Item', {
-          subject: 'Meeting',
-          start_time,
-          end_time,
-          location: 'Office',
-        });
-        handleAGiXTGetCalendarItems();
+        await handleAGiXTAddCalendarItem(event);
       } catch (error) {
-        console.error('Error executing command to add calendar item:', error);
+        setError('Failed to add calendar item: ' + error.message);
       }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await handleAGiXTAddCalendarItem(newEvent);
+      setNewEvent({
+        subject: '',
+        start_time: '',
+        end_time: '',
+        location: ''
+      });
+    } catch (error) {
+      setError('Failed to add calendar item: ' + error.message);
     }
   };
 
@@ -328,7 +403,8 @@ const CalendarApp = () => {
           <CalendarTitle>Calendar Integration</CalendarTitle>
         </CardHeader>
         <CalendarContent>
-          <Form onSubmit={handleAGiXTAddCalendarItem}>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          <Form onSubmit={handleSubmit}>
             <Label>Event Subject</Label>
             <Input
               type="text"
