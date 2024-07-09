@@ -33,7 +33,7 @@ async function getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, 
 
     const prompt = await agixt.getPrompt('Get Task List');
     const userInput = `Task Name: ${taskName}\nTask Description: ${taskDescription}\nTask Details: ${JSON.stringify(taskDetails)}`;
-    const subtaskResponse = await agixt.promptAgent('ezlocal', 'Get Task List', {
+    const subtaskResponse = await agixt.promptAgent(ALWAYS_USE_AGENT_KEY, 'Get Task List', {
       user_input: userInput,
     });
 
@@ -52,7 +52,7 @@ function parseTaskDescription(taskDescription) {
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i].trim();
     if (section.startsWith(`**Task ${i + 1}:`)) {
-      const subtaskTitle = section.split(': ')[1].trim();
+      const subtaskTitle = section.split(': ').trim();
       let subtaskDescription = '';
       let j = i + 1;
       while (j < sections.length && !sections[j].startsWith(`**Task ${j + 1}:`)) {
@@ -84,25 +84,25 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey }) => {
           baseUri: agixtApiUri,
           apiKey: agixtApiKey,
         });
-
+  
         const agentsData = await agixt.getAgents();
         const agentsList = Object.values(agentsData);
         setAgents(agentsList);
-        setSelectedAgent(agentsList[0]?.name || "");
-
+        setSelectedAgent(agentsList.length > 0 ? agentsList.name : ""); // Update the selectedAgent state
+  
         // Check if "alwaysUseAgent" is stored in AsyncStorage
         const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
         if (storedAlwaysUseAgent !== null) {
           setAlwaysUseAgent(JSON.parse(storedAlwaysUseAgent));
         }
-
+  
         setError(null);
       } catch (error) {
         console.error("Error fetching agents:", error);
         setError("Error fetching agents");
       }
     };
-
+  
     fetchAgents();
   }, [agixtApiUri, agixtApiKey]);
 
@@ -298,22 +298,34 @@ export default function TaskPanel() {
     }
   };
 
-  const getChains = async () => {
+  const getChains = async (refreshOnError = false) => {
     try {
       setIsLoading(true);
       const ApiClient = new AGiXTSDK({
-        baseUri: 'http://localhost:7437',
-        apiKey: '',
+        baseUri: agixtApiUri,
+        apiKey: agixtApiKey,
       });
       const chainsObject = await ApiClient.getChains();
       const chainsArray = Object.values(chainsObject);
       setChains(chainsArray);
     } catch (error) {
       console.log("Error getting chains:", error);
+      if (refreshOnError) {
+        // Refresh if there's an error and refreshOnError is true
+        setTimeout(() => getChains(true), 10000); // Retry after 10 seconds
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Fetch chains on component mount and refresh on error
+  useEffect(() => {
+    getChains(true); // Initial fetch with refresh on error
+
+    // Clean up
+    return () => clearTimeout();
+  }, []);
 
   const addTask = () => {
     if (taskText.trim().length > 0) {
@@ -340,9 +352,8 @@ export default function TaskPanel() {
     note: noteText ? true : false,
     dependencies: dependencies,
     dueDate: dueDate,
-    description: taskDescription,
+    description: taskDescription, // Add the description to the task
   };
-
 
   const addSubtask = (taskId, subtaskText) => {
     const updatedTasks = tasks.map((task) => {
@@ -451,72 +462,73 @@ export default function TaskPanel() {
         />
       </View>
     );
-    };
-    
-    const handleTaskNameChange = (text: string) => {
-      setTaskName(text);
-    };
-    
-    const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>((props, ref) => (
-      <TouchableOpacity style={styles.input} onPress={props.onClick} ref={ref}>
-        <Text style={{ color: "white" }}>
-          {props.value ? props.value : "No Due Date Set"}
-        </Text>
-      </TouchableOpacity>
-    ));
-    
-    const removeTask = (id: number) => {
-      const updatedTasks = tasks.filter((task) => task.id !== id);
-      setTasks(updatedTasks);
-      saveTasks(updatedTasks);
-    };
-    
-    const editTask = (task: any) => {
-      setSelectedTask(task);
-      setNoteText(task.note || "");
-      setDueDate(task.dueDate ? new Date(task.dueDate) : null);
-      setPriority(task.priority || "");
-      setShowEditModal(true);
-      setTaskName(task.text);
-      setSelectedRepo(task.repo);
-    };
-    
-    const removeDueDate = () => {
-      setDueDate(null);
-    };
-    
-    const handleTaskDescriptionChange = (text: string) => {
-      setTaskDescription(text);
-    };
+  };
+  
+  const handleTaskNameChange = (text: string) => {
+    setTaskName(text);
+  };
+  
+  const ExampleCustomInput = React.forwardRef<HTMLDivElement, { value: string | null; onClick: () => void }>((props, ref) => (
+    <TouchableOpacity style={styles.input} onPress={props.onClick} ref={ref}>
+      <Text style={{ color: "white" }}>
+        {props.value ? props.value : "No Due Date Set"}
+      </Text>
+    </TouchableOpacity>
+  ));
+  
+  const removeTask = (id: number) => {
+    const updatedTasks = tasks.filter((task) => task.id !== id);
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+  };
+  
+  const editTask = (task: any) => {
+    setSelectedTask(task);
+    setNoteText(task.note || "");
+    setDueDate(task.dueDate ? new Date(task.dueDate) : null);
+    setPriority(task.priority || "");
+    setShowEditModal(true);
+    setTaskName(task.text);
+    setSelectedRepo(task.repo);
+  };
+  
+  const removeDueDate = () => {
+    setDueDate(null);
+  };
+  
+  const handleTaskDescriptionChange = (text: string) => {
+    setTaskDescription(text);
+  };
 
-    const saveTaskEdit = () => {
-      const updatedTasks = tasks.map((task) => {
-        if (task.id === selectedTask?.id) {
-          return {
-            ...task,
-            text: taskName,
-            note: noteText,
-            description: taskDescription, // Add the description to the task
-            dueDate: dueDate ? dueDate.toISOString() : null,
-            priority: priority,
-            repo: selectedRepo,
-            subtasks: task.subtasks.map((subtask) => {
-              if (subtask.id === selectedSubtask?.id) {
-                return { ...subtask, text: editedSubtaskText };
-              }
-              return subtask;
-            }),
-          };
-        }
-        return task;
-      });
-      setTasks(updatedTasks);
-      saveTasks(updatedTasks);
-      setShowEditModal(false);
-      setSelectedTask(null);
-      setSelectedSubtask(null);
-      setEditedSubtaskText("");
-    };
+  const saveTaskEdit = () => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === selectedTask?.id) {
+        return {
+          ...task,
+          text: taskName,
+          note: noteText,
+          description: taskDescription, // Add the description to the task
+          dueDate: dueDate ? dueDate.toISOString() : null,
+          priority: priority,
+          repo: selectedRepo,
+          subtasks: task.subtasks.map((subtask) => {
+            if (subtask.id === selectedSubtask?.id) {
+              return { ...subtask, text: editedSubtaskText };
+            }
+            return subtask;
+          }),
+        };
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+    setShowEditModal(false);
+    setSelectedTask(null);
+    setSelectedSubtask(null);
+    setEditedSubtaskText("");
+  };
+  
     
     const handleChainSelect = (chain) => {
       setSelectedChain(chain);
