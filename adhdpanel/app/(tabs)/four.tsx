@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import styled from "@emotion/styled";
-import AGiXTSDK from "agixt";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import styled from '@emotion/styled';
+import AGiXTSDK from 'agixt';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const AGIXT_API_URI_KEY = "agixtapi";
-const AGIXT_API_KEY_KEY = "agixtkey";
+const AGIXT_API_URI_KEY = 'agixtapi';
+const AGIXT_API_KEY_KEY = 'agixtkey';
 
 const AppWrapper = styled.div`
   background-color: #121212;
@@ -41,6 +41,8 @@ const CardHeader = styled.div`
 
 const CardContent = styled.div`
   padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
 
   @media (min-width: 768px) {
     padding: 1.5rem;
@@ -91,22 +93,6 @@ const CalendarContent = styled(CardContent)`
     }
   }
 
-  .fc-prev-button,
-  .fc-next-button {
-    &:after {
-      content: '';
-      border: solid #ffffff;
-      border-width: 0 2px 2px 0;
-      display: inline-block;
-      padding: 3px;
-      transform: rotate(-45deg);
-    }
-  }
-
-  .fc-prev-button:after {
-    transform: rotate(135deg);
-  }
-
   .fc-day {
     background-color: #2c3e50;
     border-color: #34495e;
@@ -129,34 +115,10 @@ const CalendarContent = styled(CardContent)`
     padding: 2px 4px;
   }
 
-  .fc-view-harness {
-    height: auto !important;
-  }
-
   .fc-scrollgrid,
   .fc-theme-standard td,
   .fc-theme-standard th {
     border-color: #34495e;
-  }
-
-  .fc-scroller {
-    height: auto !important;
-  }
-
-  .fc-daygrid-body {
-    height: auto !important;
-  }
-
-  @media (max-width: 767px) {
-    .fc-toolbar {
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .fc-toolbar-chunk {
-      display: flex;
-      justify-content: center;
-    }
   }
 `;
 
@@ -218,9 +180,49 @@ const EventItem = styled.div`
   color: #e0e0e0;
 `;
 
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+`;
+
+const Label = styled.label`
+  font-size: 1rem;
+  color: #e0e0e0;
+`;
+
+const Input = styled.input`
+  background-color: #2c3e50;
+  color: #e0e0e0;
+  border: 1px solid #34495e;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 1rem;
+
+  &:focus {
+    outline: none;
+    border-color: #3498db;
+  }
+`;
+
+const SubmitButton = styled(Button)`
+  background-color: #27ae60;
+
+  &:hover {
+    background-color: #2ecc71;
+  }
+`;
+
 const CalendarApp = () => {
   const [events, setEvents] = useState([]);
   const [agixt, setAgixt] = useState(null);
+  const [newEvent, setNewEvent] = useState({
+    subject: '',
+    start_time: '',
+    end_time: '',
+    location: ''
+  });
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -263,30 +265,59 @@ const CalendarApp = () => {
   const handleAGiXTAddCalendarItem = async () => {
     try {
       if (agixt) {
-        await agixt.addCalendarItem("New Event", new Date().toISOString(), new Date(Date.now() + 3600000).toISOString(), "Online");
+        const start_time = newEvent.start_time + 'T00:00:00';
+        const end_time = newEvent.end_time + 'T23:59:59';
+        await agixt.executeCommand('YourAgentName', 'Google - Add Calendar Item', {
+          subject: newEvent.subject,
+          start_time,
+          end_time,
+          location: newEvent.location,
+        });
         handleAGiXTGetCalendarItems(agixt);
+        setNewEvent({
+          subject: '',
+          start_time: '',
+          end_time: '',
+          location: ''
+        });
       } else {
         console.error("AGiXT instance is not initialized");
       }
     } catch (error) {
-      console.error("Error adding AGiXT calendar item:", error);
+      console.error('Error executing command to add calendar item:', error);
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewEvent(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleTestAddEntry = () => {
-    const newEvent = {
+    const newTestEvent = {
       id: Date.now(),
       title: "Test Event",
       start: new Date(),
       end: new Date(Date.now() + 3600000),
     };
-    setEvents([...events, newEvent]);
+    setEvents([...events, newTestEvent]);
   };
 
-  const handleCalendarSelect = (info) => {
-    if (info.event) {
-      const selectedEvent = info.event;
-      console.log("Selected event:", selectedEvent);
+  const handleCalendarSelect = async (info) => {
+    if (info.dateStr) {
+      const start_time = info.dateStr + 'T00:00:00';
+      const end_time = info.dateStr + 'T23:59:59';
+      try {
+        await agixt.executeCommand('YourAgentName', 'Google - Add Calendar Item', {
+          subject: 'Meeting',
+          start_time,
+          end_time,
+          location: 'Office',
+        });
+        handleAGiXTGetCalendarItems();
+      } catch (error) {
+        console.error('Error executing command to add calendar item:', error);
+      }
     }
   };
 
@@ -297,42 +328,75 @@ const CalendarApp = () => {
           <CalendarTitle>Calendar Integration</CalendarTitle>
         </CardHeader>
         <CalendarContent>
+          <Form onSubmit={handleAGiXTAddCalendarItem}>
+            <Label>Event Subject</Label>
+            <Input
+              type="text"
+              name="subject"
+              value={newEvent.subject}
+              onChange={handleInputChange}
+              placeholder="Event Subject"
+              required
+            />
+            <Label>Start Time</Label>
+            <Input
+              type="datetime-local"
+              name="start_time"
+              value={newEvent.start_time}
+              onChange={handleInputChange}
+              required
+            />
+            <Label>End Time</Label>
+            <Input
+              type="datetime-local"
+              name="end_time"
+              value={newEvent.end_time}
+              onChange={handleInputChange}
+              required
+            />
+            <Label>Event Location</Label>
+            <Input
+              type="text"
+              name="location"
+              value={newEvent.location}
+              onChange={handleInputChange}
+              placeholder="Event Location"
+            />
+            <SubmitButton type="submit">Add Calendar Item</SubmitButton>
+          </Form>
           <ButtonGroup>
             <Button onClick={() => handleAGiXTGetCalendarItems(agixt)}>List AGiXT Calendar Items</Button>
-            <Button onClick={handleAGiXTAddCalendarItem}>Add AGiXT Calendar Item</Button>
             <Button onClick={handleTestAddEntry}>Test Add Entry</Button>
           </ButtonGroup>
           <FullCalendar
-  plugins={[dayGridPlugin, interactionPlugin]}
-  initialView="dayGridMonth"
-  events={events}
-  dateClick={handleCalendarSelect}
-  editable={true}
-  headerToolbar={{
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,dayGridWeek,dayGridDay'
-  }}
-  height="auto"
-  eventDrop={(info) => {
-    // Update the event's start and end dates
-    const updatedEvent = {
-      ...info.event,
-      start: info.event.start,
-      end: info.event.end,
-    };
-    setEvents(events.map((event) => event.id === updatedEvent.id ? updatedEvent : event));
-  }}
-  eventResize={(info) => {
-    // Update the event's start and end dates
-    const updatedEvent = {
-      ...info.event,
-      start: info.event.start,
-      end: info.event.end,
-    };
-    setEvents(events.map((event) => event.id === updatedEvent.id ? updatedEvent : event));
-  }}
-/>
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            events={events}
+            dateClick={handleCalendarSelect}
+            editable={true}
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,dayGridWeek,dayGridDay'
+            }}
+            height="auto"
+            eventDrop={(info) => {
+              const updatedEvent = {
+                ...info.event,
+                start: info.event.start,
+                end: info.event.end,
+              };
+              setEvents(events.map((event) => event.id === updatedEvent.id ? updatedEvent : event));
+            }}
+            eventResize={(info) => {
+              const updatedEvent = {
+                ...info.event,
+                start: info.event.start,
+                end: info.event.end,
+              };
+              setEvents(events.map((event) => event.id === updatedEvent.id ? updatedEvent : event));
+            }}
+          />
         </CalendarContent>
       </Card>
       <Card>
@@ -348,6 +412,6 @@ const CalendarApp = () => {
       </Card>
     </AppWrapper>
   );
-}
+};
 
 export default CalendarApp;
