@@ -75,10 +75,12 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey, onSelect }) => {
   const [agents, setAgents] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState("");
   const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchAgents = async () => {
+      setIsLoading(true);
       try {
         const agixt = new AGiXTSDK({
           baseUri: agixtApiUri,
@@ -86,9 +88,12 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey, onSelect }) => {
         });
   
         const agentsData = await agixt.getAgents();
-        const agentsList = Object.values(agentsData);
-        setAgents(agentsList);
-        setSelectedAgent(agentsList.length > 0 ? agentsList[0].name : "");
+        const agentsArray = Array.isArray(agentsData) 
+          ? agentsData 
+          : Object.keys(agentsData).map(name => ({ name, ...agentsData[name] }));
+        
+        setAgents(agentsArray);
+        setSelectedAgent(agentsArray.length > 0 ? agentsArray[0].name : "");
   
         const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
         if (storedAlwaysUseAgent !== null) {
@@ -98,30 +103,50 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey, onSelect }) => {
         setError(null);
       } catch (error) {
         console.error("Error fetching agents:", error);
-        setError("Error fetching agents");
+        setError("Failed to fetch agents. Please check your API settings.");
+      } finally {
+        setIsLoading(false);
       }
     };
   
     fetchAgents();
   }, [agixtApiUri, agixtApiKey]);
 
-  const handleAlwaysUseAgentChange = async (value) => {
-    setAlwaysUseAgent(value);
-    await AsyncStorage.setItem(ALWAYS_USE_AGENT_KEY, JSON.stringify(value));
+  const handleAlwaysUseAgentChange = async () => {
+    const newValue = !alwaysUseAgent;
+    setAlwaysUseAgent(newValue);
+    await AsyncStorage.setItem(ALWAYS_USE_AGENT_KEY, JSON.stringify(newValue));
   };
 
   const handleOk = () => {
     onSelect(selectedAgent, alwaysUseAgent);
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading agents...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.agixtComponentContainer}>
-      {agents.length > 0 && (
+      {agents.length > 0 ? (
         <View style={styles.agentsContainer}>
           <Text style={styles.agentsLabel}>Select an Agent:</Text>
           <Picker
             selectedValue={selectedAgent}
-            onValueChange={(value) => setSelectedAgent(value)}
+            onValueChange={setSelectedAgent}
             style={styles.agentPicker}
           >
             {agents.map((agent) => (
@@ -133,9 +158,9 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey, onSelect }) => {
             <TouchableOpacity
               style={[
                 styles.alwaysUseAgentCheckbox,
-                alwaysUseAgent ? styles.alwaysUseAgentChecked : null,
+                alwaysUseAgent && styles.alwaysUseAgentChecked,
               ]}
-              onPress={() => handleAlwaysUseAgentChange(!alwaysUseAgent)}
+              onPress={handleAlwaysUseAgentChange}
             >
               {alwaysUseAgent && <Text style={styles.alwaysUseAgentCheckboxText}>✓</Text>}
             </TouchableOpacity>
@@ -144,11 +169,8 @@ const AGiXTComponent = ({ agixtApiUri, agixtApiKey, onSelect }) => {
             <Text style={styles.okButtonText}>OK</Text>
           </TouchableOpacity>
         </View>
-      )}
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
+      ) : (
+        <Text style={styles.noAgentsText}>No agents available</Text>
       )}
     </View>
   );
