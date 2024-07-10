@@ -1,64 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, Button, View, Text, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, View, Text, ScrollView, Dimensions, Alert } from 'react-native';
 import { ExternalLink } from './ExternalLink';
-import { MonoText } from './StyledText';
-import Colors from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
 
-const AGIXT_API_URI_KEY = "agixtapi";
-const AGIXT_API_KEY_KEY = "agixtkey";
-const AUTH_KEY_KEY = "authKey";
-const GITHUB_USERNAME_KEY = "githubUsername";
-const IS_LOCKED_KEY = "isLocked";
+const STORAGE_KEYS = {
+  AGIXT_API_URI: "agixtapi",
+  AGIXT_API_KEY: "agixtkey",
+  AUTH_KEY: "authKey",
+  GITHUB_USERNAME: "githubUsername"
+};
 
 export default function EditScreenInfo({ path }: { path: string }) {
-  const [agixtApiUri, setAgixtApiUri] = useState('');
-  const [agixtApiKey, setAgixtApiKey] = useState('');
-  const [authKey, setAuthKey] = useState('');
-  const [githubUsername, setGithubUsername] = useState('');
-  const [isLocked, setIsLocked] = useState(true);
+  const [settings, setSettings] = useState({
+    agixtApiUri: '',
+    agixtApiKey: '',
+    authKey: '',
+    githubUsername: ''
+  });
 
   useEffect(() => {
-    const getSettings = async () => {
-      try {
-        const storedApiUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
-        const storedApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
-        const storedAuthKey = await AsyncStorage.getItem(AUTH_KEY_KEY);
-        const storedGithubUsername = await AsyncStorage.getItem(GITHUB_USERNAME_KEY);
-        const storedIsLocked = await AsyncStorage.getItem(IS_LOCKED_KEY);
-        if (storedApiUri) {
-          setAgixtApiUri(storedApiUri);
-        }
-        if (storedApiKey) {
-          setAgixtApiKey(storedApiKey);
-        }
-        if (storedAuthKey) {
-          setAuthKey(storedAuthKey);
-        }
-        if (storedGithubUsername) {
-          setGithubUsername(storedGithubUsername);
-        }
-        if (storedIsLocked) {
-          setIsLocked(JSON.parse(storedIsLocked));
-        }
-      } catch (e) {
-        console.error('Error accessing AsyncStorage:', e);
-      }
-    };
-    getSettings();
+    loadSettings();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const loadedSettings = await Promise.all(
+        Object.entries(STORAGE_KEYS).map(async ([key, storageKey]) => {
+          const value = await AsyncStorage.getItem(storageKey);
+          return [key.toLowerCase(), value || ''];
+        })
+      );
+      setSettings(Object.fromEntries(loadedSettings));
+    } catch (e) {
+      console.error('Error loading settings:', e);
+      Alert.alert('Error', 'Failed to load settings. Please try again.');
+    }
+  };
 
   const handleSaveSettings = async () => {
     try {
-      await AsyncStorage.setItem(AGIXT_API_URI_KEY, agixtApiUri);
-      await AsyncStorage.setItem(AGIXT_API_KEY_KEY, agixtApiKey);
-      await AsyncStorage.setItem(AUTH_KEY_KEY, authKey);
-      await AsyncStorage.setItem(GITHUB_USERNAME_KEY, githubUsername);
-      await AsyncStorage.setItem(IS_LOCKED_KEY, JSON.stringify(isLocked));
+      await Promise.all(
+        Object.entries(STORAGE_KEYS).map(([key, storageKey]) =>
+          AsyncStorage.setItem(storageKey, settings[key.toLowerCase()])
+        )
+      );
+      Alert.alert('Success', 'Settings saved successfully!');
     } catch (e) {
-      console.error('Error saving settings to AsyncStorage:', e);
+      console.error('Error saving settings:', e);
+      Alert.alert('Error', 'Failed to save settings. Please try again.');
     }
+  };
+
+  const updateSetting = (key, value) => {
+    setSettings(prevSettings => ({ ...prevSettings, [key]: value }));
   };
 
   return (
@@ -66,67 +61,48 @@ export default function EditScreenInfo({ path }: { path: string }) {
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Help</Text>
-          <View style={styles.helpContainer}>
-            <ExternalLink
-              style={styles.helpLink}
-              href="https://github.com/birdup000/ADHD-TaskManagementPanel"
-            >
-              <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
-                Tap here for documentation
-              </Text>
-            </ExternalLink>
-          </View>
+          <ExternalLink
+            style={styles.helpLink}
+            href="https://github.com/birdup000/ADHD-TaskManagementPanel"
+          >
+            <Text style={styles.helpLinkText}>
+              Tap here for documentation
+            </Text>
+          </ExternalLink>
         </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
           <View style={styles.settingsContainer}>
-            <TextInput
-              style={[styles.settingsInput, styles.inputField]}
-              placeholder="Enter AGiXT API URI"
-              value={agixtApiUri}
-              onChangeText={(text) => setAgixtApiUri(text)}
-              placeholderTextColor="#FFFFFF80"
+            <InputField
+              icon="link"
+              placeholder="AGiXT API URI"
+              value={settings.agixtApiUri}
+              onChangeText={(text) => updateSetting('agixtApiUri', text)}
             />
-            <TextInput
-              style={[styles.settingsInput, styles.inputField]}
-              placeholder="Enter AGiXT API Key"
-              value={agixtApiKey}
-              onChangeText={(text) => setAgixtApiKey(text)}
-              placeholderTextColor="#FFFFFF80"
+            <InputField
+              icon="key"
+              placeholder="AGiXT API Key"
+              value={settings.agixtApiKey}
+              onChangeText={(text) => updateSetting('agixtApiKey', text)}
               secureTextEntry
             />
-            <TextInput
-              style={[styles.settingsInput, styles.inputField]}
-              placeholder="Enter GitHub Personal Access Token"
-              value={authKey}
-              onChangeText={(text) => setAuthKey(text)}
-              placeholderTextColor="#FFFFFF80"
+            <InputField
+              icon="github"
+              placeholder="GitHub Personal Access Token"
+              value={settings.authKey}
+              onChangeText={(text) => updateSetting('authKey', text)}
               secureTextEntry
+              multiline
             />
-            <TextInput
-              style={[styles.settingsInput, styles.inputField]}
-              placeholder="Enter GitHub username"
-              value={githubUsername}
-              onChangeText={(text) => setGithubUsername(text)}
-              placeholderTextColor="#FFFFFF80"
+            <InputField
+              icon="user"
+              placeholder="GitHub Username"
+              value={settings.githubUsername}
+              onChangeText={(text) => updateSetting('githubUsername', text)}
             />
-            <View style={styles.lockContainer}>
-              <Text style={styles.lockText}>Lock/Unlock Task Map</Text>
-              <TouchableOpacity
-                style={[
-                  styles.lockButton,
-                  { backgroundColor: isLocked ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.8)' },
-                ]}
-                onPress={() => setIsLocked(!isLocked)}
-              >
-                <FontAwesome5
-                  name={isLocked ? 'lock' : 'unlock'}
-                  size={24}
-                  color="white"
-                />
-              </TouchableOpacity>
-            </View>
-            <Button title="Save Settings" onPress={handleSaveSettings} color="#007AFF" />
+            <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
+              <Text style={styles.saveButtonText}>Save Settings</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -134,62 +110,89 @@ export default function EditScreenInfo({ path }: { path: string }) {
   );
 }
 
+const InputField = ({ icon, placeholder, value, onChangeText, secureTextEntry, multiline }) => (
+  <View style={[styles.inputContainer, multiline && styles.multilineContainer]}>
+    <FontAwesome5 name={icon} size={20} color="#FFFFFF80" style={styles.inputIcon} />
+    <TextInput
+      style={[styles.input, multiline && styles.multilineInput]}
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor="#FFFFFF80"
+      secureTextEntry={secureTextEntry}
+      multiline={multiline}
+      numberOfLines={multiline ? 3 : 1}
+    />
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#121212',
   },
   contentContainer: {
-    paddingHorizontal: Dimensions.get('window').width * 0.1,
+    paddingHorizontal: Dimensions.get('window').width * 0.05,
     paddingVertical: 32,
   },
   section: {
     marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 16,
-  },
-  helpContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   helpLink: {
-    paddingVertical: 15,
+    backgroundColor: '#2C2C2C',
+    padding: 18,
+    borderRadius: 12,
   },
   helpLinkText: {
     textAlign: 'center',
     color: '#FFFFFF',
+    fontSize: 18,
   },
   settingsContainer: {
     marginBottom: 24,
   },
-  settingsInput: {
-    borderWidth: 1,
-    borderColor: '#FFFFFF80',
-    padding: 12,
-    marginVertical: 8,
-    color: '#FFFFFF',
-    borderRadius: 8,
-  },
-  inputField: {
-    backgroundColor: '#2E2E2E',
-  },
-  lockContainer: {
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 16,
+    backgroundColor: '#2C2C2C',
+    borderRadius: 12,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  lockText: {
+  multilineContainer: {
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+  },
+  inputIcon: {
+    marginRight: 16,
+    marginTop: 4,
+  },
+  input: {
+    flex: 1,
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
   },
-  lockButton: {
-    padding: 12,
-    borderRadius: 50,
+  multilineInput: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 18,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 20,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 });

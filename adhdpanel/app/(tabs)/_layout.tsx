@@ -26,7 +26,7 @@ export default function TabLayout() {
     // to prevent a hydration error in React Navigation v6.
     headerShown: useClientOnlyValue(false, true),
     headerRight: () => (
-      <Link href="/modal" asChild>
+      <Link href="/settings" asChild>
         <Pressable>
           {({ pressed }) => (
             <FontAwesome
