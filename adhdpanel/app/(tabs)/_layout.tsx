@@ -48,21 +48,21 @@ export default function TabLayout() {
     }}
   />
   <Tabs.Screen
-    name="two"
+    name="tasks"
     options={{
       title: 'Task List',
       tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
     }}
   />
   <Tabs.Screen
-    name="three"
+    name="taskmap"
     options={{
       title: 'Task Map',
       tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
     }}
   />
   <Tabs.Screen
-    name="four"
+    name="calendar"
     options={{
       title: 'Calendar',
       tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
