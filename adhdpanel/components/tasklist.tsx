@@ -298,10 +298,20 @@ export default function TaskPanel() {
         apiKey: agixtApiKey,
       });
       const chainsObject = await ApiClient.getChains();
-      const chainsArray = Object.values(chainsObject);
+      
+      // Check if chainsObject is an object or an array
+      let chainsArray;
+      if (Array.isArray(chainsObject)) {
+        chainsArray = chainsObject;
+      } else if (typeof chainsObject === 'object') {
+        chainsArray = Object.keys(chainsObject);
+      } else {
+        throw new Error('Unexpected response format for chains');
+      }
+      
       setChains(chainsArray);
     } catch (error) {
-      console.log("Error getting chains:", error);
+      console.error("Error getting chains:", error);
       if (refreshOnError) {
         setTimeout(() => getChains(true), 10000);
       }
@@ -724,18 +734,18 @@ export default function TaskPanel() {
           {selectedChain ? selectedChain : 'Run Chain'}
         </Text>
         {showChainDropdown && (
-          <View style={styles.chainDropdownContainer}>
-            {chains.map((chain) => (
-              <TouchableOpacity
-                key={chain}
-                style={styles.chainDropdownItem}
-                onPress={() => handleChainSelect(chain)}
-              >
-                <Text style={styles.chainDropdownText}>{chain}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+  <View style={styles.chainDropdownContainer}>
+    {chains.map((chain) => (
+      <TouchableOpacity
+        key={chain}
+        style={styles.chainDropdownItem}
+        onPress={() => handleChainSelect(chain)}
+      >
+        <Text style={styles.chainDropdownText}>{chain}</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+)}
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.actionButton}
