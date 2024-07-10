@@ -9,7 +9,7 @@ const AGIXT_API_KEY_KEY = "agixtkey";
 const AUTH_KEY_KEY = "authKey";
 const GITHUB_USERNAME_KEY = "githubUsername";
 
-export default function EditScreenInfo({ path }: { path: string }) {
+export default function EditScreenInfo({ path }) {
   const [agixtApiUri, setAgixtApiUri] = useState('');
   const [agixtApiKey, setAgixtApiKey] = useState('');
   const [authKey, setAuthKey] = useState('');
@@ -108,6 +108,7 @@ const InputField = ({ icon, placeholder, value, onChangeText, secureTextEntry, m
       secureTextEntry={secureTextEntry}
       multiline={multiline}
       numberOfLines={multiline ? 3 : 1}
+      pointerEvents="auto"
     />
   </View>
 );
@@ -134,6 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2C',
     padding: 18,
     borderRadius: 12,
+    role: 'link',
   },
   helpLinkText: {
     textAlign: 'center',
@@ -164,10 +166,10 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFFFFF',
     fontSize: 18,
+    verticalAlign: 'top',
   },
   multilineInput: {
     height: 80,
-    textAlignVertical: 'top',
   },
   saveButton: {
     backgroundColor: '#007AFF',
