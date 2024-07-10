@@ -684,52 +684,53 @@ export default function TaskPanel() {
               />
             </View>
             <View style={styles.taskButtonsContainer}>
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.loadingText}>Loading chains...</Text>
-                </View>
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
-                    onPress={() => {
-                      setShowChainDropdown(!showChainDropdown);
-                    }}
-                  >
-                    <Icon name="play-arrow" size={24} color="#FFFFFF" />
-                    <Text style={styles.runChainButtonText}>
-                      {selectedChain ? selectedChain : 'Run Chain'}
-                    </Text>
-                    {showChainDropdown && (
-                      <View style={styles.chainDropdownContainer}>
-                        {chains.map((chain) => (
-                          <TouchableOpacity
-                            key={chain}
-                            style={styles.chainDropdownItem}
-                            onPress={() => handleChainSelect(chain)}
-                          >
-                            <Text style={styles.chainDropdownText}>{chain}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.runChainButton, { backgroundColor: '#007AFF' }]}
-                    onPress={() => handleGetSubtasks(taskDescription, taskName, taskdetails)}
-                  >
-                    <Text style={styles.runChainButtonText}>Get Subtasks</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removeTask(item.id)}
-                  >
-                    <Icon name="delete" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
+  {isLoading ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="small" color="#FFFFFF" />
+      <Text style={styles.loadingText}>Loading chains...</Text>
+    </View>
+  ) : (
+    <>
+      <TouchableOpacity
+        style={styles.actionButton}
+        onPress={() => {
+          setShowChainDropdown(!showChainDropdown);
+        }}
+      >
+        <Icon name="play-arrow" size={24} color="#FFFFFF" />
+        <Text style={styles.actionButtonText}>
+          {selectedChain ? selectedChain : 'Run Chain'}
+        </Text>
+        {showChainDropdown && (
+          <View style={styles.chainDropdownContainer}>
+            {chains.map((chain) => (
+              <TouchableOpacity
+                key={chain}
+                style={styles.chainDropdownItem}
+                onPress={() => handleChainSelect(chain)}
+              >
+                <Text style={styles.chainDropdownText}>{chain}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.actionButton}
+        onPress={() => handleGetSubtasks(taskDescription, taskName, taskdetails)}
+      >
+        <Icon name="list" size={24} color="#FFFFFF" />
+        <Text style={styles.actionButtonText}>Get Subtasks</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => removeTask(item.id)}
+      >
+        <Icon name="delete" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+    </>
+  )}
+</View>
           </TouchableOpacity>
         )}
       />
@@ -1186,21 +1187,29 @@ const styles = StyleSheet.create({
   taskButtonsContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-end",
     marginLeft: 16,
   },
-  runChainButton: {
+  actionButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    marginRight: 16,
+    marginRight: 8,
     backgroundColor: "#007AFF",
+    minWidth: 120, // Ensure a minimum width for consistency
   },
-  runChainButtonText: {
+  actionButtonText: {
     color: "#FFFFFF",
     marginLeft: 8,
     fontWeight: "bold",
+  },
+  removeButton: {
+    backgroundColor: "#FF3B30",
+    padding: 12,
+    borderRadius: 8,
   },
   chainDropdownContainer: {
     position: "absolute",
