@@ -1,49 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View, Text, ScrollView, Dimensions, Alert } from 'react-native';
 import { ExternalLink } from './ExternalLink';
-import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome5 } from '@expo/vector-icons';
 
-const AGIXT_API_URI_KEY = "agixtapi";
-const AGIXT_API_KEY_KEY = "agixtkey";
-const AUTH_KEY_KEY = "authKey";
-const GITHUB_USERNAME_KEY = "githubUsername";
+const STORAGE_KEYS = {
+  AGIXT_API_URI: "agixtapi",
+  AGIXT_API_KEY: "agixtkey",
+  AUTH_KEY: "authKey",
+  GITHUB_USERNAME: "githubUsername"
+};
 
 export default function EditScreenInfo({ path }: { path: string }) {
-  const [agixtApiUri, setAgixtApiUri] = useState('');
-  const [agixtApiKey, setAgixtApiKey] = useState('');
-  const [authKey, setAuthKey] = useState('');
-  const [githubUsername, setGithubUsername] = useState('');
+  const [settings, setSettings] = useState({
+    agixtApiUri: '',
+    agixtApiKey: '',
+    authKey: '',
+    githubUsername: ''
+  });
 
   useEffect(() => {
-    const getSettings = async () => {
-      try {
-        const storedApiUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
-        const storedApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
-        const storedAuthKey = await AsyncStorage.getItem(AUTH_KEY_KEY);
-        const storedGithubUsername = await AsyncStorage.getItem(GITHUB_USERNAME_KEY);
-        if (storedApiUri) setAgixtApiUri(storedApiUri);
-        if (storedApiKey) setAgixtApiKey(storedApiKey);
-        if (storedAuthKey) setAuthKey(storedAuthKey);
-        if (storedGithubUsername) setGithubUsername(storedGithubUsername);
-      } catch (e) {
-        console.error('Error accessing AsyncStorage:', e);
-      }
-    };
-    getSettings();
+    loadSettings();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const loadedSettings = await Promise.all(
+        Object.entries(STORAGE_KEYS).map(async ([key, storageKey]) => {
+          const value = await AsyncStorage.getItem(storageKey);
+          return [key.toLowerCase(), value || ''];
+        })
+      );
+      setSettings(Object.fromEntries(loadedSettings));
+    } catch (e) {
+      console.error('Error loading settings:', e);
+      Alert.alert('Error', 'Failed to load settings. Please try again.');
+    }
+  };
 
   const handleSaveSettings = async () => {
     try {
-      await AsyncStorage.setItem(AGIXT_API_URI_KEY, agixtApiUri);
-      await AsyncStorage.setItem(AGIXT_API_KEY_KEY, agixtApiKey);
-      await AsyncStorage.setItem(AUTH_KEY_KEY, authKey);
-      await AsyncStorage.setItem(GITHUB_USERNAME_KEY, githubUsername);
+      await Promise.all(
+        Object.entries(STORAGE_KEYS).map(([key, storageKey]) =>
+          AsyncStorage.setItem(storageKey, settings[key.toLowerCase()])
+        )
+      );
       Alert.alert('Success', 'Settings saved successfully!');
     } catch (e) {
-      console.error('Error saving settings to AsyncStorage:', e);
+      console.error('Error saving settings:', e);
       Alert.alert('Error', 'Failed to save settings. Please try again.');
     }
+  };
+
+  const updateSetting = (key, value) => {
+    setSettings(prevSettings => ({ ...prevSettings, [key]: value }));
   };
 
   return (
@@ -51,40 +61,44 @@ export default function EditScreenInfo({ path }: { path: string }) {
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Help</Text>
-          <View style={styles.helpContainer}>
-            <ExternalLink style={styles.helpLink} href="https://github.com/birdup000/ADHD-TaskManagementPanel">
-              <Text style={styles.helpLinkText}>Tap here for documentation</Text>
-            </ExternalLink>
-          </View>
+          <ExternalLink
+            style={styles.helpLink}
+            href="https://github.com/birdup000/ADHD-TaskManagementPanel"
+          >
+            <Text style={styles.helpLinkText}>
+              Tap here for documentation
+            </Text>
+          </ExternalLink>
         </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
           <View style={styles.settingsContainer}>
             <InputField
               icon="link"
-              placeholder="Enter AGiXT API URI"
-              value={agixtApiUri}
-              onChangeText={(text) => setAgixtApiUri(text)}
+              placeholder="AGiXT API URI"
+              value={settings.agixtApiUri}
+              onChangeText={(text) => updateSetting('agixtApiUri', text)}
             />
             <InputField
               icon="key"
-              placeholder="Enter AGiXT API Key"
-              value={agixtApiKey}
-              onChangeText={(text) => setAgixtApiKey(text)}
+              placeholder="AGiXT API Key"
+              value={settings.agixtApiKey}
+              onChangeText={(text) => updateSetting('agixtApiKey', text)}
               secureTextEntry
             />
             <InputField
               icon="github"
-              placeholder="Enter GitHub Personal Access Token"
-              value={authKey}
-              onChangeText={(text) => setAuthKey(text)}
+              placeholder="GitHub Personal Access Token"
+              value={settings.authKey}
+              onChangeText={(text) => updateSetting('authKey', text)}
               secureTextEntry
+              multiline
             />
             <InputField
               icon="user"
-              placeholder="Enter GitHub username"
-              value={githubUsername}
-              onChangeText={(text) => setGithubUsername(text)}
+              placeholder="GitHub Username"
+              value={settings.githubUsername}
+              onChangeText={(text) => updateSetting('githubUsername', text)}
             />
             <TouchableOpacity style={styles.saveButton} onPress={handleSaveSettings}>
               <Text style={styles.saveButtonText}>Save Settings</Text>
