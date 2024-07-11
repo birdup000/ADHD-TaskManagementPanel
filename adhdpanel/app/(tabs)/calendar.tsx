@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const AGIXT_API_URI_KEY = 'agixtapi';
 const AGIXT_API_KEY_KEY = 'agixtkey';
 
+
 const AppWrapper = styled.div`
   background-color: #121212;
   min-height: 100vh;
@@ -228,6 +229,7 @@ const CalendarApp = () => {
   const [events, setEvents] = useState([]);
   const [agixt, setAgixt] = useState(null);
   const [error, setError] = useState(null);
+  const [isAgixtInitialized, setIsAgixtInitialized] = useState(false);
   const [newEvent, setNewEvent] = useState({
     subject: '',
     start_time: '',
@@ -240,25 +242,42 @@ const CalendarApp = () => {
       try {
         const agixtApiUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
         const agixtApiKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
-
+  
         if (agixtApiUri && agixtApiKey) {
           const agixtInstance = new AGiXTSDK({
             baseUri: agixtApiUri,
             apiKey: agixtApiKey,
           });
           setAgixt(agixtInstance);
+  
+          // Test AGiXT connection
+          const isConnected = await testAGiXTConnection(agixtInstance);
+          if (!isConnected) {
+            throw new Error("AGiXT is not responding or is offline");
+          }
+  
           await initializeAGiXTConversation(agixtInstance);
-          handleAGiXTGetCalendarItems(agixtInstance);
+          await handleAGiXTGetCalendarItems(agixtInstance);
+          setIsAgixtInitialized(true);
+          setError(null); // Clear any previous errors
         } else {
           setError("AGiXT API URI or API Key not found in AsyncStorage");
         }
       } catch (error) {
-        setError("Error loading AGiXT settings from AsyncStorage: " + error.message);
+        setError("Error initializing AGiXT: " + error.message);
+        setIsAgixtInitialized(false);
       }
     };
-
+  
     loadSettings();
   }, []);
+
+
+  useEffect(() => {
+    if (agixt && isAgixtInitialized) {
+      handleAGiXTGetCalendarItems(agixt);
+    }
+  }, [agixt, isAgixtInitialized]);
 
   const initializeAGiXTConversation = async (agixtInstance) => {
     try {
@@ -316,22 +335,43 @@ const CalendarApp = () => {
     }
   };
 
+
+  const testAGiXTConnection = async (agixtInstance) => {
+    try {
+      const testResponse = await agixtInstance.chat('CalendarTaskPanel', 'Hello, AGiXT. Are you online?', 'CalendarTaskPanel', 6);
+      return testResponse && testResponse.trim() !== '';
+    } catch (error) {
+      console.error('AGiXT connection test failed:', error);
+      return false;
+    }
+  };
+
   const handleAGiXTGetCalendarItems = async (agixtInstance) => {
     try {
+      // Test AGiXT connection before proceeding
+      const isConnected = await testAGiXTConnection(agixtInstance);
+      if (!isConnected) {
+        throw new Error("AGiXT is not responding or is offline");
+      }
+  
       const result = await interactWithAGiXT('Get all calendar items');
       if (result.success) {
-        const items = result.event || []; // Assuming the event contains the calendar items
+        const items = result.event || [];
         setEvents(items.map(item => ({
           id: item.id,
           title: item.subject,
           start: item.start_time,
           end: item.end_time,
         })));
+        setIsAgixtInitialized(true);
+        setError(null);
       } else {
-        setError("Error fetching AGiXT calendar items: " + result.error);
+        throw new Error("Error fetching AGiXT calendar items: " + result.error);
       }
     } catch (error) {
-      setError("Error fetching AGiXT calendar items: " + error.message);
+      setError(error.message);
+      setEvents([]);
+      setIsAgixtInitialized(false);
     }
   };
 
@@ -403,7 +443,12 @@ const CalendarApp = () => {
           <CalendarTitle>Calendar Integration</CalendarTitle>
         </CardHeader>
         <CalendarContent>
-          {error && <ErrorMessage>{error}</ErrorMessage>}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+{isAgixtInitialized && !error && (
+  <div style={{ color: '#27ae60', marginBottom: '1rem' }}>
+    AGiXT SDK initialized successfully
+  </div>
+)}
           <Form onSubmit={handleSubmit}>
             <Label>Event Subject</Label>
             <Input
@@ -480,11 +525,11 @@ const CalendarApp = () => {
           <EventsTitle>Upcoming Events</EventsTitle>
         </EventsHeader>
         <CardContent>
-          {events.length === 0 && <p>No events to show</p>}
-          {events.map((event) => (
-            <EventItem key={event.id}>{event.title}</EventItem>
-          ))}
-        </CardContent>
+  {events && events.length === 0 && <p>No events to show</p>}
+  {events && events.map((event) => (
+    <EventItem key={event.id}>{event.title}</EventItem>
+  ))}
+</CardContent>
       </Card>
     </AppWrapper>
   );
