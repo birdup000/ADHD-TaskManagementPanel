@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -10,6 +10,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Linking,
+  Animated,
+  Easing,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,53 +24,6 @@ import AGiXTSDK from "agixt";
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
 const ALWAYS_USE_AGENT_KEY = "alwaysUseAgent";
-
-async function getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, agixtApiKey, clarificationText) {
-  try {
-    const agixt = new AGiXTSDK({
-      baseUri: agixtApiUri,
-      apiKey: agixtApiKey,
-    });
-
-    const prompt = await agixt.getPrompt('Get Task List');
-    const userInput = `Task Name: ${taskName}\nTask Description: ${taskDescription}\nTask Details: ${JSON.stringify(taskDetails)}\nClarification: ${clarificationText}`;
-    const subtaskResponse = await agixt.promptAgent(ALWAYS_USE_AGENT_KEY, 'Get Task List', {
-      user_input: userInput,
-    });
-
-    const subtasks = parseTaskDescription(subtaskResponse);
-    return subtasks;
-  } catch (error) {
-    console.error("Error getting subtasks:", error);
-    return [];
-  }
-}
-
-function parseTaskDescription(taskDescription) {
-  const sections = taskDescription.split('\n\n');
-  const subtasks = [];
-
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i].trim();
-    if (section.startsWith(`**Task ${i + 1}:`)) {
-      const subtaskTitle = section.split(': ')[1].trim();
-      let subtaskDescription = '';
-      let j = i + 1;
-      while (j < sections.length && !sections[j].startsWith(`**Task ${j + 1}:`)) {
-        subtaskDescription += sections[j].trim() + '\n';
-        j++;
-      }
-      subtasks.push({
-        id: Date.now() + i,
-        text: subtaskTitle,
-        description: subtaskDescription.trim(),
-      });
-      i = j - 1;
-    }
-  }
-
-  return subtasks;
-}
 
 if (__DEV__) {
   loadDevMessages();
@@ -88,6 +43,58 @@ const GET_USER_REPOSITORIES = gql`
     }
   }
 `;
+
+async function getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, agixtApiKey, clarificationText) {
+  try {
+    const agixt = new AGiXTSDK({
+      baseUri: agixtApiUri,
+      apiKey: agixtApiKey,
+    });
+
+    const agentName = "DEFAULT"; // Or use a specific agent name
+    const conversationName = `Subtasks_${taskName}_${Date.now()}`;
+    const userInput = `Task Name: ${taskName}\nTask Description: ${taskDescription}\nTask Details: ${JSON.stringify(taskDetails)}\nClarification: ${clarificationText}\n\nPlease provide a list of subtasks for this task.`;
+
+    // Start a new conversation and get the subtasks
+    const response = await agixt.chat(agentName, userInput, conversationName);
+
+    // Get the conversation history
+    const conversation = await agixt.getConversation(conversationName, 100, 1, agentName);
+
+    // Extract the subtasks from the conversation
+    const subtasks = extractSubtasksFromConversation(conversation);
+
+    // Clean up: delete the temporary conversation
+    await agixt.deleteConversation(conversationName, agentName);
+
+    return subtasks;
+  } catch (error) {
+    console.error("Error getting subtasks:", error);
+    return [];
+  }
+}
+
+function extractSubtasksFromConversation(conversation) {
+  const subtasks = [];
+  const assistantMessages = conversation.filter(msg => msg.role === 'assistant');
+  
+  if (assistantMessages.length > 0) {
+    const lastMessage = assistantMessages[assistantMessages.length - 1].content;
+    const lines = lastMessage.split('\n');
+    
+    for (const line of lines) {
+      if (line.match(/^\d+\.\s/)) {
+        const subtaskText = line.replace(/^\d+\.\s/, '').trim();
+        subtasks.push({
+          id: Date.now() + subtasks.length,
+          text: subtaskText,
+        });
+      }
+    }
+  }
+
+  return subtasks;
+}
 
 export default function TaskPanel() {
   const [tasks, setTasks] = useState([]);
@@ -266,25 +273,33 @@ export default function TaskPanel() {
 
   const handleGetSubtasks = async () => {
     setShowSubtaskClarificationModal(false);
-    const subtasks = await getSubtasks(
-      selectedTaskForAGiXT.text,
-      selectedTaskForAGiXT.text,
-      {
-        note: selectedTaskForAGiXT.note,
-        dueDate: selectedTaskForAGiXT.dueDate,
-        priority: selectedTaskForAGiXT.priority,
-      },
-      agixtApiUri,
-      agixtApiKey,
-      subtaskClarificationText
-    );
-    const updatedTasks = tasks.map(task => 
-      task.id === selectedTaskForAGiXT.id 
-        ? { ...task, subtasks: [...(task.subtasks || []), ...subtasks] }
-        : task
-    );
-    saveTasks(updatedTasks);
-    setSubtaskClarificationText("");
+    setIsLoading(true);
+    try {
+      const subtasks = await getSubtasks(
+        selectedTaskForAGiXT.text,
+        selectedTaskForAGiXT.text,
+        {
+          note: selectedTaskForAGiXT.note,
+          dueDate: selectedTaskForAGiXT.dueDate,
+          priority: selectedTaskForAGiXT.priority,
+        },
+        agixtApiUri,
+        agixtApiKey,
+        subtaskClarificationText
+      );
+      const updatedTasks = tasks.map(task => 
+        task.id === selectedTaskForAGiXT.id 
+          ? { ...task, subtasks: [...(task.subtasks || []), ...subtasks] }
+          : task
+      );
+      saveTasks(updatedTasks);
+      setSubtaskClarificationText("");
+    } catch (error) {
+      console.error("Error getting subtasks:", error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const { loading, error, data } = useQuery(GET_USER_REPOSITORIES, {
@@ -364,9 +379,8 @@ export default function TaskPanel() {
         onContinue={handleGetSubtasks}
         clarificationText={subtaskClarificationText}
         onChangeClarificationText={setSubtaskClarificationText}
+        isLoading={isLoading}
       />
-
-      <ChainRunningAnimation isRunning={isChainRunning} />
     </View>
   );
 }
@@ -423,7 +437,7 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
         )}
       </View>
       <View style={styles.taskButtonsContainer}>
-      <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
+        <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
           <Icon name="edit" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <TouchableOpacity 
@@ -436,12 +450,7 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
           <Icon name="delete" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-      {isChainRunning && (
-        <View style={styles.chainRunningOverlay}>
-          <Icon name="settings" size={24} color="#FFFFFF" style={styles.rotatingGear} />
-          <Text style={styles.chainRunningText}>AUTOMATION TASK</Text>
-        </View>
-      )}
+      {isChainRunning && <ChainRunningAnimation />}
     </View>
   );
 };
@@ -846,7 +855,7 @@ const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect }) => {
   );
 };
 
-const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText }) => {
+const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText, isLoading }) => {
   return (
     <Modal
       visible={visible}
@@ -864,13 +873,18 @@ const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarification
             placeholder="Enter optional clarification text"
             placeholderTextColor="#FFFFFF80"
             multiline
+            editable={!isLoading}
           />
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
+            <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose} disabled={isLoading}>
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={onContinue}>
-              <Text style={styles.buttonText}>Continue</Text>
+            <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={onContinue} disabled={isLoading}>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Continue</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -879,13 +893,31 @@ const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarification
   );
 };
 
-const ChainRunningAnimation = ({ isRunning }) => {
-  if (!isRunning) return null;
+const ChainRunningAnimation = () => {
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   return (
-    <View style={styles.chainRunningContainer}>
+    <View style={styles.chainRunningOverlay}>
       <View style={styles.chainRunningContent}>
-        <Icon name="settings" size={48} color="#FFFFFF" style={styles.rotatingGear} />
+        <Animated.View style={{ transform: [{ rotate: spin }] }}>
+          <Icon name="settings" size={48} color="#FFFFFF" />
+        </Animated.View>
         <Text style={styles.chainRunningText}>AUTOMATION TASK</Text>
       </View>
     </View>
@@ -997,7 +1029,6 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '90%',
     maxHeight: '80%',
-    zIndex: 1000,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1181,7 +1212,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  chainRunningContainer: {
+  chainRunningOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -1190,6 +1221,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 5,
+    borderColor: '#FFFFFF',
+    borderWidth: 2,
   },
   chainRunningContent: {
     alignItems: 'center',
@@ -1198,9 +1232,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     marginTop: 10,
-  },
-  rotatingGear: {
-    transform: [{ rotate: '0deg' }],
+    fontWeight: 'bold',
   },
   link: {
     color: '#007AFF',
@@ -1220,17 +1252,6 @@ const styles = StyleSheet.create({
   },
   dependencyItemText: {
     color: '#FFFFFF',
-  },
-  chainRunningOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
   },
   clarificationInput: {
     width: '100%',
