@@ -13,7 +13,8 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ApolloClient, InMemoryCache, gql, useMutation, useQuery } from '@apollo/client';
@@ -51,20 +52,13 @@ async function getSubtasks(taskDescription, taskName, taskDetails, agixtApiUri, 
       apiKey: agixtApiKey,
     });
 
-    const agentName = "DEFAULT"; // Or use a specific agent name
+    const agentName = "DEFAULT";
     const conversationName = `Subtasks_${taskName}_${Date.now()}`;
     const userInput = `Task Name: ${taskName}\nTask Description: ${taskDescription}\nTask Details: ${JSON.stringify(taskDetails)}\nClarification: ${clarificationText}\n\nPlease provide a list of subtasks for this task.`;
 
-    // Start a new conversation and get the subtasks
     const response = await agixt.chat(agentName, userInput, conversationName);
-
-    // Get the conversation history
     const conversation = await agixt.getConversation(conversationName, 100, 1, agentName);
-
-    // Extract the subtasks from the conversation
     const subtasks = extractSubtasksFromConversation(conversation);
-
-    // Clean up: delete the temporary conversation
     await agixt.deleteConversation(conversationName, agentName);
 
     return subtasks;
@@ -252,10 +246,8 @@ export default function TaskPanel() {
       });
       const result = await agixt.runChain(chain, input, agent);
       console.log("Chain execution result:", result);
-      // Handle the result as needed (e.g., update task, show notification)
     } catch (error) {
       console.error("Error executing chain:", error);
-      // Handle the error (e.g., show error message)
     } finally {
       setIsLoading(false);
       setIsChainRunning(false);
@@ -296,7 +288,6 @@ export default function TaskPanel() {
       setSubtaskClarificationText("");
     } catch (error) {
       console.error("Error getting subtasks:", error);
-      // You might want to show an error message to the user here
     } finally {
       setIsLoading(false);
     }
@@ -432,837 +423,874 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
               <Text key={subtask.id} style={styles.subtaskText}>
                 {index + 1}. {subtask.text}
               </Text>
-            ))}
+              ))}
+              </View>
+            )}
           </View>
-        )}
-      </View>
-      <View style={styles.taskButtonsContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
-          <Icon name="edit" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => onAGiXTOptions(task)}
-        >
-          <Icon name="play-arrow" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.removeButton} onPress={onRemove}>
-          <Icon name="delete" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-      {isChainRunning && <ChainRunningAnimation />}
-    </View>
-  );
-};
-
-const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks }) => {
-  const [editedTask, setEditedTask] = useState(null);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-
-  useEffect(() => {
-    if (task) {
-      setEditedTask({
-        id: task.id,
-        text: task.text || '',
-        note: task.note || '',
-        dueDate: task.dueDate ? new Date(task.dueDate) : null,
-        priority: task.priority || '',
-        repo: task.repo || '',
-        subtasks: task.subtasks || [],
-        dependencies: task.dependencies || [],
-      });
-    } else {
-      setEditedTask(null);
-    }
-  }, [task]);
-
-  const handleChange = (field, value) => {
-    if (editedTask) {
-      setEditedTask({ ...editedTask, [field]: value });
-    }
-  };
-
-  const handleSave = () => {
-    if (editedTask) {
-      onSave(editedTask);
-    }
-  };
-
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || editedTask.dueDate;
-    setShowTimePicker(false);
-    handleChange('dueDate', currentDate);
-  };
-
-  const toggleDependency = (taskId) => {
-    const updatedDependencies = editedTask.dependencies.includes(taskId)
-      ? editedTask.dependencies.filter(id => id !== taskId)
-      : [...editedTask.dependencies, taskId];
-    handleChange('dependencies', updatedDependencies);
-  };
-
-  if (!editedTask) {
-    return null;
-  }
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { zIndex: 1000 }]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Edit Task</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Icon name="close" size={24} color="#FFFFFF" />
+          <View style={styles.taskButtonsContainer}>
+            <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
+              <Icon name="edit" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => onAGiXTOptions(task)}
+            >
+              <Icon name="play-arrow" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.removeButton} onPress={onRemove}>
+              <Icon name="delete" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-          
-          <ScrollView style={styles.modalBody}>
-            <InputField
-              label="Task Name"
-              value={editedTask.text}
-              onChangeText={(text) => handleChange('text', text)}
-            />
-            
-            <InputField
-              label="Description"
-              value={editedTask.note}
-              onChangeText={(text) => handleChange('note', text)}
-              multiline
-            />
-            
-            <View style={styles.datePickerContainer}>
-              <Text style={styles.inputLabel}>Due Date</Text>
-              <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.datePickerButton}>
-                <Text style={styles.datePickerButtonText}>
-                  {editedTask.dueDate ? editedTask.dueDate.toLocaleString() : "Select date and time"}
-                </Text>
-              </TouchableOpacity>
-              {showTimePicker && (
-                <DateTimePicker
-                  value={editedTask.dueDate || new Date()}
-                  mode="datetime"
-                  is24Hour={true}
-                  display="default"
-                  onChange={handleDateChange}
-                />
-              )}
-            </View>
-            
-            <PickerField
-              label="Priority"
-              value={editedTask.priority}
-              onValueChange={(value) => handleChange('priority', value)}
-              items={[
-                { label: 'Low', value: 'low' },
-                { label: 'Medium', value: 'medium' },
-                { label: 'High', value: 'high' },
-              ]}
-            />
-            
-            <PickerField
-              label="Repository"
-              value={editedTask.repo}
-              onValueChange={(value) => handleChange('repo', value)}
-              items={repositories.map(repo => ({ label: repo.name, value: repo.name }))}
-            />
-            
-            <SubtasksList
-              subtasks={editedTask.subtasks}
-              onSubtasksChange={(subtasks) => handleChange('subtasks', subtasks)}
-            />
-
-            <DependencyList
-              allTasks={allTasks}
-              currentTaskId={editedTask.id}
-              dependencies={editedTask.dependencies}
-              onToggleDependency={toggleDependency}
-            />
-          </ScrollView>
-          
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
-              <Text style={styles.buttonText}>Save</Text>
-            </TouchableOpacity>
-          </View>
+          {isChainRunning && <ChainRunningAnimation />}
         </View>
-      </View>
-    </Modal>
-  );
-};
-
-const InputField = ({ label, value, onChangeText, multiline = false }) => (
-  <View style={styles.inputField}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput
-      style={[styles.input, multiline && styles.multilineInput]}
-      value={value || ''}
-      onChangeText={onChangeText}
-      multiline={multiline}
-      placeholderTextColor="#FFFFFF80"
-    />
-  </View>
-);
-
-const PickerField = ({ label, value, onValueChange, items }) => (
-  <View style={styles.inputField}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <Picker
-      selectedValue={value || ''}
-      onValueChange={onValueChange}
-      style={styles.picker}
-    >
-      {items.map((item) => (
-        <Picker.Item key={item.value} label={item.label} value={item.value} />
-      ))}
-    </Picker>
-  </View>
-);
-
-const SubtasksList = ({ subtasks, onSubtasksChange }) => {
-  const addSubtask = () => {
-    onSubtasksChange([...subtasks, { id: Date.now(), text: '' }]);
-  };
-
-  const updateSubtask = (id, text) => {
-    onSubtasksChange(subtasks.map(st => st.id === id ? { ...st, text } : st));
-  };
-
-  const removeSubtask = (id) => {
-    onSubtasksChange(subtasks.filter(st => st.id !== id));
-  };
-
-  return (
-    <View style={styles.subtasksList}>
-      <Text style={styles.inputLabel}>Subtasks</Text>
-      {subtasks.map((subtask) => (
-        <View key={subtask.id} style={styles.subtaskItem}>
-          <TextInput
-            style={styles.subtaskInput}
-            value={subtask.text}
-            onChangeText={(text) => updateSubtask(subtask.id, text)}
-            placeholderTextColor="#FFFFFF80"
-          />
-          <TouchableOpacity onPress={() => removeSubtask(subtask.id)}>
-            <Icon name="remove-circle-outline" size={24} color="#FF3B30" />
-          </TouchableOpacity>
-        </View>
-      ))}
-      <TouchableOpacity style={styles.addSubtaskButton} onPress={addSubtask}>
-        <Icon name="add-circle-outline" size={24} color="#007AFF" />
-        <Text style={styles.addSubtaskText}>Add Subtask</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDependency }) => {
-  return (
-    <View style={styles.dependencyList}>
-      <Text style={styles.inputLabel}>Dependencies</Text>
-      {allTasks
-        .filter(task => task.id !== currentTaskId)
-        .map(task => (
-          <TouchableOpacity
-            key={task.id}
-            style={[
-              styles.dependencyItem,
-              dependencies.includes(task.id) && styles.dependencyItemSelected
-            ]}
-            onPress={() => onToggleDependency(task.id)}
-          >
-            <Text style={styles.dependencyItemText}>{task.text}</Text>
-          </TouchableOpacity>
-        ))
-      }
-    </View>
-  );
-};
-
-const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey, chains }) => {
-  const [agents, setAgents] = useState([]);
-  const [selectedAgent, setSelectedAgent] = useState("");
-  const [selectedChain, setSelectedChain] = useState("");
-  const [chainInput, setChainInput] = useState("");
-  const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [availableChains, setAvailableChains] = useState([]);
-
-  useEffect(() => {
-    const fetchAgentsAndChains = async () => {
-      setIsLoading(true);
-      try {
-        const agixt = new AGiXTSDK({
-          baseUri: agixtApiUri,
-          apiKey: agixtApiKey,
-        });
-
-        const agentsData = await agixt.getAgents();
-        const agentsArray = Array.isArray(agentsData) 
-          ? agentsData 
-          : Object.keys(agentsData).map(name => ({ name, ...agentsData[name] }));
-        
-        setAgents(agentsArray);
-        setSelectedAgent(agentsArray.length > 0 ? agentsArray[0].name : "");
-
-        const chainsData = await agixt.getChains();
-        setAvailableChains(Array.isArray(chainsData) ? chainsData : Object.keys(chainsData));
-        setSelectedChain(availableChains.length > 0 ? availableChains[0] : "");
-
-        const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
-        if (storedAlwaysUseAgent !== null) {
-          setAlwaysUseAgent(JSON.parse(storedAlwaysUseAgent));
-        }
-
-        setError(null);
-      } catch (error) {
-        console.error("Error fetching agents and chains:", error);
-        setError("Failed to fetch agents and chains. Please check your API settings.");
-      } finally {
-        setIsLoading(false);
-      }
+      );
     };
-
-    fetchAgentsAndChains();
-  }, [agixtApiUri, agixtApiKey]);
-
-  const handleAlwaysUseAgentChange = async () => {
-    const newValue = !alwaysUseAgent;
-    setAlwaysUseAgent(newValue);
-    await AsyncStorage.setItem(ALWAYS_USE_AGENT_KEY, JSON.stringify(newValue));
-  };
-
-  const handleOk = () => {
-    onAgentSelect(selectedAgent, selectedChain, chainInput);
-    onClose();
-  };
-
-  if (isLoading) {
-    return (
-      <Modal visible={visible} transparent animationType="fade">
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.modalText}>Loading agents and chains...</Text>
+    
+    const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks }) => {
+      const [editedTask, setEditedTask] = useState(null);
+      const [selectedTime, setSelectedTime] = useState('');
+    
+      useEffect(() => {
+        if (task) {
+          setEditedTask({
+            id: task.id,
+            text: task.text || '',
+            note: task.note || '',
+            dueDate: task.dueDate ? new Date(task.dueDate) : null,
+            priority: task.priority || '',
+            repo: task.repo || '',
+            subtasks: task.subtasks || [],
+            dependencies: task.dependencies || [],
+          });
+          if (task.dueDate) {
+            const date = new Date(task.dueDate);
+            setSelectedTime(date.toTimeString().slice(0, 5));
+          } else {
+            setSelectedTime('');
+          }
+        } else {
+          setEditedTask(null);
+          setSelectedTime('');
+        }
+      }, [task]);
+    
+      const handleChange = (field, value) => {
+        if (editedTask) {
+          setEditedTask({ ...editedTask, [field]: value });
+        }
+      };
+    
+      const handleSave = () => {
+        if (editedTask) {
+          let finalDueDate = null;
+          if (editedTask.dueDate && selectedTime) {
+            const [hours, minutes] = selectedTime.split(':');
+            finalDueDate = new Date(editedTask.dueDate);
+            finalDueDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+          }
+          onSave({ ...editedTask, dueDate: finalDueDate });
+        }
+      };
+    
+      const toggleDependency = (taskId) => {
+        const updatedDependencies = editedTask.dependencies.includes(taskId)
+          ? editedTask.dependencies.filter(id => id !== taskId)
+          : [...editedTask.dependencies, taskId];
+        handleChange('dependencies', updatedDependencies);
+      };
+    
+      const CustomDatePickerInput = React.forwardRef(({ value, onClick }, ref) => (
+        <TouchableOpacity onPress={onClick} ref={ref} style={styles.datePickerButton}>
+          <Text style={styles.datePickerButtonText}>
+            {value ? value : "Select date"}
+          </Text>
+        </TouchableOpacity>
+      ));
+    
+      if (!editedTask) {
+        return null;
+      }
+    
+      return (
+        <Modal
+          visible={visible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={onClose}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { zIndex: 1000 }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Task</Text>
+                <TouchableOpacity onPress={onClose}>
+                  <Icon name="close" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.modalBody}>
+                <InputField
+                  label="Task Name"
+                  value={editedTask.text}
+                  onChangeText={(text) => handleChange('text', text)}
+                />
+                
+                <InputField
+                  label="Description"
+                  value={editedTask.note}
+                  onChangeText={(text) => handleChange('note', text)}
+                  multiline
+                />
+                
+                <View style={styles.datePickerContainer}>
+                  <Text style={styles.inputLabel}>Due Date</Text>
+                  <DatePicker
+                    selected={editedTask.dueDate}
+                    onChange={(date) => handleChange('dueDate', date)}
+                    customInput={<CustomDatePickerInput />}
+                    popperPlacement="top-start"
+                    popperModifiers={[
+                      {
+                        name: 'offset',
+                        options: {
+                          offset: [0, 10],
+                        },
+                      },
+                      {
+                        name: 'preventOverflow',
+                        options: {
+                          boundary: 'viewport',
+                        },
+                      },
+                    ]}
+                  />
+                  <TextInput
+                    style={styles.timeInput}
+                    value={selectedTime}
+                    onChangeText={setSelectedTime}
+                    placeholder="HH:MM"
+                    placeholderTextColor="#FFFFFF80"
+                  />
+                </View>
+                
+                <PickerField
+                  label="Priority"
+                  value={editedTask.priority}
+                  onValueChange={(value) => handleChange('priority', value)}
+                  items={[
+                    { label: 'Low', value: 'low' },
+                    { label: 'Medium', value: 'medium' },
+                    { label: 'High', value: 'high' },
+                  ]}
+                />
+                
+                <PickerField
+                  label="Repository"
+                  value={editedTask.repo}
+                  onValueChange={(value) => handleChange('repo', value)}
+                  items={repositories.map(repo => ({ label: repo.name, value: repo.name }))}
+                />
+                
+                <SubtasksList
+                  subtasks={editedTask.subtasks}
+                  onSubtasksChange={(subtasks) => handleChange('subtasks', subtasks)}
+                />
+    
+                <DependencyList
+                  allTasks={allTasks}
+                  currentTaskId={editedTask.id}
+                  dependencies={editedTask.dependencies}
+                  onToggleDependency={toggleDependency}
+                />
+              </ScrollView>
+              
+              <View style={styles.modalFooter}>
+                <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
+                  <Text style={styles.buttonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      );
+    };
+    
+    const InputField = ({ label, value, onChangeText, multiline = false }) => (
+      <View style={styles.inputField}>
+        <Text style={styles.inputLabel}>{label}</Text>
+        <TextInput
+          style={[styles.input, multiline && styles.multilineInput]}
+          value={value || ''}
+          onChangeText={onChangeText}
+          multiline={multiline}
+          placeholderTextColor="#FFFFFF80"
+        />
+      </View>
     );
-  }
-
-  if (error) {
-    return (
-      <Modal visible={visible} transparent animationType="fade">
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.button} onPress={onClose}>
-              <Text style={styles.buttonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+    
+    const PickerField = ({ label, value, onValueChange, items }) => (
+      <View style={styles.inputField}>
+        <Text style={styles.inputLabel}>{label}</Text>
+        <Picker
+          selectedValue={value || ''}
+          onValueChange={onValueChange}
+          style={styles.picker}
+        >
+          {items.map((item) => (
+            <Picker.Item key={item.value} label={item.label} value={item.value} />
+          ))}
+        </Picker>
+      </View>
     );
-  }
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
-          <Text style={styles.modalTitle}>Select an Agent and Chain</Text>
-          <Picker
-            selectedValue={selectedAgent}
-            onValueChange={setSelectedAgent}
-            style={styles.agentPicker}
-          >
-            {agents.map((agent) => (
-              <Picker.Item key={agent.name} label={agent.name} value={agent.name} />
-            ))}
-          </Picker>
-          <Picker
-            selectedValue={selectedChain}
-            onValueChange={setSelectedChain}
-            style={styles.chainPicker}
-          >
-            {availableChains.map((chain) => (
-              <Picker.Item key={chain} label={chain} value={chain} />
-            ))}
-          </Picker>
-          <TextInput
-            style={styles.chainInput}
-            value={chainInput}
-            onChangeText={setChainInput}
-            placeholder="Enter chain input"
-            placeholderTextColor="#FFFFFF80"
-          />
-          <View style={styles.checkboxContainer}>
-            <TouchableOpacity style={styles.checkbox} onPress={handleAlwaysUseAgentChange}>
-              {alwaysUseAgent && <Icon name="check" size={24} color="#007AFF" />}
-            </TouchableOpacity>
-            <Text style={styles.checkboxLabel}>Always use this agent</Text>
-          </View>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={handleOk}>
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect }) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>AGiXT Options</Text>
-          <TouchableOpacity
-            style={styles.modalOption}
-            onPress={() => onOptionSelect('getSubtasks')}
-          >
-            <Text style={styles.modalOptionText}>Get Subtasks</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.modalOption}
-            onPress={() => onOptionSelect('runChain')}
-          >
-            <Text style={styles.modalOptionText}>Run Chain</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-            <Text style={styles.modalCloseButtonText}>Close</Text>
+    
+    const SubtasksList = ({ subtasks, onSubtasksChange }) => {
+      const addSubtask = () => {
+        onSubtasksChange([...subtasks, { id: Date.now(), text: '' }]);
+      };
+    
+      const updateSubtask = (id, text) => {
+        onSubtasksChange(subtasks.map(st => st.id === id ? { ...st, text } : st));
+      };
+    
+      const removeSubtask = (id) => {
+        onSubtasksChange(subtasks.filter(st => st.id !== id));
+      };
+    
+      return (
+        <View style={styles.subtasksList}>
+          <Text style={styles.inputLabel}>Subtasks</Text>
+          {subtasks.map((subtask) => (
+            <View key={subtask.id} style={styles.subtaskItem}>
+              <TextInput
+                style={styles.subtaskInput}
+                value={subtask.text}
+                onChangeText={(text) => updateSubtask(subtask.id, text)}
+                placeholderTextColor="#FFFFFF80"
+              />
+              <TouchableOpacity onPress={() => removeSubtask(subtask.id)}>
+                <Icon name="remove-circle-outline" size={24} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity style={styles.addSubtaskButton} onPress={addSubtask}>
+            <Icon name="add-circle-outline" size={24} color="#007AFF" />
+            <Text style={styles.addSubtaskText}>Add Subtask</Text>
           </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
-  );
-};
-
-const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText, isLoading }) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Get Subtasks Clarification</Text>
-          <TextInput
-            style={styles.clarificationInput}
-            value={clarificationText}
-            onChangeText={onChangeClarificationText}
-            placeholder="Enter optional clarification text"
-            placeholderTextColor="#FFFFFF80"
-            multiline
-            editable={!isLoading}
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose} disabled={isLoading}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={onContinue} disabled={isLoading}>
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Continue</Text>
-              )}
-            </TouchableOpacity>
+      );
+    };
+    
+    const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDependency }) => {
+      return (
+        <View style={styles.dependencyList}>
+          <Text style={styles.inputLabel}>Dependencies</Text>
+          {allTasks
+            .filter(task => task.id !== currentTaskId)
+            .map(task => (
+              <TouchableOpacity
+                key={task.id}
+                style={[
+                  styles.dependencyItem,
+                  dependencies.includes(task.id) && styles.dependencyItemSelected
+                ]}
+                onPress={() => onToggleDependency(task.id)}
+              >
+                <Text style={styles.dependencyItemText}>{task.text}</Text>
+              </TouchableOpacity>
+            ))
+          }
+        </View>
+      );
+    };
+    
+    const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey, chains }) => {
+      const [agents, setAgents] = useState([]);
+      const [selectedAgent, setSelectedAgent] = useState("");
+      const [selectedChain, setSelectedChain] = useState("");
+      const [chainInput, setChainInput] = useState("");
+      const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
+      const [isLoading, setIsLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [availableChains, setAvailableChains] = useState([]);
+    
+      useEffect(() => {
+        const fetchAgentsAndChains = async () => {
+          setIsLoading(true);
+          try {
+            const agixt = new AGiXTSDK({
+              baseUri: agixtApiUri,
+              apiKey: agixtApiKey,
+            });
+    
+            const agentsData = await agixt.getAgents();
+            const agentsArray = Array.isArray(agentsData) 
+              ? agentsData 
+              : Object.keys(agentsData).map(name => ({ name, ...agentsData[name] }));
+            
+            setAgents(agentsArray);
+            setSelectedAgent(agentsArray.length > 0 ? agentsArray[0].name : "");
+    
+            const chainsData = await agixt.getChains();
+            setAvailableChains(Array.isArray(chainsData) ? chainsData : Object.keys(chainsData));
+            setSelectedChain(availableChains.length > 0 ? availableChains[0] : "");
+    
+            const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
+            if (storedAlwaysUseAgent !== null) {
+              setAlwaysUseAgent(JSON.parse(storedAlwaysUseAgent));
+            }
+    
+            setError(null);
+          } catch (error) {
+            console.error("Error fetching agents and chains:", error);
+            setError("Failed to fetch agents and chains. Please check your API settings.");
+          } finally {
+            setIsLoading(false);
+          }
+        };
+    
+        fetchAgentsAndChains();
+      }, [agixtApiUri, agixtApiKey]);
+    
+      const handleAlwaysUseAgentChange = async () => {
+        const newValue = !alwaysUseAgent;
+        setAlwaysUseAgent(newValue);
+        await AsyncStorage.setItem(ALWAYS_USE_AGENT_KEY, JSON.stringify(newValue));
+      };
+    
+      const handleOk = () => {
+        onAgentSelect(selectedAgent, selectedChain, chainInput);
+        onClose();
+      };
+    
+      if (isLoading) {
+        return (
+          <Modal visible={visible} transparent animationType="fade">
+            <View style={styles.centeredView}>
+              <View style={styles.modalView}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.modalText}>Loading agents and chains...</Text>
+              </View>
+            </View>
+          </Modal>
+        );
+      }
+    
+      if (error) {
+        return (
+          <Modal visible={visible} transparent animationType="fade">
+            <View style={styles.centeredView}>
+              <View style={styles.modalView}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.button} onPress={onClose}>
+                  <Text style={styles.buttonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        );
+      }
+    
+      return (
+        <Modal visible={visible} transparent animationType="slide">
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalTitle}>Select an Agent and Chain</Text>
+              <Picker
+                selectedValue={selectedAgent}
+                onValueChange={setSelectedAgent}
+                style={styles.agentPicker}
+              >
+                {agents.map((agent) => (
+                  <Picker.Item key={agent.name} label={agent.name} value={agent.name} />
+                ))}
+              </Picker>
+              <Picker
+                selectedValue={selectedChain}
+                onValueChange={setSelectedChain}
+                style={styles.chainPicker}
+              >
+                {availableChains.map((chain) => (
+                  <Picker.Item key={chain} label={chain} value={chain} />
+                ))}
+              </Picker>
+              <TextInput
+                style={styles.chainInput}
+                value={chainInput}
+                onChangeText={setChainInput}
+                placeholder="Enter chain input"
+                placeholderTextColor="#FFFFFF80"
+              />
+              <View style={styles.checkboxContainer}>
+                <TouchableOpacity style={styles.checkbox} onPress={handleAlwaysUseAgentChange}>
+                  {alwaysUseAgent && <Icon name="check" size={24} color="#007AFF" />}
+                </TouchableOpacity>
+                <Text style={styles.checkboxLabel}>Always use this agent</Text>
+              </View>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={handleOk}>
+                  <Text style={styles.buttonText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      );
+    };
+    
+    const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect }) => {
+      return (
+        <Modal
+          visible={visible}
+          transparent
+          animationType="fade"
+          onRequestClose={onClose}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>AGiXT Options</Text>
+              <TouchableOpacity
+                style={styles.modalOption}
+                onPress={() => onOptionSelect('getSubtasks')}
+              >
+                <Text style={styles.modalOptionText}>Get Subtasks</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalOption}
+                onPress={() => onOptionSelect('runChain')}
+              >
+                <Text style={styles.modalOptionText}>Run Chain</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
+                <Text style={styles.modalCloseButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      );
+    };
+    
+    const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText, isLoading }) => {
+      return (
+        <Modal
+          visible={visible}
+          transparent
+          animationType="fade"
+          onRequestClose={onClose}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Get Subtasks Clarification</Text>
+              <TextInput
+                style={styles.clarificationInput}
+                value={clarificationText}
+                onChangeText={onChangeClarificationText}
+                placeholder="Enter optional clarification text"
+                placeholderTextColor="#FFFFFF80"
+                multiline
+                editable={!isLoading}
+              />
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose} disabled={isLoading}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={onContinue} disabled={isLoading}>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.buttonText}>Continue</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      );
+    };
+    
+    const ChainRunningAnimation = () => {
+      const rotateAnim = useRef(new Animated.Value(0)).current;
+    
+      useEffect(() => {
+        Animated.loop(
+          Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          })
+        ).start();
+      }, []);
+    
+      const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+      });
+    
+      return (
+        <View style={styles.chainRunningOverlay}>
+          <View style={styles.chainRunningContent}>
+            <Animated.View style={{ transform: [{ rotate: spin }] }}>
+              <Icon name="settings" size={48} color="#FFFFFF" />
+            </Animated.View>
+            <Text style={styles.chainRunningText}>AUTOMATION TASK</Text>
           </View>
         </View>
-      </View>
-    </Modal>
-  );
-};
-
-const ChainRunningAnimation = () => {
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  return (
-    <View style={styles.chainRunningOverlay}>
-      <View style={styles.chainRunningContent}>
-        <Animated.View style={{ transform: [{ rotate: spin }] }}>
-          <Icon name="settings" size={48} color="#FFFFFF" />
-        </Animated.View>
-        <Text style={styles.chainRunningText}>AUTOMATION TASK</Text>
-      </View>
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#121212',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    height: 40,
-    backgroundColor: '#2C2C2C',
-    color: '#FFFFFF',
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  addButton: {
-    backgroundColor: '#007AFF',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  taskContainer: {
-    backgroundColor: '#2C2C2C',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  taskRunningAnimation: {
-    borderColor: '#FFFFFF',
-    borderWidth: 2,
-  },
-  taskInfoContainer: {
-    flex: 1,
-  },
-  taskText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  noteText: {
-    color: '#BBBBBB',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  dueDateText: {
-    color: '#BBBBBB',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  priorityText: {
-    color: '#BBBBBB',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  repoText: {
-    color: '#BBBBBB',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  subtasksContainer: {
-    marginTop: 10,
-  },
-  subtasksTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  subtaskText: {
-    color: '#BBBBBB',
-    fontSize: 14,
-    marginLeft: 10,
-  },
-  taskButtonsContainer: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    padding: 5,
-    marginLeft: 10,
-  },
-  removeButton: {
-    padding: 5,
-    marginLeft: 10,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    padding: 20,
-    width: '90%',
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  modalBody: {
-    maxHeight: '70%',
-  },
-  inputField: {
-    marginBottom: 15,
-  },
-  inputLabel: {
-    color: '#FFFFFF',
-    marginBottom: 5,
-  },
-  multilineInput: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  datePickerContainer: {
-    marginBottom: 15,
-  },
-  datePickerButton: {
-    backgroundColor: '#2C2C2C',
-    padding: 10,
-    borderRadius: 5,
-  },
-  datePickerButtonText: {
-    color: '#FFFFFF',
-  },
-  picker: {
-    backgroundColor: '#2C2C2C',
-    color: '#FFFFFF',
-  },
-  subtasksList: {
-    marginTop: 15,
-  },
-  subtaskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  subtaskInput: {
-    flex: 1,
-    height: 40,
-    backgroundColor: '#2C2C2C',
-    color: '#FFFFFF',
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  addSubtaskButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  addSubtaskText: {
-    color: '#007AFF',
-    marginLeft: 5,
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 20,
-  },
-  button: {
-    padding: 10,
-    borderRadius: 5,
-    marginLeft: 10,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    backgroundColor: '#FF3B30',
-  },
-  saveButton: {
-    backgroundColor: '#007AFF',
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalView: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: '80%',
-  },
-  agentPicker: {
-    width: '100%',
-    color: '#FFFFFF',
-    backgroundColor: '#2C2C2C',
-    marginBottom: 10,
-  },
-  chainPicker: {
-    width: '100%',
-    color: '#FFFFFF',
-    backgroundColor: '#2C2C2C',
-    marginBottom: 10,
-  },
-  chainInput: {
-    width: '100%',
-    height: 40,
-    backgroundColor: '#2C2C2C',
-    color: '#FFFFFF',
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  checkboxLabel: {
-    color: '#FFFFFF',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 20,
-  },
-  buttonCancel: {
-    backgroundColor: '#FF3B30',
-  },
-  buttonOk: {
-    backgroundColor: '#007AFF',
-  },
-  errorText: {
-    color: '#FF3B30',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  modalOption: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFFFFF40',
-  },
-  modalOptionText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  modalCloseButton: {
-    marginTop: 20,
-    padding: 10,
-    backgroundColor: '#FF3B30',
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  modalCloseButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  chainRunningOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
-    borderColor: '#FFFFFF',
-    borderWidth: 2,
-  },
-  chainRunningContent: {
-    alignItems: 'center',
-  },
-  chainRunningText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    marginTop: 10,
-    fontWeight: 'bold',
-  },
-  link: {
-    color: '#007AFF',
-    textDecorationLine: 'underline',
-  },
-  dependencyList: {
-    marginTop: 15,
-  },
-  dependencyItem: {
-    backgroundColor: '#2C2C2C',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 5,
-  },
-  dependencyItemSelected: {
-    backgroundColor: '#007AFF',
-  },
-  dependencyItemText: {
-    color: '#FFFFFF',
-  },
-  clarificationInput: {
-    width: '100%',
-    height: 100,
-    backgroundColor: '#2C2C2C',
-    color: '#FFFFFF',
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginBottom: 20,
-    textAlignVertical: 'top',
-  },
-});
-
-export default TaskPanel;
+      );
+    };
+    
+    const styles = StyleSheet.create({
+      container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: '#121212',
+      },
+      inputContainer: {
+        flexDirection: 'row',
+        marginBottom: 20,
+      },
+      input: {
+        flex: 1,
+        height: 40,
+        backgroundColor: '#2C2C2C',
+        color: '#FFFFFF',
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginRight: 10,
+      },
+      addButton: {
+        backgroundColor: '#007AFF',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      taskContainer: {
+        backgroundColor: '#2C2C2C',
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      },
+      taskRunningAnimation: {
+        borderColor: '#FFFFFF',
+        borderWidth: 2,
+      },
+      taskInfoContainer: {
+        flex: 1,
+      },
+      taskText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+      },
+      noteText: {
+        color: '#BBBBBB',
+        fontSize: 14,
+        marginTop: 5,
+      },
+      dueDateText: {
+        color: '#BBBBBB',
+        fontSize: 14,
+        marginTop: 5,
+      },
+      priorityText: {
+        color: '#BBBBBB',
+        fontSize: 14,
+        marginTop: 5,
+      },
+      repoText: {
+        color: '#BBBBBB',
+        fontSize: 14,
+        marginTop: 5,
+      },
+      subtasksContainer: {
+        marginTop: 10,
+      },
+      subtasksTitle: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 5,
+      },
+      subtaskText: {
+        color: '#BBBBBB',
+        fontSize: 14,
+        marginLeft: 10,
+      },
+      taskButtonsContainer: {
+        flexDirection: 'row',
+      },
+      actionButton: {
+        padding: 5,
+        marginLeft: 10,
+      },
+      removeButton: {
+        padding: 5,
+        marginLeft: 10,
+      },
+      modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      modalContent: {
+        backgroundColor: '#1E1E1E',
+        borderRadius: 10,
+        padding: 20,
+        width: '90%',
+        maxHeight: '80%',
+      },
+      modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+      },
+      modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+      },
+      modalBody: {
+        maxHeight: '70%',
+      },
+      inputField: {
+        marginBottom: 15,
+      },
+      inputLabel: {
+        color: '#FFFFFF',
+        marginBottom: 5,
+      },
+      multilineInput: {
+        height: 100,
+        textAlignVertical: 'top',
+      },
+      datePickerContainer: {
+        marginBottom: 15,
+        zIndex: 9999,
+      },
+      datePickerButton: {
+        backgroundColor: '#2C2C2C',
+        padding: 10,
+        borderRadius: 5,
+      },
+      datePickerButtonText: {
+        color: '#FFFFFF',
+      },
+      timeInput: {
+        height: 40,
+        backgroundColor: '#2C2C2C',
+        color: '#FFFFFF',
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginTop: 10,
+      },
+      picker: {
+        backgroundColor: '#2C2C2C',
+        color: '#FFFFFF',
+      },
+      subtasksList: {
+        marginTop: 15,
+      },
+      subtaskItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+      },
+      subtaskInput: {
+        flex: 1,
+        height: 40,
+        backgroundColor: '#2C2C2C',
+        color: '#FFFFFF',
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginRight: 10,
+      },
+      addSubtaskButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+      },
+      addSubtaskText: {
+        color: '#007AFF',
+        marginLeft: 5,
+      },
+      modalFooter: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: 20,
+      },
+      button: {
+        padding: 10,
+        borderRadius: 5,
+        marginLeft: 10,
+      },
+      buttonText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+      },
+      cancelButton: {
+        backgroundColor: '#FF3B30',
+      },
+      saveButton: {
+        backgroundColor: '#007AFF',
+      },
+      centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      },
+      modalView: {
+        backgroundColor: '#1E1E1E',
+        borderRadius: 10,
+        padding: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+        width: '80%',
+      },
+      agentPicker: {
+        width: '100%',
+        color: '#FFFFFF',
+        backgroundColor: '#2C2C2C',
+        marginBottom: 10,
+      },
+      chainPicker: {
+        width: '100%',
+        color: '#FFFFFF',
+        backgroundColor: '#2C2C2C',
+        marginBottom: 10,
+      },
+      chainInput: {
+        width: '100%',
+        height: 40,
+        backgroundColor: '#2C2C2C',
+        color: '#FFFFFF',
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginBottom: 10,
+      },
+      checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 15,
+      },
+      checkbox: {
+        width: 24,
+        height: 24,
+        borderWidth: 2,
+        borderColor: '#007AFF',
+        borderRadius: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+      },
+      checkboxLabel: {
+        color: '#FFFFFF',
+      },
+      buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: 20,
+      },
+      buttonCancel: {
+        backgroundColor: '#FF3B30',
+      },
+      buttonOk: {
+        backgroundColor: '#007AFF',
+      },
+      errorText: {
+        color: '#FF3B30',
+        marginBottom: 15,
+        textAlign: 'center',
+      },
+      modalOption: {
+        padding: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#FFFFFF40',
+      },
+      modalOptionText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+      },
+      modalCloseButton: {
+        marginTop: 20,
+        padding: 10,
+        backgroundColor: '#FF3B30',
+        borderRadius: 5,
+        alignItems: 'center',
+      },
+      modalCloseButtonText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+      },
+      chainRunningOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 5,
+        borderColor: '#FFFFFF',
+        borderWidth: 2,
+      },
+      chainRunningContent: {
+        alignItems: 'center',
+      },
+      chainRunningText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        marginTop: 10,
+        fontWeight: 'bold',
+      },
+      link: {
+        color: '#007AFF',
+        textDecorationLine: 'underline',
+      },
+      dependencyList: {
+        marginTop: 15,
+      },
+      dependencyItem: {
+        backgroundColor: '#2C2C2C',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 5,
+      },
+      dependencyItemSelected: {
+        backgroundColor: '#007AFF',
+      },
+      dependencyItemText: {
+        color: '#FFFFFF',
+      },
+      clarificationInput: {
+        width: '100%',
+        height: 100,
+        backgroundColor: '#2C2C2C',
+        color: '#FFFFFF',
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginBottom: 20,
+        textAlignVertical: 'top',
+      },
+    });
+    
+    export default TaskPanel;
