@@ -189,8 +189,8 @@ const TaskMap = () => {
         <Svg height="100%" width="100%" viewBox={`0 0 ${width} ${height}`} ref={svgRef}>
           <Defs>
             <RadialGradient id="grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-              <Stop offset="0%" stopColor="#4C566A" stopOpacity="0.3" />
-              <Stop offset="100%" stopColor="#2E3440" stopOpacity="0.7" />
+              <Stop offset="0%" stopColor="#111111" stopOpacity="0.3" />
+              <Stop offset="100%" stopColor="#000000" stopOpacity="0.7" />
             </RadialGradient>
           </Defs>
           <Rect x="0" y="0" width={width} height={height} fill="url(#grad)" />
@@ -218,7 +218,7 @@ const TaskMap = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2E3440',
+    backgroundColor: '#000000',
   },
   graphContainer: {
     flex: 1,
@@ -228,9 +228,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 10,
-    backgroundColor: 'rgba(59, 66, 82, 0.8)',
+    backgroundColor: 'rgba(20, 20, 20, 0.8)',
     borderTopWidth: 1,
-    borderTopColor: '#4C566A',
+    borderTopColor: '#333333',
   },
   button: {
     backgroundColor: '#5E81AC',
