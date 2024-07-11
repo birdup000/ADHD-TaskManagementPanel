@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, Dimensions, TouchableOpacity, Text as RNText } from 'react-native';
-import Svg, { Circle, Line, Text, G } from 'react-native-svg';
+import Svg, { Circle, Line, Text, G, Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PanResponder } from 'react-native';
 
@@ -82,6 +82,52 @@ const TaskMap = () => {
     setZoom(1);
   };
 
+  const getFontSize = (radius) => Math.max(10, Math.min(14, radius / 2));
+
+  const wrapText = (text, maxLength) => {
+    if (text.length <= maxLength) return text;
+    const words = text.split(' ');
+    let line = '';
+    const lines = [];
+    words.forEach(word => {
+      if ((line + word).length > maxLength) {
+        lines.push(line.trim());
+        line = word + ' ';
+      } else {
+        line += word + ' ';
+      }
+    });
+    lines.push(line.trim());
+    return lines.join('\n');
+  };
+
+  const renderText = (x, y, text, fontSize, isSubtask = false) => (
+    <G>
+      <Text
+        x={x}
+        y={y}
+        fontSize={fontSize}
+        fontWeight="bold"
+        fill="black"
+        textAnchor="middle"
+        alignmentBaseline="central"
+      >
+        {text}
+      </Text>
+      <Text
+        x={x}
+        y={y}
+        fontSize={fontSize}
+        fontWeight="bold"
+        fill="white"
+        textAnchor="middle"
+        alignmentBaseline="central"
+      >
+        {text}
+      </Text>
+    </G>
+  );
+
   const renderGraph = () => {
     const nodeRadius = 20;
     const centerX = width / 2;
@@ -119,16 +165,7 @@ const TaskMap = () => {
                       r={nodeRadius * 0.7}
                       fill="#5E81AC"
                     />
-                    <Text
-                      x={subX}
-                      y={subY}
-                      fontSize="10"
-                      fill="white"
-                      textAnchor="middle"
-                      alignmentBaseline="central"
-                    >
-                      {subtask.text.substring(0, 8)}
-                    </Text>
+                    {renderText(subX, subY, wrapText(subtask.text, 8), getFontSize(nodeRadius * 0.7), true)}
                   </G>
                 );
               })}
@@ -138,16 +175,7 @@ const TaskMap = () => {
                 r={nodeRadius}
                 fill="#E1A95F"
               />
-              <Text
-                x={x}
-                y={y}
-                fontSize="12"
-                fill="white"
-                textAnchor="middle"
-                alignmentBaseline="central"
-              >
-                {task.text.substring(0, 10)}
-              </Text>
+              {renderText(x, y, wrapText(task.text, 10), getFontSize(nodeRadius))}
             </G>
           );
         })}
@@ -157,12 +185,15 @@ const TaskMap = () => {
 
   return (
     <View style={styles.container}>
-      <View 
-        style={styles.graphContainer} 
-        {...panResponder.panHandlers}
-        onWheel={handleZoom}
-      >
+      <View style={styles.graphContainer} {...panResponder.panHandlers} onWheel={handleZoom}>
         <Svg height="100%" width="100%" viewBox={`0 0 ${width} ${height}`} ref={svgRef}>
+          <Defs>
+            <RadialGradient id="grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <Stop offset="0%" stopColor="#4C566A" stopOpacity="0.3" />
+              <Stop offset="100%" stopColor="#2E3440" stopOpacity="0.7" />
+            </RadialGradient>
+          </Defs>
+          <Rect x="0" y="0" width={width} height={height} fill="url(#grad)" />
           {renderGraph()}
         </Svg>
       </View>
@@ -197,16 +228,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 10,
-    backgroundColor: '#3B4252',
+    backgroundColor: 'rgba(59, 66, 82, 0.8)',
+    borderTopWidth: 1,
+    borderTopColor: '#4C566A',
   },
   button: {
-    backgroundColor: '#4C566A',
+    backgroundColor: '#5E81AC',
     padding: 10,
     borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
