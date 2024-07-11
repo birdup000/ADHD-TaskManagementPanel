@@ -600,16 +600,17 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey,
   const [alwaysUseAgent, setAlwaysUseAgent] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [availableChains, setAvailableChains] = useState([]);
 
   useEffect(() => {
-    const fetchAgents = async () => {
+    const fetchAgentsAndChains = async () => {
       setIsLoading(true);
       try {
         const agixt = new AGiXTSDK({
           baseUri: agixtApiUri,
           apiKey: agixtApiKey,
         });
-  
+
         const agentsData = await agixt.getAgents();
         const agentsArray = Array.isArray(agentsData) 
           ? agentsData 
@@ -617,22 +618,26 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey,
         
         setAgents(agentsArray);
         setSelectedAgent(agentsArray.length > 0 ? agentsArray[0].name : "");
-  
+
+        const chainsData = await agixt.getChains();
+        setAvailableChains(chainsData);
+        setSelectedChain(chainsData.length > 0 ? chainsData[0] : "");
+
         const storedAlwaysUseAgent = await AsyncStorage.getItem(ALWAYS_USE_AGENT_KEY);
         if (storedAlwaysUseAgent !== null) {
           setAlwaysUseAgent(JSON.parse(storedAlwaysUseAgent));
         }
-  
+
         setError(null);
       } catch (error) {
-        console.error("Error fetching agents:", error);
-        setError("Failed to fetch agents. Please check your API settings.");
+        console.error("Error fetching agents and chains:", error);
+        setError("Failed to fetch agents and chains. Please check your API settings.");
       } finally {
         setIsLoading(false);
       }
     };
-  
-    fetchAgents();
+
+    fetchAgentsAndChains();
   }, [agixtApiUri, agixtApiKey]);
 
   const handleAlwaysUseAgentChange = async () => {
@@ -652,7 +657,7 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey,
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
             <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.modalText}>Loading agents...</Text>
+            <Text style={styles.modalText}>Loading agents and chains...</Text>
           </View>
         </View>
       </Modal>
@@ -693,7 +698,7 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey,
             onValueChange={setSelectedChain}
             style={styles.chainPicker}
           >
-            {chains.map((chain) => (
+            {availableChains.map((chain) => (
               <Picker.Item key={chain} label={chain} value={chain} />
             ))}
           </Picker>
