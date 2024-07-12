@@ -445,10 +445,10 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
         </View>
       );
     };
-    
+
     const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks }) => {
       const [editedTask, setEditedTask] = useState(null);
-      const [selectedTime, setSelectedTime] = useState('');
+      const [dueDate, setDueDate] = useState(null);
     
       useEffect(() => {
         if (task) {
@@ -456,21 +456,15 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
             id: task.id,
             text: task.text || '',
             note: task.note || '',
-            dueDate: task.dueDate ? new Date(task.dueDate) : null,
             priority: task.priority || '',
             repo: task.repo || '',
             subtasks: task.subtasks || [],
             dependencies: task.dependencies || [],
           });
-          if (task.dueDate) {
-            const date = new Date(task.dueDate);
-            setSelectedTime(date.toTimeString().slice(0, 5));
-          } else {
-            setSelectedTime('');
-          }
+          setDueDate(task.dueDate ? new Date(task.dueDate) : null);
         } else {
           setEditedTask(null);
-          setSelectedTime('');
+          setDueDate(null);
         }
       }, [task]);
     
@@ -482,13 +476,7 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
     
       const handleSave = () => {
         if (editedTask) {
-          let finalDueDate = null;
-          if (editedTask.dueDate && selectedTime) {
-            const [hours, minutes] = selectedTime.split(':');
-            finalDueDate = new Date(editedTask.dueDate);
-            finalDueDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-          }
-          onSave({ ...editedTask, dueDate: finalDueDate });
+          onSave({ ...editedTask, dueDate: dueDate });
         }
       };
     
@@ -499,10 +487,14 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
         handleChange('dependencies', updatedDependencies);
       };
     
-      const CustomDatePickerInput = React.forwardRef(({ value, onClick }, ref) => (
+      const removeDueDate = () => {
+        setDueDate(null);
+      };
+    
+      const ExampleCustomInput = React.forwardRef(({ value, onClick }, ref) => (
         <TouchableOpacity onPress={onClick} ref={ref} style={styles.datePickerButton}>
           <Text style={styles.datePickerButtonText}>
-            {value ? value : "Select date"}
+            {value || "Select due date"}
           </Text>
         </TouchableOpacity>
       ));
@@ -519,7 +511,7 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
           onRequestClose={onClose}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { zIndex: 1000 }]}>
+            <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Edit Task</Text>
                 <TouchableOpacity onPress={onClose}>
@@ -544,32 +536,21 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
                 <View style={styles.datePickerContainer}>
                   <Text style={styles.inputLabel}>Due Date</Text>
                   <DatePicker
-                    selected={editedTask.dueDate}
-                    onChange={(date) => handleChange('dueDate', date)}
-                    customInput={<CustomDatePickerInput />}
-                    popperPlacement="top-start"
-                    popperModifiers={[
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, 10],
-                        },
-                      },
-                      {
-                        name: 'preventOverflow',
-                        options: {
-                          boundary: 'viewport',
-                        },
-                      },
-                    ]}
+                    selected={dueDate}
+                    onChange={(date) => setDueDate(date)}
+                    showTimeSelect
+                    dateFormat="MMMM d, yyyy h:mm aa"
+                    placeholderText="No Due Date Set"
+                    customInput={<ExampleCustomInput />}
                   />
-                  <TextInput
-                    style={styles.timeInput}
-                    value={selectedTime}
-                    onChangeText={setSelectedTime}
-                    placeholder="HH:MM"
-                    placeholderTextColor="#FFFFFF80"
-                  />
+                  {dueDate && (
+                    <TouchableOpacity
+                      style={styles.removeDueDateButton}
+                      onPress={removeDueDate}
+                    >
+                      <Text style={styles.buttonText}>Remove Due Date</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
                 
                 <PickerField
@@ -622,7 +603,7 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
         <Text style={styles.inputLabel}>{label}</Text>
         <TextInput
           style={[styles.input, multiline && styles.multilineInput]}
-          value={value || ''}
+          value={value}
           onChangeText={onChangeText}
           multiline={multiline}
           placeholderTextColor="#FFFFFF80"
@@ -634,7 +615,7 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
       <View style={styles.inputField}>
         <Text style={styles.inputLabel}>{label}</Text>
         <Picker
-          selectedValue={value || ''}
+          selectedValue={value}
           onValueChange={onValueChange}
           style={styles.picker}
         >
@@ -704,6 +685,7 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, chains, isLoading, i
         </View>
       );
     };
+    
     
     const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey, chains }) => {
       const [agents, setAgents] = useState([]);
