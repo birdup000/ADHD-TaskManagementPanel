@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, Dimensions, TouchableOpacity, Text as RNText } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Dimensions, TouchableOpacity, PanResponder } from 'react-native';
 import Svg, { Circle, Line, Text, G, Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { PanResponder } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 const IS_LOCKED_KEY = "isLocked";
@@ -13,7 +14,6 @@ const TaskMap = () => {
   const [isLocked, setIsLocked] = useState(true);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const svgRef = useRef(null);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -29,51 +29,58 @@ const TaskMap = () => {
     }
   }, [tasks]);
 
-  const getIsLocked = useCallback(async () => {
+  const toggleLock = useCallback(async () => {
+    const newLockState = !isLocked;
+    setIsLocked(newLockState);
     try {
-      const storedIsLocked = await AsyncStorage.getItem(IS_LOCKED_KEY);
-      if (storedIsLocked !== null) {
-        setIsLocked(JSON.parse(storedIsLocked));
-      }
-    } catch (e) {
-      console.error('Error accessing AsyncStorage:', e);
+      await AsyncStorage.setItem(IS_LOCKED_KEY, JSON.stringify(newLockState));
+    } catch (error) {
+      console.log("Error saving lock state:", error);
     }
-  }, []);
+  }, [isLocked]);
 
   useEffect(() => {
     loadTasks();
-    getIsLocked();
-
-    const intervalId = setInterval(() => {
-      loadTasks();
-      getIsLocked();
-    }, 10000);
-
+    const intervalId = setInterval(loadTasks, 10000);
     return () => clearInterval(intervalId);
-  }, [loadTasks, getIsLocked]);
+  }, [loadTasks]);
 
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponder: () => !isLocked,
-    onPanResponderMove: (event, gestureState) => {
-      setPan(prevPan => ({
-        x: prevPan.x + gestureState.dx,
-        y: prevPan.y + gestureState.dy
-      }));
-    },
-    onPanResponderGrant: () => {
-      svgRef.current.setNativeProps({ style: { cursor: 'grabbing' } });
-    },
-    onPanResponderRelease: () => {
-      svgRef.current.setNativeProps({ style: { cursor: 'grab' } });
-    },
-  });
+  useEffect(() => {
+    const getInitialLockState = async () => {
+      try {
+        const storedIsLocked = await AsyncStorage.getItem(IS_LOCKED_KEY);
+        if (storedIsLocked !== null) {
+          setIsLocked(JSON.parse(storedIsLocked));
+        }
+      } catch (e) {
+        console.error('Error accessing AsyncStorage:', e);
+      }
+    };
+    getInitialLockState();
+  }, []);
 
   const handleZoom = useCallback((event) => {
     if (!isLocked) {
-      const newZoom = event.nativeEvent.deltaY > 0 ? zoom * 0.95 : zoom * 1.05;
+      const { nativeEvent } = event;
+      const newZoom = nativeEvent.scale > 1 ? zoom * 1.05 : zoom * 0.95;
       setZoom(Math.max(0.1, Math.min(newZoom, 5)));
     }
   }, [zoom, isLocked]);
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => !isLocked,
+    onPanResponderMove: (evt, gestureState) => {
+      if (!isLocked) {
+        setPan(prevPan => ({
+          x: prevPan.x + gestureState.dx / zoom,
+          y: prevPan.y + gestureState.dy / zoom
+        }));
+      }
+    },
+    onPanResponderGrant: () => {},
+    onPanResponderRelease: () => {},
+  });
 
   const handleZoomIn = () => setZoom(prevZoom => Math.min(prevZoom * 1.2, 5));
   const handleZoomOut = () => setZoom(prevZoom => Math.max(prevZoom / 1.2, 0.1));
@@ -82,7 +89,7 @@ const TaskMap = () => {
     setZoom(1);
   };
 
-  const getFontSize = (radius) => Math.max(10, Math.min(14, radius / 2));
+  const getFontSize = (radius) => Math.max(14, Math.min(18, radius / 2));
 
   const wrapText = (text, maxLength) => {
     if (text.length <= maxLength) return text;
@@ -108,9 +115,10 @@ const TaskMap = () => {
         y={y}
         fontSize={fontSize}
         fontWeight="bold"
-        fill="black"
+        fill="#000000"
         textAnchor="middle"
         alignmentBaseline="central"
+        opacity={0.8}
       >
         {text}
       </Text>
@@ -119,7 +127,7 @@ const TaskMap = () => {
         y={y}
         fontSize={fontSize}
         fontWeight="bold"
-        fill="white"
+        fill="#FFFFFF"
         textAnchor="middle"
         alignmentBaseline="central"
       >
@@ -129,13 +137,13 @@ const TaskMap = () => {
   );
 
   const renderGraph = () => {
-    const nodeRadius = 20;
+    const nodeRadius = 35;
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) / 3;
+    const radius = Math.min(width, height) / 2.5;
 
     return (
-      <G transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+      <G>
         {tasks.map((task, index) => {
           const angle = (index / tasks.length) * 2 * Math.PI;
           const x = centerX + radius * Math.cos(angle);
@@ -145,7 +153,7 @@ const TaskMap = () => {
             <G key={task.id}>
               {task.subtasks?.map((subtask, subIndex) => {
                 const subAngle = angle + ((subIndex + 1) / (task.subtasks.length + 1) - 0.5) * Math.PI / 2;
-                const subRadius = radius * 0.6;
+                const subRadius = radius * 0.7;
                 const subX = x + subRadius * Math.cos(subAngle);
                 const subY = y + subRadius * Math.sin(subAngle);
 
@@ -156,16 +164,16 @@ const TaskMap = () => {
                       y1={y}
                       x2={subX}
                       y2={subY}
-                      stroke="#88C0D0"
-                      strokeWidth="2"
+                      stroke="#4A5568"
+                      strokeWidth="3"
                     />
                     <Circle
                       cx={subX}
                       cy={subY}
                       r={nodeRadius * 0.7}
-                      fill="#5E81AC"
+                      fill="#2D3748"
                     />
-                    {renderText(subX, subY, wrapText(subtask.text, 8), getFontSize(nodeRadius * 0.7), true)}
+                    {renderText(subX, subY, wrapText(subtask.text, 12), getFontSize(nodeRadius * 0.7), true)}
                   </G>
                 );
               })}
@@ -173,9 +181,9 @@ const TaskMap = () => {
                 cx={x}
                 cy={y}
                 r={nodeRadius}
-                fill="#E1A95F"
+                fill="#1A202C"
               />
-              {renderText(x, y, wrapText(task.text, 10), getFontSize(nodeRadius))}
+              {renderText(x, y, wrapText(task.text, 14), getFontSize(nodeRadius))}
             </G>
           );
         })}
@@ -185,30 +193,40 @@ const TaskMap = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.graphContainer} {...panResponder.panHandlers} onWheel={handleZoom}>
-        <Svg height="100%" width="100%" viewBox={`0 0 ${width} ${height}`} ref={svgRef}>
+      <LinearGradient
+        colors={['#000000', '#111111']}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <View 
+        style={styles.graphContainer} 
+        {...panResponder.panHandlers}
+        onGestureEvent={handleZoom}
+      >
+        <Svg height="100%" width="100%" viewBox={`0 0 ${width} ${height}`}>
           <Defs>
             <RadialGradient id="grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-              <Stop offset="0%" stopColor="#111111" stopOpacity="0.3" />
+              <Stop offset="0%" stopColor="#1A202C" stopOpacity="0.3" />
               <Stop offset="100%" stopColor="#000000" stopOpacity="0.7" />
             </RadialGradient>
           </Defs>
           <Rect x="0" y="0" width={width} height={height} fill="url(#grad)" />
-          {renderGraph()}
+          <G transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+            {renderGraph()}
+          </G>
         </Svg>
       </View>
       <View style={styles.controlsContainer}>
         <TouchableOpacity style={styles.button} onPress={handleZoomIn}>
-          <RNText style={styles.buttonText}>+</RNText>
+          <Ionicons name="add" size={24} color="white" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={handleZoomOut}>
-          <RNText style={styles.buttonText}>-</RNText>
+          <Ionicons name="remove" size={24} color="white" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={handleReset}>
-          <RNText style={styles.buttonText}>Reset</RNText>
+          <Ionicons name="refresh" size={24} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => setIsLocked(!isLocked)}>
-          <RNText style={styles.buttonText}>{isLocked ? 'Unlock' : 'Lock'}</RNText>
+        <TouchableOpacity style={styles.button} onPress={toggleLock}>
+          <Ionicons name={isLocked ? "lock-closed" : "lock-open"} size={24} color="white" />
         </TouchableOpacity>
       </View>
     </View>
@@ -218,34 +236,27 @@ const TaskMap = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
   },
   graphContainer: {
     flex: 1,
-    cursor: 'grab',
   },
   controlsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 10,
-    backgroundColor: 'rgba(20, 20, 20, 0.8)',
+    padding: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderTopWidth: 1,
-    borderTopColor: '#333333',
+    borderTopColor: '#2D3748',
   },
   button: {
-    backgroundColor: '#5E81AC',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#2D3748',
+    padding: 12,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 
