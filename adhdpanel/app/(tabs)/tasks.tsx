@@ -25,6 +25,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import AGiXTSDK from "agixt";
 import { LinearGradient } from 'expo-linear-gradient';
+import AGiXTInteractive from '@agixt/interactive';
 
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
@@ -783,6 +784,7 @@ export default function TaskPanel() {
   const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks }) => {
     const [editedTask, setEditedTask] = useState(null);
     const [dueDate, setDueDate] = useState(null);
+    const [showAGiXTInteractive, setShowAGiXTInteractive] = useState(false);
   
     useEffect(() => {
       if (task) {
@@ -907,7 +909,7 @@ export default function TaskPanel() {
               onValueChange={(value) => handleChange('repo', value)}
               items={repositories.map(repo => ({ label: repo.name, value: repo.name }))}
             />
-
+  
             <PickerField
               label="Recurrence"
               value={editedTask.recurrence}
@@ -920,7 +922,7 @@ export default function TaskPanel() {
                 { label: 'Yearly', value: 'yearly' },
               ]}
             />
-
+  
             <InputField
               label="Group"
               value={editedTask.group}
@@ -931,13 +933,49 @@ export default function TaskPanel() {
               subtasks={editedTask.subtasks}
               onSubtasksChange={(subtasks) => handleChange('subtasks', subtasks)}
             />
-
+  
             <DependencyList
               allTasks={allTasks}
               currentTaskId={editedTask.id}
               dependencies={editedTask.dependencies}
               onToggleDependency={toggleDependency}
             />
+  
+            <TouchableOpacity 
+              style={styles.aiAssistantButton} 
+              onPress={() => setShowAGiXTInteractive(true)}
+            >
+              <Text style={styles.aiAssistantButtonText}>AI Assistant</Text>
+            </TouchableOpacity>
+  
+            {showAGiXTInteractive && (
+              <View style={styles.aiAssistantContainer}>
+                <AGiXTInteractive
+                  agent='XT'
+                  uiConfig={{
+                    showAppBar: false,
+                    showConversationSelector: false,
+                    showChatThemeToggles: false,
+                    showRLHF: false,
+                    footerMessage: '',
+                    alternateBackground: 'primary',
+                  }}
+                  serverConfig={{
+                    agixtServer: agixtApiUri,
+                    apiKey: agixtApiKey,
+                  }}
+                  overrides={{
+                    conversation: `Task_${editedTask.id}`,
+                  }}
+                />
+                <TouchableOpacity 
+                  style={styles.closeAiAssistantButton}
+                  onPress={() => setShowAGiXTInteractive(false)}
+                >
+                  <Text style={styles.closeAiAssistantButtonText}>Close AI Assistant</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </ScrollView>
           
           <View style={styles.modalFooter}>
@@ -952,9 +990,9 @@ export default function TaskPanel() {
       </View>
     </Modal>
   );
-};
-
-const InputField = ({ label, value, onChangeText, multiline = false }) => (
+  };
+  
+  const InputField = ({ label, value, onChangeText, multiline = false }) => (
   <View style={styles.inputField}>
     <Text style={styles.inputLabel}>{label}</Text>
     <TextInput
@@ -965,9 +1003,9 @@ const InputField = ({ label, value, onChangeText, multiline = false }) => (
       placeholderTextColor="#FFFFFF80"
     />
   </View>
-);
-
-const PickerField = ({ label, value, onValueChange, items }) => (
+  );
+  
+  const PickerField = ({ label, value, onValueChange, items }) => (
   <View style={styles.inputField}>
     <Text style={styles.inputLabel}>{label}</Text>
     <Picker
@@ -980,21 +1018,21 @@ const PickerField = ({ label, value, onValueChange, items }) => (
       ))}
     </Picker>
   </View>
-);
-
-const SubtasksList = ({ subtasks, onSubtasksChange }) => {
+  );
+  
+  const SubtasksList = ({ subtasks, onSubtasksChange }) => {
   const addSubtask = () => {
     onSubtasksChange([...subtasks, { id: Date.now(), text: '' }]);
   };
-
+  
   const updateSubtask = (id, text) => {
     onSubtasksChange(subtasks.map(st => st.id === id ? { ...st, text } : st));
   };
-
+  
   const removeSubtask = (id) => {
     onSubtasksChange(subtasks.filter(st => st.id !== id));
   };
-
+  
   return (
     <View style={styles.subtasksList}>
       <Text style={styles.inputLabel}>Subtasks</Text>
@@ -1017,9 +1055,9 @@ const SubtasksList = ({ subtasks, onSubtasksChange }) => {
       </TouchableOpacity>
     </View>
   );
-};
-
-const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDependency }) => {
+  };
+  
+  const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDependency }) => {
   return (
     <View style={styles.dependencyList}>
       <Text style={styles.inputLabel}>Dependencies</Text>
@@ -1040,17 +1078,17 @@ const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDepende
       }
     </View>
   );
-};
-
-const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent }) => {
+  };
+  
+  const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent }) => {
   const [selectedChain, setSelectedChain] = useState("");
   const [chainInput, setChainInput] = useState("");
-
+  
   const handleOk = () => {
     onAgentSelect(selectedAgent, selectedChain, chainInput);
     onClose();
   };
-
+  
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
@@ -1097,9 +1135,9 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedA
       </View>
     </Modal>
   );
-};
-
-const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect }) => {
+  };
+  
+  const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect }) => {
   return (
     <Modal
       visible={visible}
@@ -1129,9 +1167,9 @@ const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect }) => {
       </View>
     </Modal>
   );
-};
-
-const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText, isLoading }) => {
+  };
+  
+  const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText, isLoading }) => {
   return (
     <Modal
       visible={visible}
@@ -1167,9 +1205,9 @@ const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarification
       </View>
     </Modal>
   );
-};
-
-const AlertModal = ({ visible, title, message, onClose }) => {
+  };
+  
+  const AlertModal = ({ visible, title, message, onClose }) => {
   return (
     <Modal
       visible={visible}
@@ -1187,13 +1225,16 @@ const AlertModal = ({ visible, title, message, onClose }) => {
       </View>
     </Modal>
   );
-};
-
-const LoadingOverlay = () => (
+  };
+  
+  const LoadingOverlay = () => (
   <View style={styles.loadingOverlay}>
     <ActivityIndicator size="large" color="#FFFFFF" />
   </View>
-);
+  );
+  
+
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -1633,6 +1674,35 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-});
-
-export default TaskPanel;
+  aiAssistantButton: {
+    backgroundColor: '#3498DB',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  aiAssistantButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  aiAssistantContainer: {
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: '#3498DB',
+    borderRadius: 5,
+    padding: 10,
+  },
+  closeAiAssistantButton: {
+    backgroundColor: '#E74C3C',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  closeAiAssistantButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  });
+  
+  export default TaskPanel;
