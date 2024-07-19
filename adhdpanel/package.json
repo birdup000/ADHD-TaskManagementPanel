@@ -44,8 +44,7 @@
     "react-native-svg": "14.1.0",
     "@react-native-community/datetimepicker": "7.7.0",
     "expo-linear-gradient": "~12.7.2",
-    "expo-blur": "~12.9.2",
-    "undefined": "react-native-gesture-handler/Swipeable"
+    "expo-blur": "~12.9.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
