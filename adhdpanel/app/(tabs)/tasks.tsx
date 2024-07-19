@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   StyleSheet,
   View,
@@ -15,6 +15,8 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Switch,
+  PanResponder,
 } from "react-native";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -26,6 +28,52 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
+
+const DraggableTask = ({ task, renderTask, onMoveTask }) => {
+  const pan = useRef(new Animated.ValueXY()).current;
+  const [isDragging, setIsDragging] = useState(false);
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      setIsDragging(true);
+      pan.setOffset({
+        x: pan.x._value,
+        y: pan.y._value
+      });
+    },
+    onPanResponderMove: Animated.event(
+      [
+        null,
+        { dx: pan.x, dy: pan.y }
+      ],
+      { useNativeDriver: false }
+    ),
+    onPanResponderRelease: (e, gestureState) => {
+      setIsDragging(false);
+      pan.flattenOffset();
+      onMoveTask(task, gestureState.moveY);
+      Animated.spring(pan, {
+        toValue: { x: 0, y: 0 },
+        useNativeDriver: false
+      }).start();
+    }
+  });
+
+  return (
+    <Animated.View
+      style={{
+        transform: [{ translateX: pan.x }, { translateY: pan.y }],
+        zIndex: isDragging ? 1 : 0,
+        opacity: isDragging ? 0.8 : 1,
+      }}
+      {...panResponder.panHandlers}
+    >
+      {renderTask(task)}
+    </Animated.View>
+  );
+};
 
 export default function TaskPanel() {
   const [tasks, setTasks] = useState([]);
@@ -51,6 +99,10 @@ export default function TaskPanel() {
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
+  const [groupBy, setGroupBy] = useState("none");
+  const [showCompletedTasks, setShowCompletedTasks] = useState(true);
+  const [sortBy, setSortBy] = useState("dueDate");
+  const [taskGroups, setTaskGroups] = useState({});
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -77,6 +129,10 @@ export default function TaskPanel() {
     const interval = setInterval(handleRecurringTasks, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    groupTasks();
+  }, [tasks, groupBy, showCompletedTasks, sortBy]);
 
   const loadGithubData = async () => {
     try {
@@ -221,6 +277,7 @@ export default function TaskPanel() {
         dependencies: [],
         recurrence: null,
         completed: false,
+        group: "Default",
       };
       saveTasks([...tasks, newTask]);
       setNewTaskText("");
@@ -350,295 +407,398 @@ export default function TaskPanel() {
             case 'monthly':
               newDueDate = new Date(dueDate.setMonth(dueDate.getMonth() + 1));
               break;
-            case 'yearly':
-              newDueDate = new Date(dueDate.setFullYear(dueDate.getFullYear() + 1));
-              break;
+              case 'yearly':
+                newDueDate = new Date(dueDate.setFullYear(dueDate.getFullYear() + 1));
+                break;
+            }
+            return { ...task, dueDate: newDueDate.toISOString() };
           }
-          return { ...task, dueDate: newDueDate.toISOString() };
+        }
+        return task;
+      });
+  
+      if (JSON.stringify(updatedTasks) !== JSON.stringify(tasks)) {
+        saveTasks(updatedTasks);
+      }
+    }, [tasks, saveTasks]);
+  
+    const onToggleComplete = useCallback((id) => {
+      const taskToToggle = tasks.find(task => task.id === id);
+      
+      if (!taskToToggle.completed) {
+        const incompleteDependencies = taskToToggle.dependencies.filter(depId => 
+          tasks.find(t => t.id === depId && !t.completed)
+        );
+  
+        if (incompleteDependencies.length > 0) {
+          const incompleteTaskNames = incompleteDependencies.map(depId => 
+            tasks.find(t => t.id === depId).text
+          ).join(', ');
+  
+          showAlert("Cannot Complete Task", `Complete the following dependent tasks first: ${incompleteTaskNames}`);
+          return;
         }
       }
-      return task;
-    });
-
-    if (JSON.stringify(updatedTasks) !== JSON.stringify(tasks)) {
-      saveTasks(updatedTasks);
-    }
-  }, [tasks, saveTasks]);
-
-  const onToggleComplete = useCallback((id) => {
-    const taskToToggle = tasks.find(task => task.id === id);
-    
-    if (!taskToToggle.completed) {
-      const incompleteDependencies = taskToToggle.dependencies.filter(depId => 
-        tasks.find(t => t.id === depId && !t.completed)
+  
+      const updatedTasks = tasks.map(task => 
+        task.id === id ? { ...task, completed: !task.completed } : task
       );
-
-      if (incompleteDependencies.length > 0) {
-        const incompleteTaskNames = incompleteDependencies.map(depId => 
-          tasks.find(t => t.id === depId).text
-        ).join(', ');
-
-        showAlert("Cannot Complete Task", `Complete the following dependent tasks first: ${incompleteTaskNames}`);
-        return;
-      }
-    }
-
-    const updatedTasks = tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-    saveTasks(updatedTasks);
-  }, [tasks, saveTasks, showAlert]);
-
-  const showAlert = useCallback((title, message) => {
-    setAlertTitle(title);
-    setAlertMessage(message);
-    setShowAlertModal(true);
-  }, []);
-
-  const renderTaskItem = useCallback(({ item }) => (
-    <TaskItem
-      task={item}
-      onEdit={() => editTask(item)}
-      onRemove={() => removeTask(item.id)}
-      onAGiXTOptions={(task) => {
-        setSelectedTaskForAGiXT(task);
-        setShowAGiXTOptionsModal(true);
-      }}
-      onToggleComplete={onToggleComplete}
-      showDependencies={showDependentTasks}
-      allTasks={tasks}
-    />
-  ), [editTask, removeTask, onToggleComplete, showDependentTasks, tasks, setSelectedTaskForAGiXT]);
-
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={['#2C3E50', '#34495E', '#4A5568']}
-        style={styles.container}
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Task Manager</Text>
-          <View style={styles.integrationBar}>
-            <TouchableOpacity
-              style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
-              onPress={() => setShowGithubIntegration(!showGithubIntegration)}
-            >
-              <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
-              onPress={() => setShowDependentTasks(!showDependentTasks)}
-            >
-              <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {showGithubIntegration && (
-          <View style={styles.githubIntegrationContainer}>
-            <Text style={styles.integrationTitle}>GitHub Integration</Text>
-            <TouchableOpacity style={styles.selectAgentButton} onPress={() => setShowAGiXTModal(true)}>
-              <Text style={styles.selectAgentButtonText}>Select Agent</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardAvoidingView}
-        >
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              value={newTaskText}
-              onChangeText={setNewTaskText}
-              placeholder="Enter a task"
-              placeholderTextColor="#FFFFFF80"
-            />
-            <TouchableOpacity style={styles.addButton} onPress={addTask}>
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          <FlatList
-            data={tasks}
-            renderItem={renderTaskItem}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.taskList}
-          />
-        </KeyboardAvoidingView>
-
-        <EditTaskModal
-          visible={showEditModal}
-          task={selectedTask}
-          onClose={() => setShowEditModal(false)}
-          onSave={handleSaveTask}
-          repositories={repositories}
-          allTasks={tasks}
-        />
-
-        <AGiXTModal
-          visible={showAGiXTModal}
-          onClose={() => setShowAGiXTModal(false)}
-          onAgentSelect={handleAgentSelect}
-          chains={chains}
-          agents={agents}
-          selectedAgent={selectedAgent}
-          setSelectedAgent={setSelectedAgent}
-        />
-
-        <AGiXTOptionsModal
-          visible={showAGiXTOptionsModal}
-          onClose={() => setShowAGiXTOptionsModal(false)}
-          onOptionSelect={handleAGiXTOptionSelect}
-        />
-
-        <SubtaskClarificationModal
-          visible={showSubtaskClarificationModal}
-          onClose={() => setShowSubtaskClarificationModal(false)}
-          onContinue={handleGetSubtasks}
-          clarificationText={subtaskClarificationText}
-          onChangeClarificationText={setSubtaskClarificationText}
-          isLoading={isLoading}
-        />
-
-        <AlertModal
-          visible={showAlertModal}
-          title={alertTitle}
-          message={alertMessage}
-          onClose={() => setShowAlertModal(false)}
-        />
-
-        {isLoading && <LoadingOverlay />}
-      </LinearGradient>
-    </SafeAreaView>
-  );
-}
-
-const TaskItem = React.memo(({ task, onEdit, onRemove, onAGiXTOptions, onToggleComplete, showDependencies, allTasks }) => {
-  const renderTextWithLinks = (text) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const parts = text.split(urlRegex);
-    
-    return parts.map((part, index) => {
-      if (part.match(urlRegex)) {
-        return (
-          <Text
-            key={index}
-            style={styles.link}
-            onPress={() => Linking.openURL(part)}
-          >
-            {part}
-          </Text>
-        );
-      }
-      return <Text key={index}>{part}</Text>;
-    });
-  };
-
-  const getDependencyNames = (dependencyIds) => {
-    return dependencyIds.map(id => {
-      const dependentTask = allTasks.find(t => t.id === id);
-      return dependentTask ? dependentTask.text : 'Unknown Task';
-    }).join(', ');
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return '#FF4136';
-      case 'medium':
-        return '#FF851B';
-      case 'low':
-        return '#2ECC40';
-      default:
-        return '#7FDBFF';
-    }
-  };
-
-  return (
-    <View style={[styles.taskContainer, task.completed && styles.completedTask]}>
-      <TouchableOpacity onPress={() => onToggleComplete(task.id)} style={styles.taskCheckbox}>
-        <MaterialIcons 
-          name={task.completed ? "check-box" : "check-box-outline-blank"} 
-          size={24} 
-          color={task.completed ? "#4CAF50" : "#FFFFFF"}
-        />
-      </TouchableOpacity>
-      <View style={styles.taskContent}>
-        <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>{task.text}</Text>
-        {task.note && <Text style={styles.noteText}>{renderTextWithLinks(task.note)}</Text>}
-        {task.dueDate && (
-          <Text style={styles.dueDateText}>
-            Due: {new Date(task.dueDate).toLocaleString()}
-          </Text>
-        )}
-        {task.priority && (
-          <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(task.priority) }]}>
-            <Text style={styles.priorityText}>{task.priority}</Text>
-          </View>
-        )}
-        {task.repo && (
-          <View style={styles.repoBadge}>
-            <MaterialIcons name="code" size={16} color="#FFFFFF" />
-            <Text style={styles.repoText}>{task.repo}</Text>
-          </View>
-        )}
-        {task.recurrence && (
-          <View style={styles.recurrenceBadge}>
-            <MaterialIcons name="repeat" size={16} color="#FFFFFF" />
-            <Text style={styles.recurrenceText}>{task.recurrence}</Text>
-          </View>
-        )}
-        {showDependencies && task.dependencies && task.dependencies.length > 0 && (
-          <Text style={styles.dependenciesText}>
-            Dependencies: {getDependencyNames(task.dependencies)}
-          </Text>
-        )}
-        {task.subtasks && task.subtasks.length > 0 && (
-          <View style={styles.subtasksContainer}>
-            <Text style={styles.subtasksTitle}>Subtasks:</Text>
-            {task.subtasks.map((subtask, index) => (
-              <Text key={subtask.id} style={styles.subtaskText}>
-                {index + 1}. {subtask.text}
-              </Text>
-            ))}
-          </View>
-        )}
-      </View>
-      <View style={styles.taskActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onEdit(task)}>
-          <MaterialIcons name="edit" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onAGiXTOptions(task)}>
-          <MaterialIcons name="play-arrow" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onRemove(task.id)}>
-          <MaterialIcons name="delete" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-});
-
-const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks }) => {
-  const [editedTask, setEditedTask] = useState(null);
-  const [dueDate, setDueDate] = useState(null);
-
-  useEffect(() => {
-    if (task) {
-      setEditedTask({
-        id: task.id,
-        text: task.text || '',
-        note: task.note || '',
-        priority: task.priority || '',
-        repo: task.repo || '',
-        subtasks: task.subtasks || [],
-        dependencies: task.dependencies || [],
-        recurrence: task.recurrence || null,
-        completed: task.completed || false,
+      saveTasks(updatedTasks);
+    }, [tasks, saveTasks, showAlert]);
+  
+    const showAlert = useCallback((title, message) => {
+      setAlertTitle(title);
+      setAlertMessage(message);
+      setShowAlertModal(true);
+    }, []);
+  
+    const groupTasks = useCallback(() => {
+      let filteredTasks = showCompletedTasks ? tasks : tasks.filter(task => !task.completed);
+  
+      // Sort tasks
+      filteredTasks.sort((a, b) => {
+        switch (sortBy) {
+          case 'dueDate':
+            return new Date(a.dueDate) - new Date(b.dueDate);
+          case 'priority':
+            const priorityOrder = { high: 0, medium: 1, low: 2 };
+            return priorityOrder[a.priority] - priorityOrder[b.priority];
+          case 'alphabetical':
+            return a.text.localeCompare(b.text);
+          default:
+            return 0;
+        }
       });
-      setDueDate(task.dueDate ? new Date(task.dueDate) : null);
+  
+      // Group tasks
+      const groups = {};
+      filteredTasks.forEach(task => {
+        let groupKey;
+        switch (groupBy) {
+          case 'priority':
+            groupKey = task.priority || 'No Priority';
+            break;
+          case 'dueDate':
+            groupKey = task.dueDate ? new Date(task.dueDate).toDateString() : 'No Due Date';
+            break;
+          case 'group':
+            groupKey = task.group || 'Default';
+            break;
+          default:
+            groupKey = 'All Tasks';
+        }
+        if (!groups[groupKey]) {
+          groups[groupKey] = [];
+        }
+        groups[groupKey].push(task);
+      });
+  
+      setTaskGroups(groups);
+    }, [tasks, groupBy, showCompletedTasks, sortBy]);
+  
+    const onMoveTask = useCallback((movedTask, yPosition) => {
+      const updatedTasks = [...tasks];
+      const movedTaskIndex = updatedTasks.findIndex(t => t.id === movedTask.id);
+      const targetIndex = Math.floor(yPosition / 100); // Assuming each task is about 100 pixels high
+  
+      if (targetIndex !== movedTaskIndex) {
+        updatedTasks.splice(movedTaskIndex, 1);
+        updatedTasks.splice(targetIndex, 0, movedTask);
+        saveTasks(updatedTasks);
+      }
+    }, [tasks, saveTasks]);
+  
+    const renderTaskItem = useCallback(({ item }) => (
+      <TaskItem
+        task={item}
+        onEdit={() => editTask(item)}
+        onRemove={() => removeTask(item.id)}
+        onAGiXTOptions={(task) => {
+          setSelectedTaskForAGiXT(task);
+          setShowAGiXTOptionsModal(true);
+        }}
+        onToggleComplete={onToggleComplete}
+        showDependencies={showDependentTasks}
+        allTasks={tasks}
+      />
+    ), [editTask, removeTask, onToggleComplete, showDependentTasks, tasks, setSelectedTaskForAGiXT]);
+  
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={['#2C3E50', '#34495E', '#4A5568']}
+          style={styles.container}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Task Manager</Text>
+            <View style={styles.integrationBar}>
+              <TouchableOpacity
+                style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
+                onPress={() => setShowGithubIntegration(!showGithubIntegration)}
+              >
+                <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
+                onPress={() => setShowDependentTasks(!showDependentTasks)}
+              >
+                <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
+              </TouchableOpacity>
+            </View>
+          </View>
+  
+          {showGithubIntegration && (
+            <View style={styles.githubIntegrationContainer}>
+              <Text style={styles.integrationTitle}>GitHub Integration</Text>
+              <TouchableOpacity style={styles.selectAgentButton} onPress={() => setShowAGiXTModal(true)}>
+                <Text style={styles.selectAgentButtonText}>Select Agent</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+  
+          <View style={styles.filterContainer}>
+            <View style={styles.filterItem}>
+              <Text style={styles.filterLabel}>Group By:</Text>
+              <Picker
+                selectedValue={groupBy}
+                onValueChange={(itemValue) => setGroupBy(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="None" value="none" />
+                <Picker.Item label="Priority" value="priority" />
+                <Picker.Item label="Due Date" value="dueDate" />
+                <Picker.Item label="Custom Group" value="group" />
+              </Picker>
+            </View>
+            <View style={styles.filterItem}>
+              <Text style={styles.filterLabel}>Sort By:</Text>
+              <Picker
+                selectedValue={sortBy}
+                onValueChange={(itemValue) => setSortBy(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Due Date" value="dueDate" />
+                <Picker.Item label="Priority" value="priority" />
+                <Picker.Item label="Alphabetical" value="alphabetical" />
+              </Picker>
+            </View>
+            <View style={styles.filterItem}>
+              <Text style={styles.filterLabel}>Show Completed:</Text>
+              <Switch
+                value={showCompletedTasks}
+                onValueChange={setShowCompletedTasks}
+                trackColor={{ false: "#767577", true: "#81b0ff" }}
+                thumbColor={showCompletedTasks ? "#f5dd4b" : "#f4f3f4"}
+              />
+            </View>
+          </View>
+  
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.keyboardAvoidingView}
+          >
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                value={newTaskText}
+                onChangeText={setNewTaskText}
+                placeholder="Enter a task"
+                placeholderTextColor="#FFFFFF80"
+              />
+              <TouchableOpacity style={styles.addButton} onPress={addTask}>
+                <MaterialIcons name="add" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+  
+            <ScrollView contentContainerStyle={styles.taskList}>
+              {Object.entries(taskGroups).map(([groupName, groupTasks]) => (
+                <View key={groupName} style={styles.taskGroup}>
+                  <Text style={styles.groupTitle}>{groupName}</Text>
+                  {groupTasks.map(task => (
+                    <DraggableTask
+                      key={task.id}
+                      task={task}
+                      renderTask={(task) => renderTaskItem({ item: task })}
+                      onMoveTask={onMoveTask}
+                    />
+                  ))}
+                </View>
+              ))}
+            </ScrollView>
+          </KeyboardAvoidingView>
+  
+          <EditTaskModal
+            visible={showEditModal}
+            task={selectedTask}
+            onClose={() => setShowEditModal(false)}
+            onSave={handleSaveTask}
+            repositories={repositories}
+            allTasks={tasks}
+          />
+  
+          <AGiXTModal
+            visible={showAGiXTModal}
+            onClose={() => setShowAGiXTModal(false)}
+            onAgentSelect={handleAgentSelect}
+            chains={chains}
+            agents={agents}
+            selectedAgent={selectedAgent}
+            setSelectedAgent={setSelectedAgent}
+          />
+  
+          <AGiXTOptionsModal
+            visible={showAGiXTOptionsModal}
+            onClose={() => setShowAGiXTOptionsModal(false)}
+            onOptionSelect={handleAGiXTOptionSelect}
+          />
+  
+          <SubtaskClarificationModal
+            visible={showSubtaskClarificationModal}
+            onClose={() => setShowSubtaskClarificationModal(false)}
+            onContinue={handleGetSubtasks}
+            clarificationText={subtaskClarificationText}
+            onChangeClarificationText={setSubtaskClarificationText}
+            isLoading={isLoading}
+          />
+  
+          <AlertModal
+            visible={showAlertModal}
+            title={alertTitle}
+            message={alertMessage}
+            onClose={() => setShowAlertModal(false)}
+          />
+  
+          {isLoading && <LoadingOverlay />}
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+  
+  const TaskItem = React.memo(({ task, onEdit, onRemove, onAGiXTOptions, onToggleComplete, showDependencies, allTasks }) => {
+    const renderTextWithLinks = (text) => {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const parts = text.split(urlRegex);
+      
+      return parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+          return (
+            <Text
+              key={index}
+              style={styles.link}
+              onPress={() => Linking.openURL(part)}
+            >
+              {part}
+            </Text>
+          );
+        }
+        return <Text key={index}>{part}</Text>;
+      });
+    };
+  
+    const getDependencyNames = (dependencyIds) => {
+      return dependencyIds.map(id => {
+        const dependentTask = allTasks.find(t => t.id === id);
+        return dependentTask ? dependentTask.text : 'Unknown Task';
+      }).join(', ');
+    };
+  
+    const getPriorityColor = (priority) => {
+      switch (priority.toLowerCase()) {
+        case 'high':
+          return '#FF4136';
+        case 'medium':
+          return '#FF851B';
+        case 'low':
+          return '#2ECC40';
+        default:
+          return '#7FDBFF';
+      }
+    };
+  
+    return (
+      <View style={[styles.taskContainer, task.completed && styles.completedTask]}>
+        <TouchableOpacity onPress={() => onToggleComplete(task.id)} style={styles.taskCheckbox}>
+          <MaterialIcons 
+            name={task.completed ? "check-box" : "check-box-outline-blank"} 
+            size={24} 
+            color={task.completed ? "#4CAF50" : "#FFFFFF"}
+          />
+        </TouchableOpacity>
+        <View style={styles.taskContent}>
+          <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>{task.text}</Text>
+          {task.note && <Text style={styles.noteText}>{renderTextWithLinks(task.note)}</Text>}
+          {task.dueDate && (
+            <Text style={styles.dueDateText}>
+              Due: {new Date(task.dueDate).toLocaleString()}
+            </Text>
+          )}
+          {task.priority && (
+            <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(task.priority) }]}>
+              <Text style={styles.priorityText}>{task.priority}</Text>
+            </View>
+          )}
+          {task.repo && (
+            <View style={styles.repoBadge}>
+              <MaterialIcons name="code" size={16} color="#FFFFFF" />
+              <Text style={styles.repoText}>{task.repo}</Text>
+            </View>
+          )}
+          {task.recurrence && (
+            <View style={styles.recurrenceBadge}>
+              <MaterialIcons name="repeat" size={16} color="#FFFFFF" />
+              <Text style={styles.recurrenceText}>{task.recurrence}</Text>
+            </View>
+          )}
+          {showDependencies && task.dependencies && task.dependencies.length > 0 && (
+            <Text style={styles.dependenciesText}>
+              Dependencies: {getDependencyNames(task.dependencies)}
+            </Text>
+          )}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <View style={styles.subtasksContainer}>
+              <Text style={styles.subtasksTitle}>Subtasks:</Text>
+              {task.subtasks.map((subtask, index) => (
+                <Text key={subtask.id} style={styles.subtaskText}>
+                  {index + 1}. {subtask.text}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+        <View style={styles.taskActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => onEdit(task)}>
+            <MaterialIcons name="edit" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => onAGiXTOptions(task)}>
+            <MaterialIcons name="play-arrow" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => onRemove(task.id)}>
+            <MaterialIcons name="delete" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  });
+  
+  const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks }) => {
+    const [editedTask, setEditedTask] = useState(null);
+    const [dueDate, setDueDate] = useState(null);
+  
+    useEffect(() => {
+      if (task) {
+        setEditedTask({
+          id: task.id,
+          text: task.text || '',
+          note: task.note || '',
+          priority: task.priority || '',
+          repo: task.repo || '',
+          subtasks: task.subtasks || [],
+          dependencies: task.dependencies || [],
+          recurrence: task.recurrence || null,
+          completed: task.completed || false,
+          group: task.group || 'Default',
+        });
+        setDueDate(task.dueDate ? new Date(task.dueDate) : null);
     } else {
       setEditedTask(null);
       setDueDate(null);
@@ -759,6 +919,12 @@ const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks 
                 { label: 'Monthly', value: 'monthly' },
                 { label: 'Yearly', value: 'yearly' },
               ]}
+            />
+
+            <InputField
+              label="Group"
+              value={editedTask.group}
+              onChangeText={(text) => handleChange('group', text)}
             />
             
             <SubtasksList
@@ -1444,6 +1610,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  filterItem: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  filterLabel: {
+    color: '#FFFFFF',
+    marginBottom: 5,
+  },
+  taskGroup: {
+    marginBottom: 20,
+  },
+  groupTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
 });
 
