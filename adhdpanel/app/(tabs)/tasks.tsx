@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   StyleSheet,
   View,
@@ -12,18 +12,20 @@ import {
   Linking,
   Animated,
   Easing,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import AGiXTSDK from "agixt";
-import { FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
-const ALWAYS_USE_AGENT_KEY = "alwaysUseAgent";
 
 export default function TaskPanel() {
   const [tasks, setTasks] = useState([]);
@@ -31,7 +33,6 @@ export default function TaskPanel() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [githubUsername, setGithubUsername] = useState("");
   const [showAGiXTModal, setShowAGiXTModal] = useState(false);
-  const [selectedChain, setSelectedChain] = useState(null);
   const [chains, setChains] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [agixtApiUri, setAgixtApiUri] = useState("");
@@ -40,8 +41,6 @@ export default function TaskPanel() {
   const [newTaskPriority, setNewTaskPriority] = useState("");
   const [showAGiXTOptionsModal, setShowAGiXTOptionsModal] = useState(false);
   const [selectedTaskForAGiXT, setSelectedTaskForAGiXT] = useState(null);
-  const [chainInput, setChainInput] = useState("");
-  const [isChainRunning, setIsChainRunning] = useState(false);
   const [showSubtaskClarificationModal, setShowSubtaskClarificationModal] = useState(false);
   const [subtaskClarificationText, setSubtaskClarificationText] = useState("");
   const [repositories, setRepositories] = useState([]);
@@ -55,19 +54,27 @@ export default function TaskPanel() {
 
   useEffect(() => {
     const loadInitialData = async () => {
-      await loadGithubData();
-      await loadAgixtData();
-      await loadTasks();
-      await getChains();
-      await getAgents();
-      await fetchRepositories();
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          loadGithubData(),
+          loadAgixtData(),
+          loadTasks(),
+          getChains(),
+          getAgents(),
+          fetchRepositories(),
+        ]);
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+        showAlert("Error", "Failed to load initial data. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadInitialData();
 
-    // Set up interval to check for recurring tasks
-    const interval = setInterval(handleRecurringTasks, 60000); // Check every minute
-
+    const interval = setInterval(handleRecurringTasks, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -78,7 +85,8 @@ export default function TaskPanel() {
         setGithubUsername(storedGithubUsername);
       }
     } catch (error) {
-      console.log('Error getting GitHub username from AsyncStorage:', error);
+      console.error('Error getting GitHub username from AsyncStorage:', error);
+      throw error;
     }
   };
 
@@ -91,7 +99,8 @@ export default function TaskPanel() {
         setAgixtApiKey(storedAgixtApiKey);
       }
     } catch (error) {
-      console.log('Error getting AGiXT data from AsyncStorage:', error);
+      console.error('Error getting AGiXT data from AsyncStorage:', error);
+      throw error;
     }
   };
 
@@ -102,7 +111,8 @@ export default function TaskPanel() {
         setTasks(JSON.parse(storedTasks));
       }
     } catch (error) {
-      console.log("Error loading tasks:", error);
+      console.error("Error loading tasks:", error);
+      throw error;
     }
   };
 
@@ -111,13 +121,13 @@ export default function TaskPanel() {
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
       setTasks(updatedTasks);
     } catch (error) {
-      console.log("Error saving tasks:", error);
+      console.error("Error saving tasks:", error);
+      throw error;
     }
   };
 
   const getChains = async () => {
     try {
-      setIsLoading(true);
       const ApiClient = new AGiXTSDK({
         baseUri: agixtApiUri,
         apiKey: agixtApiKey,
@@ -136,8 +146,7 @@ export default function TaskPanel() {
       setChains(chainsArray);
     } catch (error) {
       console.error("Error getting chains:", error);
-    } finally {
-      setIsLoading(false);
+      throw error;
     }
   };
 
@@ -163,6 +172,7 @@ export default function TaskPanel() {
     } catch (error) {
       console.error("Error fetching agents:", error);
       setAgents([]);
+      throw error;
     }
   };
 
@@ -175,32 +185,30 @@ export default function TaskPanel() {
       
       const conversationName = "GitHub Repositories";
       
-      // Create a new conversation
       await agixt.newConversation(selectedAgent, conversationName);
       
       const result = await agixt.executeCommand(
         selectedAgent,
         "Get List of My Github Repositories",
-        {}, // No additional arguments needed for this command
+        {}, 
         conversationName
       );
 
       if (typeof result === 'string') {
-        // If the result is a string, parse it as JSON
         const parsedRepos = JSON.parse(result);
         setRepositories(parsedRepos);
       } else if (Array.isArray(result)) {
-        // If the result is already an array, use it directly
         setRepositories(result);
       } else {
-        console.error("Unexpected repository data format:", result);
+        throw new Error("Unexpected repository data format");
       }
     } catch (error) {
       console.error("Error fetching repositories:", error);
+      throw error;
     }
   };
 
-  const addTask = () => {
+  const addTask = useCallback(() => {
     if (newTaskText.trim().length > 0) {
       const newTask = {
         id: Date.now(),
@@ -214,21 +222,18 @@ export default function TaskPanel() {
         recurrence: null,
         completed: false,
       };
-      const updatedTasks = [...tasks, newTask];
-      saveTasks(updatedTasks);
+      saveTasks([...tasks, newTask]);
       setNewTaskText("");
       setNewTaskPriority("");
     }
-  };
+  }, [newTaskText, newTaskPriority, tasks, saveTasks]);
 
-  const removeTask = (id) => {
+  const removeTask = useCallback((id) => {
     const taskToRemove = tasks.find(task => task.id === id);
     const dependentTasks = tasks.filter(task => task.dependencies && task.dependencies.includes(id));
 
     if (dependentTasks.length > 0) {
-      setAlertTitle("Cannot Delete Task");
-      setAlertMessage(`This task cannot be deleted because it is a dependency for: ${dependentTasks.map(t => t.text).join(', ')}. Complete these tasks first.`);
-      setShowAlertModal(true);
+      showAlert("Cannot Delete Task", `This task cannot be deleted because it is a dependency for: ${dependentTasks.map(t => t.text).join(', ')}. Complete these tasks first.`);
       return;
     }
 
@@ -242,42 +247,38 @@ export default function TaskPanel() {
           tasks.find(t => t.id === depId).text
         ).join(', ');
 
-        setAlertTitle("Cannot Delete Task");
-        setAlertMessage(`Complete the following dependent tasks first: ${incompleteTaskNames}`);
-        setShowAlertModal(true);
+        showAlert("Cannot Delete Task", `Complete the following dependent tasks first: ${incompleteTaskNames}`);
         return;
       }
     }
 
-    const updatedTasks = tasks.filter((task) => task.id !== id);
-    saveTasks(updatedTasks);
-  };
+    saveTasks(tasks.filter((task) => task.id !== id));
+  }, [tasks, saveTasks, showAlert]);
 
-  const editTask = (task) => {
+  const editTask = useCallback((task) => {
     setSelectedTask(task);
     setShowEditModal(true);
-  };
+  }, []);
 
-  const handleSaveTask = (editedTask) => {
+  const handleSaveTask = useCallback((editedTask) => {
     const updatedTasks = tasks.map((task) =>
       task.id === editedTask.id ? editedTask : task
     );
     saveTasks(updatedTasks);
     setShowEditModal(false);
     setSelectedTask(null);
-  };
+  }, [tasks, saveTasks]);
 
-  const handleAgentSelect = async (agent, chain, input) => {
+  const handleAgentSelect = useCallback(async (agent, chain, input) => {
     setShowAGiXTModal(false);
     if (chain) {
       await executeChain(agent, chain, input);
     }
-  };
+  }, []);
 
   const executeChain = async (agent, chain, input) => {
     try {
       setIsLoading(true);
-      setIsChainRunning(true);
       const agixt = new AGiXTSDK({
         baseUri: agixtApiUri,
         apiKey: agixtApiKey,
@@ -286,22 +287,22 @@ export default function TaskPanel() {
       console.log("Chain execution result:", result);
     } catch (error) {
       console.error("Error executing chain:", error);
+      showAlert("Error", "Failed to execute chain. Please try again.");
     } finally {
       setIsLoading(false);
-      setIsChainRunning(false);
     }
   };
 
-  const handleAGiXTOptionSelect = async (option) => {
+  const handleAGiXTOptionSelect = useCallback(async (option) => {
     if (option === 'getSubtasks') {
       setShowSubtaskClarificationModal(true);
     } else if (option === 'runChain') {
       setShowAGiXTModal(true);
     }
     setShowAGiXTOptionsModal(false);
-  };
+  }, []);
 
-  const handleGetSubtasks = async () => {
+  const handleGetSubtasks = useCallback(async () => {
     setShowSubtaskClarificationModal(false);
     setIsLoading(true);
     try {
@@ -326,12 +327,13 @@ export default function TaskPanel() {
       setSubtaskClarificationText("");
     } catch (error) {
       console.error("Error getting subtasks:", error);
+      showAlert("Error", "Failed to get subtasks. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTaskForAGiXT, subtaskClarificationText, tasks, saveTasks, agixtApiUri, agixtApiKey, showAlert]);
 
-  const handleRecurringTasks = () => {
+  const handleRecurringTasks = useCallback(() => {
     const now = new Date();
     const updatedTasks = tasks.map(task => {
       if (task.recurrence && task.dueDate) {
@@ -361,9 +363,9 @@ export default function TaskPanel() {
     if (JSON.stringify(updatedTasks) !== JSON.stringify(tasks)) {
       saveTasks(updatedTasks);
     }
-  };
+  }, [tasks, saveTasks]);
 
-  const onToggleComplete = (id) => {
+  const onToggleComplete = useCallback((id) => {
     const taskToToggle = tasks.find(task => task.id === id);
     
     if (!taskToToggle.completed) {
@@ -376,9 +378,7 @@ export default function TaskPanel() {
           tasks.find(t => t.id === depId).text
         ).join(', ');
 
-        setAlertTitle("Cannot Complete Task");
-        setAlertMessage(`Complete the following dependent tasks first: ${incompleteTaskNames}`);
-        setShowAlertModal(true);
+        showAlert("Cannot Complete Task", `Complete the following dependent tasks first: ${incompleteTaskNames}`);
         return;
       }
     }
@@ -387,126 +387,135 @@ export default function TaskPanel() {
       task.id === id ? { ...task, completed: !task.completed } : task
     );
     saveTasks(updatedTasks);
-  };
+  }, [tasks, saveTasks, showAlert]);
+
+  const showAlert = useCallback((title, message) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setShowAlertModal(true);
+  }, []);
+
+  const renderTaskItem = useCallback(({ item }) => (
+    <TaskItem
+      task={item}
+      onEdit={() => editTask(item)}
+      onRemove={() => removeTask(item.id)}
+      onAGiXTOptions={(task) => {
+        setSelectedTaskForAGiXT(task);
+        setShowAGiXTOptionsModal(true);
+      }}
+      onToggleComplete={onToggleComplete}
+      showDependencies={showDependentTasks}
+      allTasks={tasks}
+    />
+  ), [editTask, removeTask, onToggleComplete, showDependentTasks, tasks, setSelectedTaskForAGiXT]);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Text style={styles.title}>Task Manager</Text>
-      </View>
-
-      <View style={styles.integrationBar}>
-  <TouchableOpacity
-    style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
-    onPress={() => setShowGithubIntegration(!showGithubIntegration)}
-  >
-    <FontAwesome5 name="github" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
-    <Text style={[styles.integrationButtonText, showGithubIntegration && styles.integrationButtonTextActive]}>
-      GitHub
-    </Text>
-  </TouchableOpacity>
-  <TouchableOpacity
-    style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
-    onPress={() => setShowDependentTasks(!showDependentTasks)}
-  >
-    <Icon name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
-    <Text style={[styles.integrationButtonText, showDependentTasks && styles.integrationButtonTextActive]}>
-      Dependencies
-    </Text>
-  </TouchableOpacity>
-</View>
-
-      {showGithubIntegration && (
-        <View style={styles.githubIntegrationContainer}>
-          <Text style={styles.integrationTitle}>GitHub Integration</Text>
-          <TouchableOpacity style={styles.selectAgentButton} onPress={() => setShowAGiXTModal(true)}>
-            <Text style={styles.selectAgentButtonText}>Select Agent</Text>
-          </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={['#2C3E50', '#34495E', '#4A5568']}
+        style={styles.container}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Task Manager</Text>
+          <View style={styles.integrationBar}>
+            <TouchableOpacity
+              style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
+              onPress={() => setShowGithubIntegration(!showGithubIntegration)}
+            >
+              <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
+              onPress={() => setShowDependentTasks(!showDependentTasks)}
+            >
+              <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={newTaskText}
-          onChangeText={setNewTaskText}
-          placeholder="Enter a task"
-          placeholderTextColor="#FFFFFF80"
-        />
-        <TouchableOpacity style={styles.addButton} onPress={addTask}>
-          <Icon name="add" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TaskItem
-            task={item}
-            onEdit={() => editTask(item)}
-            onRemove={() => removeTask(item.id)}
-            onAGiXTOptions={(task) => {
-              setSelectedTaskForAGiXT(task);
-              setShowAGiXTOptionsModal(true);
-            }}
-            onToggleComplete={onToggleComplete}
-            chains={chains}
-            isLoading={isLoading}
-            isChainRunning={isChainRunning}
-            showDependencies={showDependentTasks}
-            allTasks={tasks}
-          />
+        {showGithubIntegration && (
+          <View style={styles.githubIntegrationContainer}>
+            <Text style={styles.integrationTitle}>GitHub Integration</Text>
+            <TouchableOpacity style={styles.selectAgentButton} onPress={() => setShowAGiXTModal(true)}>
+              <Text style={styles.selectAgentButtonText}>Select Agent</Text>
+            </TouchableOpacity>
+          </View>
         )}
-      />
 
-      <EditTaskModal
-        visible={showEditModal}
-        task={selectedTask}
-        onClose={() => setShowEditModal(false)}
-        onSave={handleSaveTask}
-        repositories={repositories}
-        allTasks={tasks}
-      />
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoidingView}
+        >
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              value={newTaskText}
+              onChangeText={setNewTaskText}
+              placeholder="Enter a task"
+              placeholderTextColor="#FFFFFF80"
+            />
+            <TouchableOpacity style={styles.addButton} onPress={addTask}>
+              <MaterialIcons name="add" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
 
-      <AGiXTModal
-        visible={showAGiXTModal}
-        onClose={() => setShowAGiXTModal(false)}
-        onAgentSelect={handleAgentSelect}
-        agixtApiUri={agixtApiUri}
-        agixtApiKey={agixtApiKey}
-        chains={chains}
-        agents={agents}
-        selectedAgent={selectedAgent}
-        setSelectedAgent={setSelectedAgent}
-      />
+          <FlatList
+            data={tasks}
+            renderItem={renderTaskItem}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.taskList}
+          />
+        </KeyboardAvoidingView>
 
-      <AGiXTOptionsModal
-        visible={showAGiXTOptionsModal}
-        onClose={() => setShowAGiXTOptionsModal(false)}
-        onOptionSelect={handleAGiXTOptionSelect}
-      />
+        <EditTaskModal
+          visible={showEditModal}
+          task={selectedTask}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleSaveTask}
+          repositories={repositories}
+          allTasks={tasks}
+        />
 
-      <SubtaskClarificationModal
-        visible={showSubtaskClarificationModal}
-        onClose={() => setShowSubtaskClarificationModal(false)}
-        onContinue={handleGetSubtasks}
-        clarificationText={subtaskClarificationText}
-        onChangeClarificationText={setSubtaskClarificationText}
-        isLoading={isLoading}
-      />
+        <AGiXTModal
+          visible={showAGiXTModal}
+          onClose={() => setShowAGiXTModal(false)}
+          onAgentSelect={handleAgentSelect}
+          chains={chains}
+          agents={agents}
+          selectedAgent={selectedAgent}
+          setSelectedAgent={setSelectedAgent}
+        />
 
-      <AlertModal
-        visible={showAlertModal}
-        title={alertTitle}
-        message={alertMessage}
-        onClose={() => setShowAlertModal(false)}
-      />
-    </View>
+        <AGiXTOptionsModal
+          visible={showAGiXTOptionsModal}
+          onClose={() => setShowAGiXTOptionsModal(false)}
+          onOptionSelect={handleAGiXTOptionSelect}
+        />
+
+        <SubtaskClarificationModal
+          visible={showSubtaskClarificationModal}
+          onClose={() => setShowSubtaskClarificationModal(false)}
+          onContinue={handleGetSubtasks}
+          clarificationText={subtaskClarificationText}
+          onChangeClarificationText={setSubtaskClarificationText}
+          isLoading={isLoading}
+        />
+
+        <AlertModal
+          visible={showAlertModal}
+          title={alertTitle}
+          message={alertMessage}
+          onClose={() => setShowAlertModal(false)}
+        />
+
+        {isLoading && <LoadingOverlay />}
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
-const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, onToggleComplete, chains, isLoading, isChainRunning, showDependencies, allTasks }) => {
+const TaskItem = React.memo(({ task, onEdit, onRemove, onAGiXTOptions, onToggleComplete, showDependencies, allTasks }) => {
   const renderTextWithLinks = (text) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = text.split(urlRegex);
@@ -534,35 +543,52 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, onToggleComplete, ch
     }).join(', ');
   };
 
+  const getPriorityColor = (priority) => {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return '#FF4136';
+      case 'medium':
+        return '#FF851B';
+      case 'low':
+        return '#2ECC40';
+      default:
+        return '#7FDBFF';
+    }
+  };
+
   return (
-    <View style={[
-      styles.taskContainer,
-      isChainRunning && styles.taskRunningAnimation,
-      task.completed && styles.completedTask
-    ]}>
-      <TouchableOpacity onPress={() => onToggleComplete(task.id)} style={styles.checkboxContainer}>
-        <Icon 
+    <View style={[styles.taskContainer, task.completed && styles.completedTask]}>
+      <TouchableOpacity onPress={() => onToggleComplete(task.id)} style={styles.taskCheckbox}>
+        <MaterialIcons 
           name={task.completed ? "check-box" : "check-box-outline-blank"} 
           size={24} 
           color={task.completed ? "#4CAF50" : "#FFFFFF"}
         />
       </TouchableOpacity>
-      <View style={styles.taskInfoContainer}>
+      <View style={styles.taskContent}>
         <Text style={[styles.taskText, task.completed && styles.completedTaskText]}>{task.text}</Text>
-        {task.note && <Text style={styles.noteText}>Note: {renderTextWithLinks(task.note)}</Text>}
+        {task.note && <Text style={styles.noteText}>{renderTextWithLinks(task.note)}</Text>}
         {task.dueDate && (
           <Text style={styles.dueDateText}>
             Due: {new Date(task.dueDate).toLocaleString()}
           </Text>
         )}
         {task.priority && (
-          <Text style={styles.priorityText}>Priority: {task.priority}</Text>
+          <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(task.priority) }]}>
+            <Text style={styles.priorityText}>{task.priority}</Text>
+          </View>
         )}
         {task.repo && (
-          <Text style={styles.repoText}>Repo: {task.repo}</Text>
+          <View style={styles.repoBadge}>
+            <MaterialIcons name="code" size={16} color="#FFFFFF" />
+            <Text style={styles.repoText}>{task.repo}</Text>
+          </View>
         )}
         {task.recurrence && (
-          <Text style={styles.recurrenceText}>Recurs: {task.recurrence}</Text>
+          <View style={styles.recurrenceBadge}>
+            <MaterialIcons name="repeat" size={16} color="#FFFFFF" />
+            <Text style={styles.recurrenceText}>{task.recurrence}</Text>
+          </View>
         )}
         {showDependencies && task.dependencies && task.dependencies.length > 0 && (
           <Text style={styles.dependenciesText}>
@@ -580,24 +606,20 @@ const TaskItem = ({ task, onEdit, onRemove, onAGiXTOptions, onToggleComplete, ch
           </View>
         )}
       </View>
-      <View style={styles.taskButtonsContainer}>
+      <View style={styles.taskActions}>
         <TouchableOpacity style={styles.actionButton} onPress={() => onEdit(task)}>
-          <Icon name="edit" size={24} color="#FFFFFF" />
+          <MaterialIcons name="edit" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => onAGiXTOptions(task)}
-        >
-          <Icon name="play-arrow" size={24} color="#FFFFFF" />
+        <TouchableOpacity style={styles.actionButton} onPress={() => onAGiXTOptions(task)}>
+          <MaterialIcons name="play-arrow" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.removeButton} onPress={() => onRemove(task.id)}>
-          <Icon name="delete" size={24} color="#FFFFFF" />
+        <TouchableOpacity style={styles.actionButton} onPress={() => onRemove(task.id)}>
+          <MaterialIcons name="delete" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-      {isChainRunning && <ChainRunningAnimation />}
     </View>
   );
-};
+});
 
 const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks }) => {
   const [editedTask, setEditedTask] = useState(null);
@@ -670,7 +692,7 @@ const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks 
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Edit Task</Text>
             <TouchableOpacity onPress={onClose}>
-              <Icon name="close" size={24} color="#FFFFFF" />
+              <MaterialIcons name="close" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
           
@@ -788,7 +810,7 @@ const PickerField = ({ label, value, onValueChange, items }) => (
       style={styles.picker}
     >
       {items.map((item) => (
-        <Picker.Item key={item.value} label={item.label} value={item.value} />
+        <Picker.Item key={item.value} label={item.label} value={item.value} color="#FFFFFF" />
       ))}
     </Picker>
   </View>
@@ -819,12 +841,12 @@ const SubtasksList = ({ subtasks, onSubtasksChange }) => {
             placeholderTextColor="#FFFFFF80"
           />
           <TouchableOpacity onPress={() => removeSubtask(subtask.id)}>
-            <Icon name="remove-circle-outline" size={24} color="#FF3B30" />
+            <MaterialIcons name="remove-circle-outline" size={24} color="#FF3B30" />
           </TouchableOpacity>
         </View>
       ))}
       <TouchableOpacity style={styles.addSubtaskButton} onPress={addSubtask}>
-        <Icon name="add-circle-outline" size={24} color="#007AFF" />
+        <MaterialIcons name="add-circle-outline" size={24} color="#007AFF" />
         <Text style={styles.addSubtaskText}>Add Subtask</Text>
       </TouchableOpacity>
     </View>
@@ -854,7 +876,7 @@ const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDepende
   );
 };
 
-const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey, chains, agents, selectedAgent, setSelectedAgent }) => {
+const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent }) => {
   const [selectedChain, setSelectedChain] = useState("");
   const [chainInput, setChainInput] = useState("");
 
@@ -865,8 +887,8 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey,
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.centeredView}>
-        <View style={styles.modalView}>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Select an Agent and Chain</Text>
           {agents.length > 0 ? (
             <Picker
@@ -875,7 +897,7 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey,
               style={styles.agentPicker}
             >
               {agents.map((agent) => (
-                <Picker.Item key={agent.name} label={agent.name} value={agent.name} />
+                <Picker.Item key={agent.name} label={agent.name} value={agent.name} color="#FFFFFF" />
               ))}
             </Picker>
           ) : (
@@ -887,7 +909,7 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, agixtApiUri, agixtApiKey,
             style={styles.chainPicker}
           >
             {chains.map((chain) => (
-              <Picker.Item key={chain} label={chain} value={chain} />
+              <Picker.Item key={chain} label={chain} value={chain} color="#FFFFFF" />
             ))}
           </Picker>
           <TextInput
@@ -1001,79 +1023,48 @@ const AlertModal = ({ visible, title, message, onClose }) => {
   );
 };
 
-const ChainRunningAnimation = () => {
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  return (
-    <View style={styles.chainRunningOverlay}>
-      <View style={styles.chainRunningContent}>
-        <Animated.View style={{ transform: [{ rotate: spin }] }}>
-          <Icon name="settings" size={48} color="#FFFFFF" />
-        </Animated.View>
-        <Text style={styles.chainRunningText}>AUTOMATION TASK</Text>
-      </View>
-    </View>
-  );
-};
+const LoadingOverlay = () => (
+  <View style={styles.loadingOverlay}>
+    <ActivityIndicator size="large" color="#FFFFFF" />
+  </View>
+);
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#2C3E50',
+  },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#121212',
   },
-  topBar: {
-    backgroundColor: '#007AFF',
-    padding: 15,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
   },
   integrationBar: {
     flexDirection: 'row',
-    marginBottom: 20,
   },
   integrationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: 10,
-    borderRadius: 5,
-    marginRight: 10,
+    borderRadius: 20,
+    marginLeft: 10,
   },
   integrationButtonActive: {
-    backgroundColor: '#007AFF',
-  },
-  integrationButtonText: {
-    color: '#BBBBBB',
-    marginLeft: 5,
-  },
-  integrationButtonTextActive: {
-    color: '#FFFFFF',
+    backgroundColor: '#3498DB',
   },
   githubIntegrationContainer: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 10,
     marginBottom: 20,
   },
   integrationTitle: {
@@ -1083,7 +1074,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   selectAgentButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3498DB',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -1092,6 +1083,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   inputContainer: {
     flexDirection: 'row',
     marginBottom: 20,
@@ -1099,40 +1093,38 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 40,
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#FFFFFF',
     paddingHorizontal: 10,
     borderRadius: 5,
     marginRight: 10,
   },
   addButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3498DB',
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  taskList: {
+    paddingBottom: 20,
+  },
   taskContainer: {
-    backgroundColor: '#2C2C2C',
-    borderRadius: 5,
-    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+    padding: 15,
     marginBottom: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  taskRunningAnimation: {
-    borderColor: '#FFFFFF',
-    borderWidth: 2,
   },
   completedTask: {
     opacity: 0.6,
   },
-  checkboxContainer: {
+  taskCheckbox: {
     marginRight: 10,
   },
-  taskInfoContainer: {
+  taskContent: {
     flex: 1,
   },
   taskText: {
@@ -1153,20 +1145,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
   },
+  priorityBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 5,
+  },
   priorityText: {
-    color: '#BBBBBB',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  repoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginTop: 5,
   },
   repoText: {
-    color: '#BBBBBB',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 12,
+    marginLeft: 5,
+  },
+  recurrenceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginTop: 5,
   },
   recurrenceText: {
-    color: '#BBBBBB',
-    fontSize: 14,
-    marginTop: 5,
+    color: '#FFFFFF',
+    fontSize: 12,
+    marginLeft: 5,
   },
   dependenciesText: {
     color: '#BBBBBB',
@@ -1187,14 +1204,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 10,
   },
-  taskButtonsContainer: {
+  taskActions: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   actionButton: {
-    padding: 5,
-    marginLeft: 10,
-  },
-  removeButton: {
     padding: 5,
     marginLeft: 10,
   },
@@ -1205,7 +1219,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#34495E',
     borderRadius: 10,
     padding: 20,
     width: '90%',
@@ -1238,18 +1252,24 @@ const styles = StyleSheet.create({
   },
   datePickerContainer: {
     marginBottom: 15,
-    zIndex: 9999,
   },
   datePickerButton: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: 10,
     borderRadius: 5,
   },
   datePickerButtonText: {
     color: '#FFFFFF',
   },
+  removeDueDateButton: {
+    marginTop: 5,
+    padding: 5,
+    backgroundColor: '#E74C3C',
+    borderRadius: 5,
+    alignItems: 'center',
+  },
   picker: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#FFFFFF',
   },
   subtasksList: {
@@ -1263,7 +1283,7 @@ const styles = StyleSheet.create({
   subtaskInput: {
     flex: 1,
     height: 40,
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#FFFFFF',
     paddingHorizontal: 10,
     borderRadius: 5,
@@ -1274,7 +1294,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addSubtaskText: {
-    color: '#007AFF',
+    color: '#3498DB',
     marginLeft: 5,
   },
   modalFooter: {
@@ -1292,48 +1312,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   cancelButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#E74C3C',
   },
   saveButton: {
-    backgroundColor: '#007AFF',
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalView: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: '80%',
+    backgroundColor: '#2ECC71',
   },
   agentPicker: {
     width: '100%',
     color: '#FFFFFF',
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 10,
   },
   chainPicker: {
     width: '100%',
     color: '#FFFFFF',
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 10,
   },
   chainInput: {
     width: '100%',
     height: 40,
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#FFFFFF',
     paddingHorizontal: 10,
     borderRadius: 5,
@@ -1346,15 +1345,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonCancel: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#E74C3C',
   },
   buttonOk: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#2ECC71',
   },
   modalOption: {
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#FFFFFF40',
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalOptionText: {
     color: '#FFFFFF',
@@ -1363,7 +1362,7 @@ const styles = StyleSheet.create({
   modalCloseButton: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#E74C3C',
     borderRadius: 5,
     alignItems: 'center',
   },
@@ -1371,43 +1370,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  chainRunningOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
-    borderColor: '#FFFFFF',
-    borderWidth: 2,
-  },
-  chainRunningContent: {
-    alignItems: 'center',
-  },
-  chainRunningText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    marginTop: 10,
-    fontWeight: 'bold',
-  },
   link: {
-    color: '#007AFF',
+    color: '#3498DB',
     textDecorationLine: 'underline',
   },
   dependencyList: {
     marginTop: 15,
   },
   dependencyItem: {
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     padding: 10,
     borderRadius: 5,
     marginBottom: 5,
   },
   dependencyItemSelected: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3498DB',
   },
   dependencyItemText: {
     color: '#FFFFFF',
@@ -1415,7 +1392,7 @@ const styles = StyleSheet.create({
   clarificationInput: {
     width: '100%',
     height: 100,
-    backgroundColor: '#2C2C2C',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#FFFFFF',
     paddingHorizontal: 10,
     borderRadius: 5,
@@ -1433,7 +1410,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   alertContent: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#34495E',
     borderRadius: 10,
     padding: 20,
     width: '80%',
@@ -1452,7 +1429,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   alertButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3498DB',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 5,
@@ -1461,6 +1438,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
