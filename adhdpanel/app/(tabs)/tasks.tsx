@@ -26,6 +26,7 @@ import AGiXTSDK from "agixt";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
+
 const { width, height } = Dimensions.get('window');
 
 const AGIXT_API_URI_KEY = "agixtapi";
@@ -948,13 +949,194 @@ export default function TaskPanel() {
   );
 }
 
+
+
+const AnimatedInput = ({ label, value, onChangeText, multiline = false, darkMode }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const labelPosition = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(labelPosition, {
+      toValue: (isFocused || value) ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocused, value]);
+
+  const labelStyle = {
+    position: 'absolute',
+    left: 0,
+    top: labelPosition.interpolate({
+      inputRange: [0, 1],
+      outputRange: [18, 0],
+    }),
+    fontSize: labelPosition.interpolate({
+      inputRange: [0, 1],
+      outputRange: [16, 12],
+    }),
+    color: labelPosition.interpolate({
+      inputRange: [0, 1],
+      outputRange: [darkMode ? '#BBBBBB' : '#666666', darkMode ? '#FFFFFF' : '#000000'],
+    }),
+  };
+
+  return (
+    <View style={styles.container}>
+      <Animated.Text style={labelStyle}>
+        {label}
+      </Animated.Text>
+      <TextInput
+        style={[
+          styles.input,
+          darkMode && styles.darkModeInput,
+          multiline && styles.multilineInput,
+        ]}
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        multiline={multiline}
+      />
+    </View>
+  );
+};
+
+const CustomDropdown = ({ label, value, onValueChange, items, darkMode }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const selectedItem = items.find(item => item.value === value);
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.item,
+        darkMode && styles.darkModeItem,
+        item.value === value && styles.selectedItem,
+        item.value === value && darkMode && styles.darkModeSelectedItem
+      ]}
+      onPress={() => {
+        onValueChange(item.value);
+        setModalVisible(false);
+      }}
+    >
+      {item.icon && (
+        <MaterialIcons
+          name={item.icon}
+          size={20}
+          color={item.color || (darkMode ? '#FFFFFF' : '#000000')}
+          style={styles.icon}
+        />
+      )}
+      <Text style={[
+        styles.itemText,
+        darkMode && styles.darkModeText,
+        item.value === value && styles.selectedItemText
+      ]}>
+        {item.label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Text style={[styles.label, darkMode && styles.darkModeText]}>{label}</Text>
+      <TouchableOpacity
+        style={[styles.button, darkMode && styles.darkModeButton]}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={[styles.buttonText, darkMode && styles.darkModeText]}>
+          {selectedItem ? selectedItem.label : 'Select an option'}
+        </Text>
+        <MaterialIcons
+          name="arrow-drop-down"
+          size={24}
+          color={darkMode ? '#FFFFFF' : '#000000'}
+        />
+      </TouchableOpacity>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
+            <FlatList
+              data={items}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.value.toString()}
+            />
+            <TouchableOpacity
+              style={[styles.closeButton, darkMode && styles.darkModeCloseButton]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={[styles.closeButtonText, darkMode && styles.darkModeCloseButtonText]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+
+const CollapsibleSection = ({ title, children, darkMode }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [animation] = useState(new Animated.Value(0));
+
+  const toggleExpand = () => {
+    if (expanded) {
+      Animated.timing(animation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      Animated.timing(animation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+    setExpanded(!expanded);
+  };
+
+  const bodyHeight = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1000], // Adjust this value based on your content
+  });
+
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity onPress={toggleExpand} style={[styles.header, darkMode && styles.darkModeHeader]}>
+        <Text style={[styles.headerText, darkMode && styles.darkModeText]}>{title}</Text>
+        <MaterialIcons
+          name={expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+          size={24}
+          color={darkMode ? '#FFFFFF' : '#000000'}
+        />
+      </TouchableOpacity>
+      <Animated.View style={[styles.body, { height: bodyHeight }]}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+};
+
+
 const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks, darkMode }) => {
   const [editedTask, setEditedTask] = useState(null);
   const [dueDate, setDueDate] = useState(null);
+  const [modalAnimation] = useState(new Animated.Value(0));
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
     if (task) {
-      setEditedTask({...task});
+      setEditedTask({
+        ...task,
+        subtasks: Array.isArray(task.subtasks) ? task.subtasks : [],
+        dependencies: Array.isArray(task.dependencies) ? task.dependencies : []
+      });
       setDueDate(task.dueDate ? new Date(task.dueDate) : null);
     } else {
       setEditedTask({
@@ -973,179 +1155,262 @@ const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks,
     }
   }, [task]);
 
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(modalAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(modalAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
   const handleChange = (field, value) => {
-    setEditedTask(prev => ({ ...prev, [field]: value }));
+    if (field === 'subtasks' || field === 'dependencies') {
+      setEditedTask(prev => ({ 
+        ...prev, 
+        [field]: Array.isArray(value) ? value : []
+      }));
+    } else {
+      setEditedTask(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleSave = () => {
     if (editedTask) {
-      onSave({ ...editedTask, dueDate: dueDate });
+      const taskToSave = {
+        ...editedTask,
+        subtasks: Array.isArray(editedTask.subtasks) ? editedTask.subtasks : [],
+        dependencies: Array.isArray(editedTask.dependencies) ? editedTask.dependencies : [],
+        dueDate: dueDate
+      };
+      onSave(taskToSave);
     }
   };
 
   const toggleDependency = (taskId) => {
-    const updatedDependencies = editedTask.dependencies.includes(taskId)
-      ? editedTask.dependencies.filter(id => id !== taskId)
-      : [...editedTask.dependencies, taskId];
+    const currentDependencies = Array.isArray(editedTask.dependencies) ? editedTask.dependencies : [];
+    const updatedDependencies = currentDependencies.includes(taskId)
+      ? currentDependencies.filter(id => id !== taskId)
+      : [...currentDependencies, taskId];
     handleChange('dependencies', updatedDependencies);
   };
+
+  const handleDateChange = (date) => {
+    setDueDate(date);
+    setIsDatePickerOpen(false);
+  };
+
+  const modalTranslateY = modalAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [300, 0],
+  });
 
   return (
     <Modal
       visible={visible}
-      animationType="slide"
       transparent={true}
+      animationType="fade"
       onRequestClose={onClose}
     >
       <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
-        <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
-          <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>
-            {task ? "Edit Task" : "Add New Task"}
-          </Text>
+        <Animated.View 
+          style={[
+            styles.modalContent, 
+            darkMode && styles.darkModeModalContent,
+            { transform: [{ translateY: modalTranslateY }] }
+          ]}
+        >
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>
+              {task ? "Edit Task" : "Add New Task"}
+            </Text>
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <MaterialIcons name="close" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
+            </TouchableOpacity>
+          </View>
+          
           <ScrollView style={styles.modalBody}>
-            <InputField
-              label="Task Name"
-              value={editedTask?.text}
-              onChangeText={(text) => handleChange('text', text)}
-              darkMode={darkMode}
-            />
-            
-            <InputField
-              label="Description"
-              value={editedTask?.note}
-              onChangeText={(text) => handleChange('note', text)}
-              multiline
-              darkMode={darkMode}
-            />
-            
-            <View style={styles.datePickerContainer}>
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Due Date</Text>
-              <EnhancedDatePicker
-                selected={dueDate}
-                onChange={(date) => setDueDate(date)}
-                darkMode={darkMode}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Task Name</Text>
+              <TextInput
+                style={[styles.input, darkMode && styles.darkModeInput]}
+                value={editedTask?.text}
+                onChangeText={(text) => handleChange('text', text)}
+                placeholder="Enter task name"
+                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+              />
+              
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.multilineInput, darkMode && styles.darkModeInput]}
+                value={editedTask?.note}
+                onChangeText={(text) => handleChange('note', text)}
+                placeholder="Enter task description"
+                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+                multiline
               />
             </View>
             
-            <CustomPicker
-              label="Priority"
-              selectedValue={editedTask?.priority}
-              onValueChange={(value) => handleChange('priority', value)}
-              items={[
-                { label: 'Low', value: 'low' },
-                { label: 'Medium', value: 'medium' },
-                { label: 'High', value: 'high' },
-              ]}
-              darkMode={darkMode}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Due Date</Text>
+              <TouchableOpacity
+                style={[styles.datePickerButton, darkMode && styles.darkModeDatePickerButton]}
+                onPress={() => setIsDatePickerOpen(true)}
+              >
+                <Text style={[styles.datePickerButtonText, darkMode && styles.darkModeText]}>
+                  {dueDate ? dueDate.toLocaleString() : "Select due date"}
+                </Text>
+                <MaterialIcons name="calendar-today" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
+              </TouchableOpacity>
+            </View>
             
-            <CustomPicker
-              label="Repository"
-              selectedValue={editedTask?.repo}
-              onValueChange={(value) => handleChange('repo', value)}
-              items={repositories.map(repo => ({ label: repo.name, value: repo.name }))}
-              darkMode={darkMode}
-            />
+        {isDatePickerOpen && (
+          <View style={styles.datePickerOverlay}>
+            <View style={[styles.datePickerContainer, darkMode && styles.darkModeDatePickerContainer]}>
+              <DatePicker
+                selected={dueDate}
+                onChange={handleDateChange}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                timeCaption="Time"
+                dateFormat="MMMM d, yyyy h:mm aa"
+                inline
+                calendarClassName={darkMode ? "dark-mode-datepicker" : ""}
+              />
+              <TouchableOpacity
+                style={styles.closeDatePickerButton}
+                onPress={() => setIsDatePickerOpen(false)}
+              >
+                <Text style={styles.closeDatePickerButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Priority</Text>
+              <Picker
+                selectedValue={editedTask?.priority}
+                onValueChange={(value) => handleChange('priority', value)}
+                style={[styles.picker, darkMode && styles.darkModePicker]}
+              >
+                <Picker.Item label="Low" value="low" />
+                <Picker.Item label="Medium" value="medium" />
+                <Picker.Item label="High" value="high" />
+              </Picker>
+              
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Repository</Text>
+              <Picker
+                selectedValue={editedTask?.repo}
+                onValueChange={(value) => handleChange('repo', value)}
+                style={[styles.picker, darkMode && styles.darkModePicker]}
+              >
+                <Picker.Item label="None" value="" />
+                {repositories.map(repo => (
+                  <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
+                ))}
+              </Picker>
 
-            <CustomPicker
-              label="Recurrence"
-              selectedValue={editedTask?.recurrence}
-              onValueChange={(value) => handleChange('recurrence', value)}
-              items={[
-                { label: 'None', value: null },
-                { label: 'Daily', value: 'daily' },
-                { label: 'Weekly', value: 'weekly' },
-                { label: 'Monthly', value: 'monthly' },
-                { label: 'Yearly', value: 'yearly' },
-              ]}
-              darkMode={darkMode}
-            />
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Recurrence</Text>
+              <Picker
+                selectedValue={editedTask?.recurrence}
+                onValueChange={(value) => handleChange('recurrence', value)}
+                style={[styles.picker, darkMode && styles.darkModePicker]}
+              >
+                <Picker.Item label="None" value={null} />
+                <Picker.Item label="Daily" value="daily" />
+                <Picker.Item label="Weekly" value="weekly" />
+                <Picker.Item label="Monthly" value="monthly" />
+                <Picker.Item label="Yearly" value="yearly" />
+              </Picker>
+            </View>
 
-            <InputField
-              label="Group"
-              value={editedTask?.group}
-              onChangeText={(text) => handleChange('group', text)}
-              darkMode={darkMode}
-            />
-            
-            <SubtasksList
-              subtasks={editedTask?.subtasks}
-              onSubtasksChange={(subtasks) => handleChange('subtasks', subtasks)}
-              darkMode={darkMode}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Group</Text>
+              <TextInput
+                style={[styles.input, darkMode && styles.darkModeInput]}
+                value={editedTask?.group}
+                onChangeText={(text) => handleChange('group', text)}
+                placeholder="Enter group name"
+                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+              />
+            </View>
 
-            <DependencyList
-              allTasks={allTasks}
-              currentTaskId={editedTask?.id}
-              dependencies={editedTask?.dependencies}
-              onToggleDependency={toggleDependency}
-              darkMode={darkMode}
-            />
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Subtasks</Text>
+              {editedTask?.subtasks.map((subtask, index) => (
+                <View key={subtask.id} style={styles.subtaskItem}>
+                  <TextInput
+                    style={[styles.input, styles.subtaskInput, darkMode && styles.darkModeInput]}
+                    value={subtask.text}
+                    onChangeText={(text) => {
+                      const updatedSubtasks = [...editedTask.subtasks];
+                      updatedSubtasks[index].text = text;
+                      handleChange('subtasks', updatedSubtasks);
+                    }}
+                    placeholder={`Subtask ${index + 1}`}
+                    placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+                  />
+                  <TouchableOpacity onPress={() => {
+                    const updatedSubtasks = editedTask.subtasks.filter((_, i) => i !== index);
+                    handleChange('subtasks', updatedSubtasks);
+                  }}>
+                    <MaterialIcons name="remove-circle-outline" size={24} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity style={styles.addSubtaskButton} onPress={() => {
+                const newSubtask = { id: Date.now(), text: '' };
+                handleChange('subtasks', [...editedTask.subtasks, newSubtask]);
+              }}>
+                <MaterialIcons name="add-circle-outline" size={24} color="#007AFF" />
+                <Text style={[styles.addSubtaskText, darkMode && styles.darkModeText]}>Add Subtask</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Dependencies</Text>
+              {allTasks
+                .filter(t => t.id !== editedTask?.id)
+                .map(task => (
+                  <TouchableOpacity
+                    key={task.id}
+                    style={[
+                      styles.dependencyItem,
+                      editedTask?.dependencies.includes(task.id) && styles.dependencyItemSelected
+                    ]}
+                    onPress={() => toggleDependency(task.id)}
+                  >
+                    <Text style={[styles.dependencyItemText, darkMode && styles.darkModeText]}>{task.text}</Text>
+                  </TouchableOpacity>
+                ))
+              }
+            </View>
           </ScrollView>
           
           <View style={styles.modalFooter}>
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+              <MaterialIcons name="close" size={20} color="#FFFFFF" />
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
+              <MaterialIcons name="check" size={20} color="#FFFFFF" />
               <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
 };
 
-const InputField = ({ label, value, onChangeText, multiline = false, darkMode }) => (
-  <View style={styles.inputField}>
-    <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>{label}</Text>
-    <TextInput
-      style={[styles.input, multiline && styles.multilineInput, darkMode && styles.darkModeInput]}
-      value={value}
-      onChangeText={onChangeText}
-      multiline={multiline}
-      placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-    />
-  </View>
-);
-
-const SubtasksList = ({ subtasks, onSubtasksChange, darkMode }) => {
-  const addSubtask = () => {
-    onSubtasksChange([...subtasks, { id: Date.now(), text: '' }]);
-  };
-
-  const updateSubtask = (id, text) => {
-    onSubtasksChange(subtasks.map(st => st.id === id ? { ...st, text } : st));
-  };
-
-  const removeSubtask = (id) => {
-    onSubtasksChange(subtasks.filter(st => st.id !== id));
-  };
-
-  return (
-    <View style={styles.subtasksList}>
-      <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Subtasks</Text>
-      {subtasks.map((subtask) => (
-        <View key={subtask.id} style={styles.subtaskItem}>
-          <TextInput
-            style={[styles.subtaskInput, darkMode && styles.darkModeInput]}
-            value={subtask.text}
-            onChangeText={(text) => updateSubtask(subtask.id, text)}
-            placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-          />
-          <TouchableOpacity onPress={() => removeSubtask(subtask.id)}>
-            <MaterialIcons name="remove-circle-outline" size={24} color="#FF3B30" />
-          </TouchableOpacity>
-        </View>
-      ))}
-      <TouchableOpacity style={styles.addSubtaskButton} onPress={addSubtask}>
-        <MaterialIcons name="add-circle-outline" size={24} color="#007AFF" />
-        <Text style={[styles.addSubtaskText, darkMode && styles.darkModeText]}>Add Subtask</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
 
 const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDependency, darkMode }) => {
   return (
@@ -1317,7 +1582,11 @@ const LoadingOverlay = ({ darkMode }) => (
   </View>
 );
 
+
+
+
 const styles = StyleSheet.create({
+  // Existing styles
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -1410,19 +1679,38 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 20,
     width: '90%',
-    maxHeight: '80%',
+    maxHeight: '90%',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   darkModeModalContent: {
     backgroundColor: '#333333',
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    paddingBottom: 10,
+  },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 15,
     color: '#000000',
+  },
+  closeButton: {
+    padding: 5,
   },
   modalBody: {
     maxHeight: '70%',
@@ -1433,13 +1721,16 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   button: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 10,
     marginLeft: 10,
   },
   buttonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+    marginLeft: 5,
   },
   cancelButton: {
     backgroundColor: '#E74C3C',
@@ -1844,6 +2135,157 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontStyle: 'italic',
     marginBottom: 10,
+  },
+  // Styles for AnimatedInput
+  animatedInputContainer: {
+    marginBottom: 20,
+    position: 'relative',
+  },
+  animatedInput: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#CCCCCC',
+    fontSize: 16,
+    paddingVertical: 5,
+    color: '#000000',
+  },
+  darkModeAnimatedInput: {
+    borderBottomColor: '#666666',
+    color: '#FFFFFF',
+  },
+  animatedInputMultiline: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  // Styles for CustomDatePicker
+  datePickerContainer: {
+    marginBottom: 20,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#3498db',
+  },
+  darkModeDatePickerButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: '#2980b9',
+  },
+  datePickerButtonText: {
+    color: '#000000',
+    fontSize: 16,
+  },
+  darkModeDatePickerButtonText: {
+    color: '#FFFFFF',
+  },
+  // Styles for CustomDropdown
+  dropdownContainer: {
+    marginBottom: 20,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#3498db',
+  },
+  darkModeDropdownButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: '#2980b9',
+  },
+  dropdownButtonText: {
+    color: '#000000',
+    fontSize: 16,
+  },
+  darkModeDropdownButtonText: {
+    color: '#FFFFFF',
+  },
+  dropdownOptions: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  darkModeDropdownOptions: {
+    backgroundColor: '#333333',
+  },
+  dropdownOption: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  darkModeDropdownOption: {
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  dropdownOptionText: {
+    color: '#000000',
+    fontSize: 16,
+  },
+  darkModeDropdownOptionText: {
+    color: '#FFFFFF',
+  },
+  // Styles for CollapsibleSection
+  collapsibleSection: {
+    marginBottom: 20,
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  darkModeCollapsibleHeader: {
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  collapsibleTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  darkModeCollapsibleTitle: {
+    color: '#FFFFFF',
+  },
+  collapsibleContent: {
+    paddingTop: 15,
+  },
+  // Styles for improved layout
+  inputGroup: {
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  column: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  closeDatePickerButton: {
+    backgroundColor: '#FF3B30',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 20,
+    alignItems: 'center',
+    color: '#FFFFFF',
   },
 });
 
