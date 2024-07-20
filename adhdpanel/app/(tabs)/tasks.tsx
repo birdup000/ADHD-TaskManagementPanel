@@ -1271,29 +1271,53 @@ const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks,
               </TouchableOpacity>
             </View>
             
-        {isDatePickerOpen && (
-          <View style={styles.datePickerOverlay}>
-            <View style={[styles.datePickerContainer, darkMode && styles.darkModeDatePickerContainer]}>
-              <DatePicker
-                selected={dueDate}
-                onChange={handleDateChange}
-                showTimeSelect
-                timeFormat="HH:mm"
-                timeIntervals={15}
-                timeCaption="Time"
-                dateFormat="MMMM d, yyyy h:mm aa"
-                inline
-                calendarClassName={darkMode ? "dark-mode-datepicker" : ""}
-              />
-              <TouchableOpacity
-                style={styles.closeDatePickerButton}
-                onPress={() => setIsDatePickerOpen(false)}
-              >
-                <Text style={styles.closeDatePickerButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+            {isDatePickerOpen && (
+  <Modal
+    transparent={true}
+    animationType="fade"
+    visible={isDatePickerOpen}
+    onRequestClose={() => setIsDatePickerOpen(false)}
+  >
+    <View style={styles.datePickerOverlay}>
+      <View style={[styles.datePickerContainer, darkMode && styles.darkModeDatePickerContainer]}>
+        <View style={styles.datePickerHeader}>
+          <Text style={[styles.datePickerTitle, darkMode && styles.darkModeText]}>Select Date and Time</Text>
+          <TouchableOpacity onPress={() => setIsDatePickerOpen(false)}>
+            <MaterialIcons name="close" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
+          </TouchableOpacity>
+        </View>
+        <DatePicker
+          selected={dueDate}
+          onChange={handleDateChange}
+          showTimeSelect
+          timeFormat="HH:mm"
+          timeIntervals={15}
+          timeCaption="Time"
+          dateFormat="MMMM d, yyyy h:mm aa"
+          inline
+          calendarClassName={darkMode ? "dark-mode-datepicker" : ""}
+        />
+        <View style={styles.datePickerActions}>
+          <TouchableOpacity
+            style={[styles.datePickerButton, styles.datePickerCancelButton]}
+            onPress={() => setIsDatePickerOpen(false)}
+          >
+            <Text style={styles.datePickerButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.datePickerButton, styles.datePickerConfirmButton]}
+            onPress={() => {
+              handleDateChange(dueDate);
+              setIsDatePickerOpen(false);
+            }}
+          >
+            <Text style={styles.datePickerButtonText}>Confirm</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+)}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Priority</Text>
               <Picker
@@ -2285,7 +2309,59 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 20,
     alignItems: 'center',
+  },
+  closeDatePickerButtonText: {
     color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  // New styles for DatePicker
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+  },
+  darkModeDatePickerContainer: {
+    backgroundColor: '#333333',
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  datePickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  datePickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 20,
+  },
+  datePickerButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginLeft: 10,
+  },
+  datePickerCancelButton: {
+    backgroundColor: '#E74C3C',
+  },
+  datePickerConfirmButton: {
+    backgroundColor: '#2ECC71',
+  },
+  datePickerButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 
