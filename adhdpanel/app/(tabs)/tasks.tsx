@@ -26,7 +26,6 @@ import AGiXTSDK from "agixt";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
-
 const { width, height } = Dimensions.get('window');
 
 const AGIXT_API_URI_KEY = "agixtapi";
@@ -318,6 +317,40 @@ const EnhancedDatePicker = ({ selected, onChange, darkMode }) => {
   );
 };
 
+const GitHubIntegration = ({ data, isLoading, darkMode }) => {
+  if (isLoading) {
+    return <ActivityIndicator size="large" color={darkMode ? "#FFFFFF" : "#000000"} />;
+  }
+
+  if (!data) {
+    return <Text style={[styles.errorText, darkMode && styles.darkModeText]}>No GitHub data available</Text>;
+  }
+
+  return (
+    <View style={styles.githubIntegration}>
+      <Text style={[styles.githubUsername, darkMode && styles.darkModeText]}>
+        GitHub User: {data.login}
+      </Text>
+      <Text style={[styles.githubBio, darkMode && styles.darkModeText]}>
+        Bio: {data.bio || 'No bio available'}
+      </Text>
+      <Text style={[styles.githubStats, darkMode && styles.darkModeText]}>
+        Public Repos: {data.public_repos} | Followers: {data.followers} | Following: {data.following}
+      </Text>
+      {data.repositories && (
+        <>
+          <Text style={[styles.repoTitle, darkMode && styles.darkModeText]}>Recent Repositories:</Text>
+          {data.repositories.slice(0, 5).map(repo => (
+            <Text key={repo.id} style={[styles.repoItem, darkMode && styles.darkModeText]}>
+              {repo.name} - {repo.description || 'No description'}
+            </Text>
+          ))}
+        </>
+      )}
+    </View>
+  );
+};
+
 export default function TaskPanel() {
   const [tasks, setTasks] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -349,6 +382,8 @@ export default function TaskPanel() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
+  const [githubData, setGithubData] = useState(null);
+  const [isLoadingGithub, setIsLoadingGithub] = useState(false);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -507,6 +542,46 @@ export default function TaskPanel() {
     } catch (error) {
       console.error("Error fetching repositories:", error);
       throw error;
+    }
+  };
+
+  const fetchGithubData = async () => {
+    if (!githubUsername) {
+      showAlert("GitHub Username Missing", "Please set your GitHub username in the settings.");
+      return;
+    }
+
+    setIsLoadingGithub(true);
+    try {
+      const agixt = new AGiXTSDK({
+        baseUri: agixtApiUri,
+        apiKey: agixtApiKey,
+      });
+      
+      const conversationName = "GitHub User Data";
+      
+      await agixt.newConversation(selectedAgent, conversationName);
+      
+      const result = await agixt.executeCommand(
+        selectedAgent,
+        "Get GitHub User Data",
+        { username: githubUsername },
+        conversationName
+      );
+
+      if (typeof result === 'string') {
+        const parsedData = JSON.parse(result);
+        setGithubData(parsedData);
+      } else if (typeof result === 'object') {
+        setGithubData(result);
+      } else {
+        throw new Error("Unexpected GitHub data format");
+      }
+    } catch (error) {
+      console.error("Error fetching GitHub data:", error);
+      showAlert("Error", "Failed to fetch GitHub data. Please try again.");
+    } finally {
+      setIsLoadingGithub(false);
     }
   };
 
@@ -709,245 +784,260 @@ export default function TaskPanel() {
         case 'priority':
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
-        case 'alphabetical':
-          return a.text.localeCompare(b.text);
-        default:
-          return 0;
+          case 'alphabetical':
+            return a.text.localeCompare(b.text);
+          default:
+            return 0;
+        }
+      });
+  
+      // Group tasks
+      const groups = {};
+      filteredTasks.forEach(task => {
+        let groupKey;
+        switch (groupBy) {
+          case 'priority':
+            groupKey = task.priority || 'No Priority';
+            break;
+          case 'dueDate':
+            groupKey = task.dueDate ? new Date(task.dueDate).toDateString() : 'No Due Date';
+            break;
+          case 'group':
+            groupKey = task.group || 'Default';
+            break;
+          default:
+            groupKey = 'All Tasks';
+        }
+        if (!groups[groupKey]) {
+          groups[groupKey] = [];
+        }
+        groups[groupKey].push(task);
+      });
+  
+      setTaskGroups(groups);
+    }, [tasks, groupBy, showCompletedTasks, sortBy]);
+  
+    const onMoveTask = useCallback((movedTask, yPosition) => {
+      const updatedTasks = [...tasks];
+      const movedTaskIndex = updatedTasks.findIndex(t => t.id === movedTask.id);
+      const targetIndex = Math.floor(yPosition / 100); // Assuming each task is about 100 pixels high
+  
+      if (targetIndex !== movedTaskIndex) {
+        updatedTasks.splice(movedTaskIndex, 1);
+        updatedTasks.splice(targetIndex, 0, movedTask);
+        saveTasks(updatedTasks);
       }
-    });
-
-    // Group tasks
-    const groups = {};
-    filteredTasks.forEach(task => {
-      let groupKey;
-      switch (groupBy) {
-        case 'priority':
-          groupKey = task.priority || 'No Priority';
-          break;
-        case 'dueDate':
-          groupKey = task.dueDate ? new Date(task.dueDate).toDateString() : 'No Due Date';
-          break;
-        case 'group':
-          groupKey = task.group || 'Default';
-          break;
-        default:
-          groupKey = 'All Tasks';
+    }, [tasks, saveTasks]);
+  
+    const toggleSidebar = () => {
+      setShowSidebar(!showSidebar);
+    };
+  
+    const handleGroupSelect = (group) => {
+      setSelectedGroup(group);
+      setShowSidebar(false);
+    };
+  
+    const toggleDarkMode = () => {
+      setDarkMode(!darkMode);
+    };
+  
+    const toggleGithubIntegration = () => {
+      if (!showGithubIntegration && !githubData) {
+        fetchGithubData();
       }
-      if (!groups[groupKey]) {
-        groups[groupKey] = [];
-      }
-      groups[groupKey].push(task);
-    });
-
-    setTaskGroups(groups);
-  }, [tasks, groupBy, showCompletedTasks, sortBy]);
-
-  const onMoveTask = useCallback((movedTask, yPosition) => {
-    const updatedTasks = [...tasks];
-    const movedTaskIndex = updatedTasks.findIndex(t => t.id === movedTask.id);
-    const targetIndex = Math.floor(yPosition / 100); // Assuming each task is about 100 pixels high
-
-    if (targetIndex !== movedTaskIndex) {
-      updatedTasks.splice(movedTaskIndex, 1);
-      updatedTasks.splice(targetIndex, 0, movedTask);
-      saveTasks(updatedTasks);
-    }
-  }, [tasks, saveTasks]);
-
-  const toggleSidebar = () => {
-    setShowSidebar(!showSidebar);
-  };
-
-  const handleGroupSelect = (group) => {
-    setSelectedGroup(group);
-    setShowSidebar(false);
-  };
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
-  return (
-    <SafeAreaView style={[styles.safeArea, darkMode && styles.darkMode]}>
-      <LinearGradient
-        colors={darkMode ? ['#1A2980', '#26D0CE'] : ['#4CA1AF', '#C4E0E5']}
-        style={styles.container}
-      >
-        <BlurView intensity={20} style={StyleSheet.absoluteFill} />
-        <View style={styles.header}>
-          <TouchableOpacity onPress={toggleSidebar}>
-            <MaterialIcons name="menu" size={28} color={darkMode ? "#FFFFFF" : "#000000"} />
-          </TouchableOpacity>
-          <Text style={[styles.title, darkMode && styles.darkModeText]}>Task Manager</Text>
-          <CustomSwitch
-            value={darkMode}
-            onValueChange={toggleDarkMode}
-          />
-        </View>
-
-        <View style={styles.integrationBar}>
-        <TouchableOpacity
-            style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
-            onPress={() => setShowGithubIntegration(!showGithubIntegration)}
-          >
-            <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
-            onPress={() => setShowDependentTasks(!showDependentTasks)}
-          >
-            <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
-          </TouchableOpacity>
-        </View>
-
-        {selectedGroup && (
-          <Text style={[styles.selectedGroupTitle, darkMode && styles.darkModeText]}>{selectedGroup}</Text>
-        )}
-
-        <View style={styles.filterContainer}>
-          <View style={styles.filterItem}>
-            <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Group By:</Text>
-            <CustomPicker
-              selectedValue={groupBy}
-              onValueChange={(itemValue) => setGroupBy(itemValue)}
-              items={[
-                { label: "None", value: "none" },
-                { label: "Priority", value: "priority" },
-                { label: "Due Date", value: "dueDate" },
-                { label: "Custom Group", value: "group" },
-              ]}
-              darkMode={darkMode}
-            />
-          </View>
-          <View style={styles.filterItem}>
-            <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Sort By:</Text>
-            <CustomPicker
-              selectedValue={sortBy}
-              onValueChange={(itemValue) => setSortBy(itemValue)}
-              items={[
-                { label: "Due Date", value: "dueDate" },
-                { label: "Priority", value: "priority" },
-                { label: "Alphabetical", value: "alphabetical" },
-              ]}
-              darkMode={darkMode}
-            />
-          </View>
-          <View style={styles.filterItem}>
-            <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Show Completed:</Text>
-            <CustomSwitch
-              value={showCompletedTasks}
-              onValueChange={setShowCompletedTasks}
-            />
-          </View>
-        </View>
-
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardAvoidingView}
+      setShowGithubIntegration(!showGithubIntegration);
+    };
+  
+    return (
+      <SafeAreaView style={[styles.safeArea, darkMode && styles.darkMode]}>
+        <LinearGradient
+          colors={darkMode ? ['#1A2980', '#26D0CE'] : ['#4CA1AF', '#C4E0E5']}
+          style={styles.container}
         >
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[styles.input, darkMode && styles.darkModeInput]}
-              value={newTaskText}
-              onChangeText={setNewTaskText}
-              placeholder="Enter a task"
-              placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+          <BlurView intensity={20} style={StyleSheet.absoluteFill} />
+          <View style={styles.header}>
+            <TouchableOpacity onPress={toggleSidebar}>
+              <MaterialIcons name="menu" size={28} color={darkMode ? "#FFFFFF" : "#000000"} />
+            </TouchableOpacity>
+            <Text style={[styles.title, darkMode && styles.darkModeText]}>Task Manager</Text>
+            <CustomSwitch
+              value={darkMode}
+              onValueChange={toggleDarkMode}
             />
-            <TouchableOpacity style={styles.addButton} onPress={addTask}>
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
+          </View>
+  
+          <View style={styles.integrationBar}>
+            <TouchableOpacity
+              style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
+              onPress={toggleGithubIntegration}
+            >
+              <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
+              onPress={() => setShowDependentTasks(!showDependentTasks)}
+            >
+              <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
             </TouchableOpacity>
           </View>
-
-          <FlatList
-            data={Object.entries(taskGroups)}
-            keyExtractor={(item) => item[0]}
-            renderItem={({ item: [groupName, groupTasks] }) => (
-              <View style={styles.taskGroup}>
-                <Text style={[styles.groupTitle, darkMode && styles.darkModeText]}>{groupName}</Text>
-                {groupTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={() => editTask(task)}
-                    onRemove={() => removeTask(task.id)}
-                    onAGiXTOptions={(task) => {
-                      setSelectedTaskForAGiXT(task);
-                      setShowAGiXTOptionsModal(true);
-                    }}
-                    onToggleComplete={onToggleComplete}
-                    showDependencies={showDependentTasks}
-                    allTasks={tasks}
-                    darkMode={darkMode}
-                  />
-                ))}
-              </View>
+  
+          {selectedGroup && (
+            <Text style={[styles.selectedGroupTitle, darkMode && styles.darkModeText]}>{selectedGroup}</Text>
+          )}
+  
+          <View style={styles.filterContainer}>
+            <View style={styles.filterItem}>
+              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Group By:</Text>
+              <CustomPicker
+                selectedValue={groupBy}
+                onValueChange={(itemValue) => setGroupBy(itemValue)}
+                items={[
+                  { label: "None", value: "none" },
+                  { label: "Priority", value: "priority" },
+                  { label: "Due Date", value: "dueDate" },
+                  { label: "Custom Group", value: "group" },
+                ]}
+                darkMode={darkMode}
+              />
+            </View>
+            <View style={styles.filterItem}>
+              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Sort By:</Text>
+              <CustomPicker
+                selectedValue={sortBy}
+                onValueChange={(itemValue) => setSortBy(itemValue)}
+                items={[
+                  { label: "Due Date", value: "dueDate" },
+                  { label: "Priority", value: "priority" },
+                  { label: "Alphabetical", value: "alphabetical" },
+                ]}
+                darkMode={darkMode}
+              />
+            </View>
+            <View style={styles.filterItem}>
+              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Show Completed:</Text>
+              <CustomSwitch
+                value={showCompletedTasks}
+                onValueChange={setShowCompletedTasks}
+              />
+            </View>
+          </View>
+  
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.keyboardAvoidingView}
+          >
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, darkMode && styles.darkModeInput]}
+                value={newTaskText}
+                onChangeText={setNewTaskText}
+                placeholder="Enter a task"
+                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+              />
+              <TouchableOpacity style={styles.addButton} onPress={addTask}>
+                <MaterialIcons name="add" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+  
+            {showGithubIntegration && (
+              <GitHubIntegration 
+                data={githubData} 
+                isLoading={isLoadingGithub}
+                darkMode={darkMode}
+              />
             )}
-          />
-        </KeyboardAvoidingView>
-
-        <FloatingActionButton onPress={() => setShowEditModal(true)} />
-
-        {showSidebar && (
-          <Sidebar
-            groups={Object.keys(taskGroups)}
-            tasks={tasks}
-            onGroupSelect={handleGroupSelect}
-            onClose={toggleSidebar}
+  
+            <FlatList
+              data={Object.entries(taskGroups)}
+              keyExtractor={(item) => item[0]}
+              renderItem={({ item: [groupName, groupTasks] }) => (
+                <View style={styles.taskGroup}>
+                  <Text style={[styles.groupTitle, darkMode && styles.darkModeText]}>{groupName}</Text>
+                  {groupTasks.map(task => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onEdit={() => editTask(task)}
+                      onRemove={() => removeTask(task.id)}
+                      onAGiXTOptions={(task) => {
+                        setSelectedTaskForAGiXT(task);
+                        setShowAGiXTOptionsModal(true);
+                      }}
+                      onToggleComplete={onToggleComplete}
+                      showDependencies={showDependentTasks}
+                      allTasks={tasks}
+                      darkMode={darkMode}
+                    />
+                  ))}
+                </View>
+              )}
+            />
+          </KeyboardAvoidingView>
+  
+          <FloatingActionButton onPress={() => setShowEditModal(true)} />
+  
+          {showSidebar && (
+            <Sidebar
+              groups={Object.keys(taskGroups)}
+              tasks={tasks}
+              onGroupSelect={handleGroupSelect}
+              onClose={toggleSidebar}
+              darkMode={darkMode}
+            />
+          )}
+  
+          <EditTaskModal
+            visible={showEditModal}
+            task={selectedTask}
+            onClose={() => setShowEditModal(false)}
+            onSave={handleSaveTask}
+            repositories={repositories}
+            allTasks={tasks}
             darkMode={darkMode}
           />
-        )}
-
-        <EditTaskModal
-          visible={showEditModal}
-          task={selectedTask}
-          onClose={() => setShowEditModal(false)}
-          onSave={handleSaveTask}
-          repositories={repositories}
-          allTasks={tasks}
-          darkMode={darkMode}
-        />
-
-        <AGiXTModal
-          visible={showAGiXTModal}
-          onClose={() => setShowAGiXTModal(false)}
-          onAgentSelect={handleAgentSelect}
-          chains={chains}
-          agents={agents}
-          selectedAgent={selectedAgent}
-          setSelectedAgent={setSelectedAgent}
-          darkMode={darkMode}
-        />
-
-        <AGiXTOptionsModal
-          visible={showAGiXTOptionsModal}
-          onClose={() => setShowAGiXTOptionsModal(false)}
-          onOptionSelect={handleAGiXTOptionSelect}
-          darkMode={darkMode}
-        />
-
-        <SubtaskClarificationModal
-          visible={showSubtaskClarificationModal}
-          onClose={() => setShowSubtaskClarificationModal(false)}
-          onContinue={handleGetSubtasks}
-          clarificationText={subtaskClarificationText}
-          onChangeClarificationText={setSubtaskClarificationText}
-          isLoading={isLoading}
-          darkMode={darkMode}
-        />
-
-        <AlertModal
-          visible={showAlertModal}
-          title={alertTitle}
-          message={alertMessage}
-          onClose={() => setShowAlertModal(false)}
-          darkMode={darkMode}
-        />
-
-        {isLoading && <LoadingOverlay darkMode={darkMode} />}
-      </LinearGradient>
-    </SafeAreaView>
-  );
-}
+  
+          <AGiXTModal
+            visible={showAGiXTModal}
+            onClose={() => setShowAGiXTModal(false)}
+            onAgentSelect={handleAgentSelect}
+            chains={chains}
+            agents={agents}
+            selectedAgent={selectedAgent}
+            setSelectedAgent={setSelectedAgent}
+            darkMode={darkMode}
+          />
+  
+          <AGiXTOptionsModal
+            visible={showAGiXTOptionsModal}
+            onClose={() => setShowAGiXTOptionsModal(false)}
+            onOptionSelect={handleAGiXTOptionSelect}
+            darkMode={darkMode}
+          />
+  
+          <SubtaskClarificationModal
+            visible={showSubtaskClarificationModal}
+            onClose={() => setShowSubtaskClarificationModal(false)}
+            onContinue={handleGetSubtasks}
+            clarificationText={subtaskClarificationText}
+            onChangeClarificationText={setSubtaskClarificationText}
+            isLoading={isLoading}
+            darkMode={darkMode}
+          />
+  
+          <AlertModal
+            visible={showAlertModal}
+            title={alertTitle}
+            message={alertMessage}
+            onClose={() => setShowAlertModal(false)}
+            darkMode={darkMode}
+          />
+  
+          {isLoading && <LoadingOverlay darkMode={darkMode} />}
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
 
 
 
@@ -1607,10 +1697,7 @@ const LoadingOverlay = ({ darkMode }) => (
 );
 
 
-
-
 const styles = StyleSheet.create({
-  // Existing styles
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -2160,7 +2247,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 10,
   },
-  // Styles for AnimatedInput
   animatedInputContainer: {
     marginBottom: 20,
     position: 'relative',
@@ -2180,7 +2266,6 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
   },
-  // Styles for CustomDatePicker
   datePickerContainer: {
     marginBottom: 20,
   },
@@ -2205,7 +2290,6 @@ const styles = StyleSheet.create({
   darkModeDatePickerButtonText: {
     color: '#FFFFFF',
   },
-  // Styles for CustomDropdown
   dropdownContainer: {
     marginBottom: 20,
   },
@@ -2265,7 +2349,6 @@ const styles = StyleSheet.create({
   darkModeDropdownOptionText: {
     color: '#FFFFFF',
   },
-  // Styles for CollapsibleSection
   collapsibleSection: {
     marginBottom: 20,
   },
@@ -2291,7 +2374,6 @@ const styles = StyleSheet.create({
   collapsibleContent: {
     paddingTop: 15,
   },
-  // Styles for improved layout
   inputGroup: {
     marginBottom: 20,
   },
@@ -2314,7 +2396,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  // New styles for DatePicker
   datePickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -2363,6 +2444,46 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
+  githubIntegration: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+  },
+  githubUsername: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#000000',
+  },
+  githubBio: {
+    fontSize: 14,
+    marginBottom: 10,
+    color: '#000000',
+  },
+  githubStats: {
+    fontSize: 14,
+    marginBottom: 10,
+    color: '#000000',
+  },
+  repoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 5,
+    color: '#000000',
+  },
+  repoItem: {
+    fontSize: 14,
+    marginBottom: 5,
+    color: '#000000',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#E74C3C',
+    textAlign: 'center',
+  },
 });
+
 
 export default TaskPanel;
