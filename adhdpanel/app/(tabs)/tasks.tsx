@@ -25,6 +25,7 @@ import { Picker } from '@react-native-picker/picker';
 import AGiXTSDK from "agixt";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { WebView } from 'react-native-webview';
 
 const { width, height } = Dimensions.get('window');
 
@@ -351,6 +352,71 @@ const GitHubIntegration = ({ data, isLoading, darkMode }) => {
   );
 };
 
+const ChatSidebar = ({ visible, onClose, uri, darkMode }) => {
+  if (!visible) return null;
+
+  const validUri = uri && typeof uri === 'string' && uri.trim() !== '' ? uri : null;
+
+  const renderContent = () => {
+    if (!validUri) {
+      return (
+        <View style={styles.unsupportedPlatform}>
+          <Text style={[styles.unsupportedText, darkMode && styles.darkModeText]}>
+            No valid URL provided for the chat.
+          </Text>
+        </View>
+      );
+    }
+
+    if (Platform.OS === 'web') {
+      return (
+        <iframe
+          src={validUri}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+          }}
+        />
+      );
+    } else if (Platform.OS === 'android' || Platform.OS === 'ios') {
+      return (
+        <WebView
+          source={{ uri: validUri }}
+          style={styles.webView}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={darkMode ? "#FFFFFF" : "#000000"} />
+            </View>
+          )}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('WebView error: ', nativeEvent);
+          }}
+        />
+      );
+    } else {
+      return (
+        <View style={styles.unsupportedPlatform}>
+          <Text style={[styles.unsupportedText, darkMode && styles.darkModeText]}>
+            Chat is not supported on this platform.
+          </Text>
+        </View>
+      );
+    }
+  };
+
+  return (
+    <View style={[styles.chatSidebar, darkMode && styles.darkModeChatSidebar]}>
+      <TouchableOpacity style={styles.closeChatButton} onPress={onClose}>
+        <MaterialIcons name="close" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
+      </TouchableOpacity>
+      {renderContent()}
+    </View>
+  );
+};
+
 export default function TaskPanel() {
   const [tasks, setTasks] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -384,6 +450,8 @@ export default function TaskPanel() {
   const [darkMode, setDarkMode] = useState(false);
   const [githubData, setGithubData] = useState(null);
   const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+  const [showChatSidebar, setShowChatSidebar] = useState(false);
+  const [interactiveUri, setInteractiveUri] = useState("");
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -396,6 +464,7 @@ export default function TaskPanel() {
           getChains(),
           getAgents(),
           fetchRepositories(),
+          loadInteractiveUri(),
         ]);
       } catch (error) {
         console.error("Error loading initial data:", error);
@@ -414,6 +483,10 @@ export default function TaskPanel() {
   useEffect(() => {
     groupTasks();
   }, [tasks, groupBy, showCompletedTasks, sortBy]);
+
+  useEffect(() => {
+    console.log("interactiveUri changed:", interactiveUri);
+  }, [interactiveUri]);
 
   const loadGithubData = async () => {
     try {
@@ -438,6 +511,17 @@ export default function TaskPanel() {
     } catch (error) {
       console.error('Error getting AGiXT data from AsyncStorage:', error);
       throw error;
+    }
+  };
+
+  const loadInteractiveUri = async () => {
+    try {
+      const uri = await AsyncStorage.getItem('interactive_uri');
+      if (uri) {
+        setInteractiveUri(uri);
+      }
+    } catch (error) {
+      console.error('Error loading interactive URI:', error);
     }
   };
 
@@ -680,6 +764,373 @@ export default function TaskPanel() {
     setShowAGiXTOptionsModal(false);
   }, []);
 
+  const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks, darkMode }) => {
+    const [editedTask, setEditedTask] = useState(null);
+    const [dueDate, setDueDate] = useState(null);
+  
+    useEffect(() => {
+      if (task) {
+        setEditedTask({
+          ...task,
+          subtasks: Array.isArray(task.subtasks) ? task.subtasks : [],
+          dependencies: Array.isArray(task.dependencies) ? task.dependencies : []
+        });
+        setDueDate(task.dueDate ? new Date(task.dueDate) : null);
+      } else {
+        setEditedTask({
+          id: Date.now(),
+          text: '',
+          note: '',
+          priority: '',
+          repo: '',
+          subtasks: [],
+          dependencies: [],
+          recurrence: null,
+          completed: false,
+          group: 'Default',
+        });
+        setDueDate(null);
+      }
+    }, [task]);
+  
+    const handleChange = (field, value) => {
+      setEditedTask(prev => ({ ...prev, [field]: value }));
+    };
+  
+    const handleSave = () => {
+      if (editedTask) {
+        onSave({
+          ...editedTask,
+          dueDate: dueDate ? dueDate.toISOString() : null,
+        });
+      }
+      onClose();
+    };
+  
+    const toggleDependency = (taskId) => {
+      const currentDependencies = Array.isArray(editedTask.dependencies) ? editedTask.dependencies : [];
+      const updatedDependencies = currentDependencies.includes(taskId)
+        ? currentDependencies.filter(id => id !== taskId)
+        : [...currentDependencies, taskId];
+      handleChange('dependencies', updatedDependencies);
+    };
+  
+    if (!visible) return null;
+  
+    return (
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={onClose}
+      >
+        <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
+          <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>
+                {task ? "Edit Task" : "Add New Task"}
+              </Text>
+              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <MaterialIcons name="close" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Task Name</Text>
+                <TextInput
+                  style={[styles.input, darkMode && styles.darkModeInput]}
+                  value={editedTask?.text}
+                  onChangeText={(text) => handleChange('text', text)}
+                  placeholder="Enter task name"
+                  placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+                />
+                
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Description</Text>
+                <TextInput
+                  style={[styles.input, styles.multilineInput, darkMode && styles.darkModeInput]}
+                  value={editedTask?.note}
+                  onChangeText={(text) => handleChange('note', text)}
+                  placeholder="Enter task description"
+                  placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+                  multiline
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Due Date</Text>
+                <EnhancedDatePicker
+                  selected={dueDate}
+                  onChange={setDueDate}
+                  darkMode={darkMode}
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Priority</Text>
+                <CustomPicker
+                  selectedValue={editedTask?.priority}
+                  onValueChange={(value) => handleChange('priority', value)}
+                  items={[
+                    { label: "Low", value: "low" },
+                    { label: "Medium", value: "medium" },
+                    { label: "High", value: "high" },
+                  ]}
+                  darkMode={darkMode}
+                />
+                
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Repository</Text>
+                <CustomPicker
+                  selectedValue={editedTask?.repo}
+                  onValueChange={(value) => handleChange('repo', value)}
+                  items={[
+                    { label: "None", value: "" },
+                    ...repositories.map(repo => ({ label: repo.name, value: repo.name }))
+                  ]}
+                  darkMode={darkMode}
+                />
+  
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Recurrence</Text>
+                <CustomPicker
+                  selectedValue={editedTask?.recurrence}
+                  onValueChange={(value) => handleChange('recurrence', value)}
+                  items={[
+                    { label: "None", value: null },
+                    { label: "Daily", value: "daily" },
+                    { label: "Weekly", value: "weekly" },
+                    { label: "Monthly", value: "monthly" },
+                    { label: "Yearly", value: "yearly" },
+                  ]}
+                  darkMode={darkMode}
+                />
+              </View>
+  
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Group</Text>
+                <TextInput
+                  style={[styles.input, darkMode && styles.darkModeInput]}
+                  value={editedTask?.group}
+                  onChangeText={(text) => handleChange('group', text)}
+                  placeholder="Enter group name"
+                  placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+                />
+              </View>
+  
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Subtasks</Text>
+                {editedTask?.subtasks.map((subtask, index) => (
+                  <View key={subtask.id} style={styles.subtaskItem}>
+                    <TextInput
+                      style={[styles.input, styles.subtaskInput, darkMode && styles.darkModeInput]}
+                      value={subtask.text}
+                      onChangeText={(text) => {
+                        const updatedSubtasks = [...editedTask.subtasks];
+                        updatedSubtasks[index].text = text;
+                        handleChange('subtasks', updatedSubtasks);
+                      }}
+                      placeholder={`Subtask ${index + 1}`}
+                      placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+                    />
+                    <TouchableOpacity onPress={() => {
+                      const updatedSubtasks = editedTask.subtasks.filter((_, i) => i !== index);
+                      handleChange('subtasks', updatedSubtasks);
+                    }}>
+                      <MaterialIcons name="remove-circle-outline" size={24} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <TouchableOpacity style={styles.addSubtaskButton} onPress={() => {
+                  const newSubtask = { id: Date.now(), text: '' };
+                  handleChange('subtasks', [...editedTask.subtasks, newSubtask]);
+                }}>
+                  <MaterialIcons name="add-circle-outline" size={24} color="#007AFF" />
+                  <Text style={[styles.addSubtaskText, darkMode && styles.darkModeText]}>Add Subtask</Text>
+                </TouchableOpacity>
+              </View>
+  
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Dependencies</Text>
+                {allTasks
+                  .filter(t => t.id !== editedTask?.id)
+                  .map(task => (
+                    <TouchableOpacity
+                      key={task.id}
+                      style={[
+                        styles.dependencyItem,
+                        editedTask?.dependencies.includes(task.id) && styles.dependencyItemSelected
+                      ]}
+                      onPress={() => toggleDependency(task.id)}
+                    >
+                      <Text style={[styles.dependencyItemText, darkMode && styles.darkModeText]}>{task.text}</Text>
+                    </TouchableOpacity>
+                  ))
+                }
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+                <MaterialIcons name="close" size={20} color="#FFFFFF" />
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
+                <MaterialIcons name="check" size={20} color="#FFFFFF" />
+                <Text style={styles.buttonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent, darkMode }) => {
+    const [selectedChain, setSelectedChain] = useState("");
+    const [chainInput, setChainInput] = useState("");
+  
+    const handleOk = () => {
+      onAgentSelect(selectedAgent, selectedChain, chainInput);
+      onClose();
+    };
+  
+    return (
+      <Modal visible={visible} transparent animationType="slide">
+        <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
+          <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
+            <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>Select an Agent and Chain</Text>
+            {agents.length > 0 ? (
+              <CustomPicker
+                selectedValue={selectedAgent}
+                onValueChange={setSelectedAgent}
+                items={agents.map(agent => ({ label: agent.name, value: agent.name }))}
+                darkMode={darkMode}
+              />
+            ) : (
+              <Text style={[styles.noAgentsText, darkMode && styles.darkModeText]}>No agents available</Text>
+            )}
+            <CustomPicker
+              selectedValue={selectedChain}
+              onValueChange={setSelectedChain}
+              items={chains.map(chain => ({ label: chain, value: chain }))}
+              darkMode={darkMode}
+            />
+            <TextInput
+              style={[styles.chainInput, darkMode && styles.darkModeInput]}
+              value={chainInput}
+              onChangeText={setChainInput}
+              placeholder="Enter chain input"
+              placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+            />
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleOk}>
+                <Text style={styles.buttonText}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect, darkMode }) => {
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        onRequestClose={onClose}
+      >
+        <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
+          <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
+            <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>AGiXT Options</Text>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => onOptionSelect('getSubtasks')}
+            >
+              <Text style={[styles.modalOptionText, darkMode && styles.darkModeText]}>Get Subtasks</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => onOptionSelect('runChain')}
+            >
+              <Text style={[styles.modalOptionText, darkMode && styles.darkModeText]}>Run Chain</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
+              <Text style={styles.modalCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText, isLoading, darkMode }) => {
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+        onRequestClose={onClose}
+      >
+        <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
+          <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
+            <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>Get Subtasks Clarification</Text>
+            <TextInput
+              style={[styles.clarificationInput, darkMode && styles.darkModeInput]}
+              value={clarificationText}
+              onChangeText={onChangeClarificationText}
+              placeholder="Enter optional clarification text"
+              placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+              multiline
+              editable={!isLoading}
+            />
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose} disabled={isLoading}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={onContinue} disabled={isLoading}>
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.buttonText}>Continue</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const AlertModal = ({ visible, title, message, onClose, darkMode }) => {
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="fade"
+      >
+        <View style={[styles.alertOverlay, darkMode && styles.darkModeOverlay]}>
+          <View style={[styles.alertContent, darkMode && styles.darkModeModalContent]}>
+            <Text style={[styles.alertTitle, darkMode && styles.darkModeText]}>{title}</Text>
+            <Text style={[styles.alertMessage, darkMode && styles.darkModeText]}>{message}</Text>
+            <TouchableOpacity style={styles.alertButton} onPress={onClose}>
+              <Text style={styles.alertButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const LoadingOverlay = ({ darkMode }) => (
+    <View style={[styles.loadingOverlay, darkMode && styles.darkModeOverlay]}>
+      <ActivityIndicator size="large" color={darkMode ? "#FFFFFF" : "#000000"} />
+    </View>
+  );
+
   const handleGetSubtasks = useCallback(async () => {
     setShowSubtaskClarificationModal(false);
     setIsLoading(true);
@@ -784,917 +1235,270 @@ export default function TaskPanel() {
         case 'priority':
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
-          case 'alphabetical':
-            return a.text.localeCompare(b.text);
-          default:
-            return 0;
-        }
-      });
-  
-      // Group tasks
-      const groups = {};
-      filteredTasks.forEach(task => {
-        let groupKey;
-        switch (groupBy) {
-          case 'priority':
-            groupKey = task.priority || 'No Priority';
-            break;
-          case 'dueDate':
-            groupKey = task.dueDate ? new Date(task.dueDate).toDateString() : 'No Due Date';
-            break;
-          case 'group':
-            groupKey = task.group || 'Default';
-            break;
-          default:
-            groupKey = 'All Tasks';
-        }
-        if (!groups[groupKey]) {
-          groups[groupKey] = [];
-        }
-        groups[groupKey].push(task);
-      });
-  
-      setTaskGroups(groups);
-    }, [tasks, groupBy, showCompletedTasks, sortBy]);
-  
-    const onMoveTask = useCallback((movedTask, yPosition) => {
-      const updatedTasks = [...tasks];
-      const movedTaskIndex = updatedTasks.findIndex(t => t.id === movedTask.id);
-      const targetIndex = Math.floor(yPosition / 100); // Assuming each task is about 100 pixels high
-  
-      if (targetIndex !== movedTaskIndex) {
-        updatedTasks.splice(movedTaskIndex, 1);
-        updatedTasks.splice(targetIndex, 0, movedTask);
-        saveTasks(updatedTasks);
+        case 'alphabetical':
+          return a.text.localeCompare(b.text);
+        default:
+          return 0;
       }
-    }, [tasks, saveTasks]);
-  
-    const toggleSidebar = () => {
-      setShowSidebar(!showSidebar);
-    };
-  
-    const handleGroupSelect = (group) => {
-      setSelectedGroup(group);
-      setShowSidebar(false);
-    };
-  
-    const toggleDarkMode = () => {
-      setDarkMode(!darkMode);
-    };
-  
-    const toggleGithubIntegration = () => {
-      if (!showGithubIntegration && !githubData) {
-        fetchGithubData();
+    });
+
+    // Group tasks
+    const groups = {};
+    filteredTasks.forEach(task => {
+      let groupKey;
+      switch (groupBy) {
+        case 'priority':
+          groupKey = task.priority || 'No Priority';
+          break;
+        case 'dueDate':
+          groupKey = task.dueDate ? new Date(task.dueDate).toDateString() : 'No Due Date';
+          break;
+        case 'group':
+          groupKey = task.group || 'Default';
+          break;
+        default:
+          groupKey = 'All Tasks';
       }
-      setShowGithubIntegration(!showGithubIntegration);
-    };
-  
-    return (
-      <SafeAreaView style={[styles.safeArea, darkMode && styles.darkMode]}>
-        <LinearGradient
-          colors={darkMode ? ['#1A2980', '#26D0CE'] : ['#4CA1AF', '#C4E0E5']}
-          style={styles.container}
-        >
-          <BlurView intensity={20} style={StyleSheet.absoluteFill} />
-          <View style={styles.header}>
-            <TouchableOpacity onPress={toggleSidebar}>
-              <MaterialIcons name="menu" size={28} color={darkMode ? "#FFFFFF" : "#000000"} />
-            </TouchableOpacity>
-            <Text style={[styles.title, darkMode && styles.darkModeText]}>Task Manager</Text>
-            <CustomSwitch
-              value={darkMode}
-              onValueChange={toggleDarkMode}
-            />
-          </View>
-  
-          <View style={styles.integrationBar}>
-            <TouchableOpacity
-              style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
-              onPress={toggleGithubIntegration}
-            >
-              <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
-              onPress={() => setShowDependentTasks(!showDependentTasks)}
-            >
-              <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
-            </TouchableOpacity>
-          </View>
-  
-          {selectedGroup && (
-            <Text style={[styles.selectedGroupTitle, darkMode && styles.darkModeText]}>{selectedGroup}</Text>
-          )}
-  
-          <View style={styles.filterContainer}>
-            <View style={styles.filterItem}>
-              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Group By:</Text>
-              <CustomPicker
-                selectedValue={groupBy}
-                onValueChange={(itemValue) => setGroupBy(itemValue)}
-                items={[
-                  { label: "None", value: "none" },
-                  { label: "Priority", value: "priority" },
-                  { label: "Due Date", value: "dueDate" },
-                  { label: "Custom Group", value: "group" },
-                ]}
-                darkMode={darkMode}
-              />
-            </View>
-            <View style={styles.filterItem}>
-              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Sort By:</Text>
-              <CustomPicker
-                selectedValue={sortBy}
-                onValueChange={(itemValue) => setSortBy(itemValue)}
-                items={[
-                  { label: "Due Date", value: "dueDate" },
-                  { label: "Priority", value: "priority" },
-                  { label: "Alphabetical", value: "alphabetical" },
-                ]}
-                darkMode={darkMode}
-              />
-            </View>
-            <View style={styles.filterItem}>
-              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Show Completed:</Text>
-              <CustomSwitch
-                value={showCompletedTasks}
-                onValueChange={setShowCompletedTasks}
-              />
-            </View>
-          </View>
-  
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.keyboardAvoidingView}
-          >
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.input, darkMode && styles.darkModeInput]}
-                value={newTaskText}
-                onChangeText={setNewTaskText}
-                placeholder="Enter a task"
-                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-              />
-              <TouchableOpacity style={styles.addButton} onPress={addTask}>
-                <MaterialIcons name="add" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-  
-            {showGithubIntegration && (
-              <GitHubIntegration 
-                data={githubData} 
-                isLoading={isLoadingGithub}
-                darkMode={darkMode}
-              />
-            )}
-  
-            <FlatList
-              data={Object.entries(taskGroups)}
-              keyExtractor={(item) => item[0]}
-              renderItem={({ item: [groupName, groupTasks] }) => (
-                <View style={styles.taskGroup}>
-                  <Text style={[styles.groupTitle, darkMode && styles.darkModeText]}>{groupName}</Text>
-                  {groupTasks.map(task => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onEdit={() => editTask(task)}
-                      onRemove={() => removeTask(task.id)}
-                      onAGiXTOptions={(task) => {
-                        setSelectedTaskForAGiXT(task);
-                        setShowAGiXTOptionsModal(true);
-                      }}
-                      onToggleComplete={onToggleComplete}
-                      showDependencies={showDependentTasks}
-                      allTasks={tasks}
-                      darkMode={darkMode}
-                    />
-                  ))}
-                </View>
-              )}
-            />
-          </KeyboardAvoidingView>
-  
-          <FloatingActionButton onPress={() => setShowEditModal(true)} />
-  
-          {showSidebar && (
-            <Sidebar
-              groups={Object.keys(taskGroups)}
-              tasks={tasks}
-              onGroupSelect={handleGroupSelect}
-              onClose={toggleSidebar}
-              darkMode={darkMode}
-            />
-          )}
-  
-          <EditTaskModal
-            visible={showEditModal}
-            task={selectedTask}
-            onClose={() => setShowEditModal(false)}
-            onSave={handleSaveTask}
-            repositories={repositories}
-            allTasks={tasks}
-            darkMode={darkMode}
-          />
-  
-          <AGiXTModal
-            visible={showAGiXTModal}
-            onClose={() => setShowAGiXTModal(false)}
-            onAgentSelect={handleAgentSelect}
-            chains={chains}
-            agents={agents}
-            selectedAgent={selectedAgent}
-            setSelectedAgent={setSelectedAgent}
-            darkMode={darkMode}
-          />
-  
-          <AGiXTOptionsModal
-            visible={showAGiXTOptionsModal}
-            onClose={() => setShowAGiXTOptionsModal(false)}
-            onOptionSelect={handleAGiXTOptionSelect}
-            darkMode={darkMode}
-          />
-  
-          <SubtaskClarificationModal
-            visible={showSubtaskClarificationModal}
-            onClose={() => setShowSubtaskClarificationModal(false)}
-            onContinue={handleGetSubtasks}
-            clarificationText={subtaskClarificationText}
-            onChangeClarificationText={setSubtaskClarificationText}
-            isLoading={isLoading}
-            darkMode={darkMode}
-          />
-  
-          <AlertModal
-            visible={showAlertModal}
-            title={alertTitle}
-            message={alertMessage}
-            onClose={() => setShowAlertModal(false)}
-            darkMode={darkMode}
-          />
-  
-          {isLoading && <LoadingOverlay darkMode={darkMode} />}
-        </LinearGradient>
-      </SafeAreaView>
-    );
-  }
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(task);
+    });
 
+    setTaskGroups(groups);
+  }, [tasks, groupBy, showCompletedTasks, sortBy]);
 
+  const onMoveTask = useCallback((movedTask, yPosition) => {
+    const updatedTasks = [...tasks];
+    const movedTaskIndex = updatedTasks.findIndex(t => t.id === movedTask.id);
+    const targetIndex = Math.floor(yPosition / 100); // Assuming each task is about 100 pixels high
 
-const AnimatedInput = ({ label, value, onChangeText, multiline = false, darkMode }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const labelPosition = useRef(new Animated.Value(value ? 1 : 0)).current;
+    if (targetIndex !== movedTaskIndex) {
+      updatedTasks.splice(movedTaskIndex, 1);
+      updatedTasks.splice(targetIndex, 0, movedTask);
+      saveTasks(updatedTasks);
+    }
+  }, [tasks, saveTasks]);
 
-  useEffect(() => {
-    Animated.timing(labelPosition, {
-      toValue: (isFocused || value) ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isFocused, value]);
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
 
-  const labelStyle = {
-    position: 'absolute',
-    left: 0,
-    top: labelPosition.interpolate({
-      inputRange: [0, 1],
-      outputRange: [18, 0],
-    }),
-    fontSize: labelPosition.interpolate({
-      inputRange: [0, 1],
-      outputRange: [16, 12],
-    }),
-    color: labelPosition.interpolate({
-      inputRange: [0, 1],
-      outputRange: [darkMode ? '#BBBBBB' : '#666666', darkMode ? '#FFFFFF' : '#000000'],
-    }),
+  const handleGroupSelect = (group) => {
+    setSelectedGroup(group);
+    setShowSidebar(false);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  const toggleGithubIntegration = () => {
+    if (!showGithubIntegration && !githubData) {
+      fetchGithubData();
+    }
+    setShowGithubIntegration(!showGithubIntegration);
   };
 
   return (
-    <View style={styles.container}>
-      <Animated.Text style={labelStyle}>
-        {label}
-      </Animated.Text>
-      <TextInput
-        style={[
-          styles.input,
-          darkMode && styles.darkModeInput,
-          multiline && styles.multilineInput,
-        ]}
-        value={value}
-        onChangeText={onChangeText}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        multiline={multiline}
-      />
-    </View>
-  );
-};
-
-const CustomDropdown = ({ label, value, onValueChange, items, darkMode }) => {
-  const [modalVisible, setModalVisible] = useState(false);
-
-  const selectedItem = items.find(item => item.value === value);
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.item,
-        darkMode && styles.darkModeItem,
-        item.value === value && styles.selectedItem,
-        item.value === value && darkMode && styles.darkModeSelectedItem
-      ]}
-      onPress={() => {
-        onValueChange(item.value);
-        setModalVisible(false);
-      }}
-    >
-      {item.icon && (
-        <MaterialIcons
-          name={item.icon}
-          size={20}
-          color={item.color || (darkMode ? '#FFFFFF' : '#000000')}
-          style={styles.icon}
-        />
-      )}
-      <Text style={[
-        styles.itemText,
-        darkMode && styles.darkModeText,
-        item.value === value && styles.selectedItemText
-      ]}>
-        {item.label}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  return (
-    <View style={styles.container}>
-      <Text style={[styles.label, darkMode && styles.darkModeText]}>{label}</Text>
-      <TouchableOpacity
-        style={[styles.button, darkMode && styles.darkModeButton]}
-        onPress={() => setModalVisible(true)}
+    <SafeAreaView style={[styles.safeArea, darkMode && styles.darkMode]}>
+      <LinearGradient
+        colors={darkMode ? ['#1A2980', '#26D0CE'] : ['#4CA1AF', '#C4E0E5']}
+        style={styles.container}
       >
-        <Text style={[styles.buttonText, darkMode && styles.darkModeText]}>
-          {selectedItem ? selectedItem.label : 'Select an option'}
-        </Text>
-        <MaterialIcons
-          name="arrow-drop-down"
-          size={24}
-          color={darkMode ? '#FFFFFF' : '#000000'}
-        />
-      </TouchableOpacity>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
-            <FlatList
-              data={items}
-              renderItem={renderItem}
-              keyExtractor={(item) => item.value.toString()}
-            />
-            <TouchableOpacity
-              style={[styles.closeButton, darkMode && styles.darkModeCloseButton]}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={[styles.closeButtonText, darkMode && styles.darkModeCloseButtonText]}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </View>
-  );
-};
-
-
-const CollapsibleSection = ({ title, children, darkMode }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [animation] = useState(new Animated.Value(0));
-
-  const toggleExpand = () => {
-    if (expanded) {
-      Animated.timing(animation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    } else {
-      Animated.timing(animation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
-    setExpanded(!expanded);
-  };
-
-  const bodyHeight = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1000], // Adjust this value based on your content
-  });
-
-  return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={toggleExpand} style={[styles.header, darkMode && styles.darkModeHeader]}>
-        <Text style={[styles.headerText, darkMode && styles.darkModeText]}>{title}</Text>
-        <MaterialIcons
-          name={expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-          size={24}
-          color={darkMode ? '#FFFFFF' : '#000000'}
-        />
-      </TouchableOpacity>
-      <Animated.View style={[styles.body, { height: bodyHeight }]}>
-        {children}
-      </Animated.View>
-    </View>
-  );
-};
-
-
-const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks, darkMode }) => {
-  const [editedTask, setEditedTask] = useState(null);
-  const [dueDate, setDueDate] = useState(null);
-  const [modalAnimation] = useState(new Animated.Value(0));
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
-  useEffect(() => {
-    if (task) {
-      setEditedTask({
-        ...task,
-        subtasks: Array.isArray(task.subtasks) ? task.subtasks : [],
-        dependencies: Array.isArray(task.dependencies) ? task.dependencies : []
-      });
-      setDueDate(task.dueDate ? new Date(task.dueDate) : null);
-    } else {
-      setEditedTask({
-        id: Date.now(),
-        text: '',
-        note: '',
-        priority: '',
-        repo: '',
-        subtasks: [],
-        dependencies: [],
-        recurrence: null,
-        completed: false,
-        group: 'Default',
-      });
-      setDueDate(null);
-    }
-  }, [task]);
-
-  useEffect(() => {
-    if (visible) {
-      Animated.timing(modalAnimation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(modalAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible]);
-
-  const handleChange = (field, value) => {
-    if (field === 'subtasks' || field === 'dependencies') {
-      setEditedTask(prev => ({ 
-        ...prev, 
-        [field]: Array.isArray(value) ? value : []
-      }));
-    } else {
-      setEditedTask(prev => ({ ...prev, [field]: value }));
-    }
-  };
-
-  const handleSave = () => {
-    if (editedTask) {
-      const taskToSave = {
-        ...editedTask,
-        subtasks: Array.isArray(editedTask.subtasks) ? editedTask.subtasks : [],
-        dependencies: Array.isArray(editedTask.dependencies) ? editedTask.dependencies : [],
-        dueDate: dueDate
-      };
-      onSave(taskToSave);
-    }
-  };
-
-  const toggleDependency = (taskId) => {
-    const currentDependencies = Array.isArray(editedTask.dependencies) ? editedTask.dependencies : [];
-    const updatedDependencies = currentDependencies.includes(taskId)
-      ? currentDependencies.filter(id => id !== taskId)
-      : [...currentDependencies, taskId];
-    handleChange('dependencies', updatedDependencies);
-  };
-
-  const handleDateChange = (date) => {
-    setDueDate(date);
-    setIsDatePickerOpen(false);
-  };
-
-  const modalTranslateY = modalAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [300, 0],
-  });
-
-  return (
-    <Modal
-      visible={visible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
-        <Animated.View 
-          style={[
-            styles.modalContent, 
-            darkMode && styles.darkModeModalContent,
-            { transform: [{ translateY: modalTranslateY }] }
-          ]}
-        >
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>
-              {task ? "Edit Task" : "Add New Task"}
-            </Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <MaterialIcons name="close" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.modalBody}>
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Task Name</Text>
-              <TextInput
-                style={[styles.input, darkMode && styles.darkModeInput]}
-                value={editedTask?.text}
-                onChangeText={(text) => handleChange('text', text)}
-                placeholder="Enter task name"
-                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-              />
-              
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.multilineInput, darkMode && styles.darkModeInput]}
-                value={editedTask?.note}
-                onChangeText={(text) => handleChange('note', text)}
-                placeholder="Enter task description"
-                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-                multiline
-              />
-            </View>
-            
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Due Date</Text>
-              <TouchableOpacity
-                style={[styles.datePickerButton, darkMode && styles.darkModeDatePickerButton]}
-                onPress={() => setIsDatePickerOpen(true)}
-              >
-                <Text style={[styles.datePickerButtonText, darkMode && styles.darkModeText]}>
-                  {dueDate ? dueDate.toLocaleString() : "Select due date"}
-                </Text>
-                <MaterialIcons name="calendar-today" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
-              </TouchableOpacity>
-            </View>
-            
-            {isDatePickerOpen && (
-  <Modal
-    transparent={true}
-    animationType="fade"
-    visible={isDatePickerOpen}
-    onRequestClose={() => setIsDatePickerOpen(false)}
-  >
-    <View style={styles.datePickerOverlay}>
-      <View style={[styles.datePickerContainer, darkMode && styles.darkModeDatePickerContainer]}>
-        <View style={styles.datePickerHeader}>
-          <Text style={[styles.datePickerTitle, darkMode && styles.darkModeText]}>Select Date and Time</Text>
-          <TouchableOpacity onPress={() => setIsDatePickerOpen(false)}>
-            <MaterialIcons name="close" size={24} color={darkMode ? "#FFFFFF" : "#000000"} />
+        <BlurView intensity={20} style={StyleSheet.absoluteFill} />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={toggleSidebar}>
+            <MaterialIcons name="menu" size={28} color={darkMode ? "#FFFFFF" : "#000000"} />
           </TouchableOpacity>
+          <Text style={[styles.title, darkMode && styles.darkModeText]}>Task Manager</Text>
+          <TouchableOpacity onPress={() => setShowChatSidebar(true)}>
+            <MaterialIcons name="chat" size={28} color={darkMode ? "#FFFFFF" : "#000000"} />
+          </TouchableOpacity>
+          <CustomSwitch
+            value={darkMode}
+            onValueChange={toggleDarkMode}
+          />
         </View>
-        <DatePicker
-          selected={dueDate}
-          onChange={handleDateChange}
-          showTimeSelect
-          timeFormat="HH:mm"
-          timeIntervals={15}
-          timeCaption="Time"
-          dateFormat="MMMM d, yyyy h:mm aa"
-          inline
-          calendarClassName={darkMode ? "dark-mode-datepicker" : ""}
-        />
-        <View style={styles.datePickerActions}>
+
+        <View style={styles.integrationBar}>
           <TouchableOpacity
-            style={[styles.datePickerButton, styles.datePickerCancelButton]}
-            onPress={() => setIsDatePickerOpen(false)}
+            style={[styles.integrationButton, showGithubIntegration && styles.integrationButtonActive]}
+            onPress={toggleGithubIntegration}
           >
-            <Text style={styles.datePickerButtonText}>Cancel</Text>
+            <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : "#BBBBBB"} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.datePickerButton, styles.datePickerConfirmButton]}
-            onPress={() => {
-              handleDateChange(dueDate);
-              setIsDatePickerOpen(false);
-            }}
+            style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive]}
+            onPress={() => setShowDependentTasks(!showDependentTasks)}
           >
-            <Text style={styles.datePickerButtonText}>Confirm</Text>
+            <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
           </TouchableOpacity>
         </View>
-      </View>
-    </View>
-  </Modal>
-)}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Priority</Text>
-              <Picker
-                selectedValue={editedTask?.priority}
-                onValueChange={(value) => handleChange('priority', value)}
-                style={[styles.picker, darkMode && styles.darkModePicker]}
-              >
-                <Picker.Item label="Low" value="low" />
-                <Picker.Item label="Medium" value="medium" />
-                <Picker.Item label="High" value="high" />
-              </Picker>
-              
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Repository</Text>
-              <Picker
-                selectedValue={editedTask?.repo}
-                onValueChange={(value) => handleChange('repo', value)}
-                style={[styles.picker, darkMode && styles.darkModePicker]}
-              >
-                <Picker.Item label="None" value="" />
-                {repositories.map(repo => (
-                  <Picker.Item key={repo.name} label={repo.name} value={repo.name} />
-                ))}
-              </Picker>
 
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Recurrence</Text>
-              <Picker
-                selectedValue={editedTask?.recurrence}
-                onValueChange={(value) => handleChange('recurrence', value)}
-                style={[styles.picker, darkMode && styles.darkModePicker]}
-              >
-                <Picker.Item label="None" value={null} />
-                <Picker.Item label="Daily" value="daily" />
-                <Picker.Item label="Weekly" value="weekly" />
-                <Picker.Item label="Monthly" value="monthly" />
-                <Picker.Item label="Yearly" value="yearly" />
-              </Picker>
-            </View>
+        {selectedGroup && (
+          <Text style={[styles.selectedGroupTitle, darkMode && styles.darkModeText]}>{selectedGroup}</Text>
+        )}
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Group</Text>
-              <TextInput
-                style={[styles.input, darkMode && styles.darkModeInput]}
-                value={editedTask?.group}
-                onChangeText={(text) => handleChange('group', text)}
-                placeholder="Enter group name"
-                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Subtasks</Text>
-              {editedTask?.subtasks.map((subtask, index) => (
-                <View key={subtask.id} style={styles.subtaskItem}>
-                  <TextInput
-                    style={[styles.input, styles.subtaskInput, darkMode && styles.darkModeInput]}
-                    value={subtask.text}
-                    onChangeText={(text) => {
-                      const updatedSubtasks = [...editedTask.subtasks];
-                      updatedSubtasks[index].text = text;
-                      handleChange('subtasks', updatedSubtasks);
-                    }}
-                    placeholder={`Subtask ${index + 1}`}
-                    placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-                  />
-                  <TouchableOpacity onPress={() => {
-                    const updatedSubtasks = editedTask.subtasks.filter((_, i) => i !== index);
-                    handleChange('subtasks', updatedSubtasks);
-                  }}>
-                    <MaterialIcons name="remove-circle-outline" size={24} color="#FF3B30" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              <TouchableOpacity style={styles.addSubtaskButton} onPress={() => {
-                const newSubtask = { id: Date.now(), text: '' };
-                handleChange('subtasks', [...editedTask.subtasks, newSubtask]);
-              }}>
-                <MaterialIcons name="add-circle-outline" size={24} color="#007AFF" />
-                <Text style={[styles.addSubtaskText, darkMode && styles.darkModeText]}>Add Subtask</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Dependencies</Text>
-              {allTasks
-                .filter(t => t.id !== editedTask?.id)
-                .map(task => (
-                  <TouchableOpacity
-                    key={task.id}
-                    style={[
-                      styles.dependencyItem,
-                      editedTask?.dependencies.includes(task.id) && styles.dependencyItemSelected
-                    ]}
-                    onPress={() => toggleDependency(task.id)}
-                  >
-                    <Text style={[styles.dependencyItemText, darkMode && styles.darkModeText]}>{task.text}</Text>
-                  </TouchableOpacity>
-                ))
-              }
-            </View>
-          </ScrollView>
-          
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
-              <MaterialIcons name="close" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
-              <MaterialIcons name="check" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-};
-
-
-const DependencyList = ({ allTasks, currentTaskId, dependencies, onToggleDependency, darkMode }) => {
-  return (
-    <View style={styles.dependencyList}>
-      <Text style={[styles.inputLabel, darkMode && styles.darkModeText]}>Dependencies</Text>
-      {allTasks
-        .filter(task => task.id !== currentTaskId)
-        .map(task => (
-          <TouchableOpacity
-            key={task.id}
-            style={[
-              styles.dependencyItem,
-              dependencies.includes(task.id) && styles.dependencyItemSelected
-            ]}
-            onPress={() => onToggleDependency(task.id)}
-          >
-            <Text style={[styles.dependencyItemText, darkMode && styles.darkModeText]}>{task.text}</Text>
-          </TouchableOpacity>
-        ))
-      }
-    </View>
-  );
-};
-
-const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent, darkMode }) => {
-  const [selectedChain, setSelectedChain] = useState("");
-  const [chainInput, setChainInput] = useState("");
-
-  const handleOk = () => {
-    onAgentSelect(selectedAgent, selectedChain, chainInput);
-    onClose();
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
-        <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
-          <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>Select an Agent and Chain</Text>
-          {agents.length > 0 ? (
+        <View style={styles.filterContainer}>
+          <View style={styles.filterItem}>
+            <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Group By:</Text>
             <CustomPicker
-              selectedValue={selectedAgent}
-              onValueChange={setSelectedAgent}
-              items={agents.map(agent => ({ label: agent.name, value: agent.name }))}
+              selectedValue={groupBy}
+              onValueChange={(itemValue) => setGroupBy(itemValue)}
+              items={[
+                { label: "None", value: "none" },
+                { label: "Priority", value: "priority" },
+                { label: "Due Date", value: "dueDate" },
+                { label: "Custom Group", value: "group" },
+              ]}
               darkMode={darkMode}
             />
-          ) : (
-            <Text style={[styles.noAgentsText, darkMode && styles.darkModeText]}>No agents available</Text>
+          </View>
+          <View style={styles.filterItem}>
+            <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Sort By:</Text>
+            <CustomPicker
+              selectedValue={sortBy}
+              onValueChange={(itemValue) => setSortBy(itemValue)}
+              items={[
+                { label: "Due Date", value: "dueDate" },
+                { label: "Priority", value: "priority" },
+                { label: "Alphabetical", value: "alphabetical" },
+              ]}
+              darkMode={darkMode}
+            />
+          </View>
+          <View style={styles.filterItem}>
+            <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Show Completed:</Text>
+            <CustomSwitch
+              value={showCompletedTasks}
+              onValueChange={setShowCompletedTasks}
+            />
+          </View>
+        </View>
+
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoidingView}
+        >
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={[styles.input, darkMode && styles.darkModeInput]}
+              value={newTaskText}
+              onChangeText={setNewTaskText}
+              placeholder="Enter a task"
+              placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+            />
+            <TouchableOpacity style={styles.addButton} onPress={addTask}>
+              <MaterialIcons name="add" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          {showGithubIntegration && (
+            <GitHubIntegration 
+              data={githubData} 
+              isLoading={isLoadingGithub}
+              darkMode={darkMode}
+            />
           )}
-          <CustomPicker
-            selectedValue={selectedChain}
-            onValueChange={setSelectedChain}
-            items={chains.map(chain => ({ label: chain, value: chain }))}
+
+          <FlatList
+            data={Object.entries(taskGroups)}
+            keyExtractor={(item) => item[0]}
+            renderItem={({ item: [groupName, groupTasks] }) => (
+              <View style={styles.taskGroup}>
+                <Text style={[styles.groupTitle, darkMode && styles.darkModeText]}>{groupName}</Text>
+                {groupTasks.map(task => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={() => editTask(task)}
+                    onRemove={() => removeTask(task.id)}
+                    onAGiXTOptions={(task) => {
+                      setSelectedTaskForAGiXT(task);
+                      setShowAGiXTOptionsModal(true);
+                    }}
+                    onToggleComplete={onToggleComplete}
+                    showDependencies={showDependentTasks}
+                    allTasks={tasks}
+                    darkMode={darkMode}
+                  />
+                ))}
+              </View>
+            )}
+          />
+        </KeyboardAvoidingView>
+
+        <FloatingActionButton onPress={() => setShowEditModal(true)} />
+
+        {showSidebar && (
+          <Sidebar
+            groups={Object.keys(taskGroups)}
+            tasks={tasks}
+            onGroupSelect={handleGroupSelect}
+            onClose={toggleSidebar}
             darkMode={darkMode}
           />
-          <TextInput
-            style={[styles.chainInput, darkMode && styles.darkModeInput]}
-            value={chainInput}
-            onChangeText={setChainInput}
-            placeholder="Enter chain input"
-            placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={handleOk}>
-              <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+        )}
 
-const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect, darkMode }) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
-        <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
-          <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>AGiXT Options</Text>
-          <TouchableOpacity
-            style={styles.modalOption}
-            onPress={() => onOptionSelect('getSubtasks')}
-          >
-            <Text style={[styles.modalOptionText, darkMode && styles.darkModeText]}>Get Subtasks</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.modalOption}
-            onPress={() => onOptionSelect('runChain')}
-          >
-            <Text style={[styles.modalOptionText, darkMode && styles.darkModeText]}>Run Chain</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-            <Text style={styles.modalCloseButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+        <EditTaskModal
+          visible={showEditModal}
+          task={selectedTask}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleSaveTask}
+          repositories={repositories}
+          allTasks={tasks}
+          darkMode={darkMode}
+        />
 
-const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarificationText, onChangeClarificationText, isLoading, darkMode }) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
-        <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
-          <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>Get Subtasks Clarification</Text>
-          <TextInput
-            style={[styles.clarificationInput, darkMode && styles.darkModeInput]}
-            value={clarificationText}
-            onChangeText={onChangeClarificationText}
-            placeholder="Enter optional clarification text"
-            placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-            multiline
-            editable={!isLoading}
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={[styles.button, styles.buttonCancel]} onPress={onClose} disabled={isLoading}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.buttonOk]} onPress={onContinue} disabled={isLoading}>
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Continue</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+        <AGiXTModal
+          visible={showAGiXTModal}
+          onClose={() => setShowAGiXTModal(false)}
+          onAgentSelect={handleAgentSelect}
+          chains={chains}
+          agents={agents}
+          selectedAgent={selectedAgent}
+          setSelectedAgent={setSelectedAgent}
+          darkMode={darkMode}
+        />
 
-const AlertModal = ({ visible, title, message, onClose, darkMode }) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-    >
-      <View style={[styles.alertOverlay, darkMode && styles.darkModeOverlay]}>
-        <View style={[styles.alertContent, darkMode && styles.darkModeModalContent]}>
-          <Text style={[styles.alertTitle, darkMode && styles.darkModeText]}>{title}</Text>
-          <Text style={[styles.alertMessage, darkMode && styles.darkModeText]}>{message}</Text>
-          <TouchableOpacity style={styles.alertButton} onPress={onClose}>
-            <Text style={styles.alertButtonText}>OK</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+        <AGiXTOptionsModal
+          visible={showAGiXTOptionsModal}
+          onClose={() => setShowAGiXTOptionsModal(false)}
+          onOptionSelect={handleAGiXTOptionSelect}
+          darkMode={darkMode}
+        />
 
-const LoadingOverlay = ({ darkMode }) => (
-  <View style={[styles.loadingOverlay, darkMode && styles.darkModeOverlay]}>
-    <ActivityIndicator size="large" color={darkMode ? "#FFFFFF" : "#000000"} />
-  </View>
-);
+        <SubtaskClarificationModal
+          visible={showSubtaskClarificationModal}
+          onClose={() => setShowSubtaskClarificationModal(false)}
+          onContinue={handleGetSubtasks}
+          clarificationText={subtaskClarificationText}
+          onChangeClarificationText={setSubtaskClarificationText}
+          isLoading={isLoading}
+          darkMode={darkMode}
+        />
+
+        <AlertModal
+          visible={showAlertModal}
+          title={alertTitle}
+          message={alertMessage}
+          onClose={() => setShowAlertModal(false)}
+          darkMode={darkMode}
+        />
+
+        <ChatSidebar
+          visible={showChatSidebar}
+          onClose={() => setShowChatSidebar(false)}
+          uri={interactiveUri || ""}
+          darkMode={darkMode}
+        />
+
+        {isLoading && <LoadingOverlay darkMode={darkMode} />}
+      </LinearGradient>
+    </SafeAreaView>
+  );
+}
 
 
 const styles = StyleSheet.create({
@@ -2483,7 +2287,27 @@ const styles = StyleSheet.create({
     color: '#E74C3C',
     textAlign: 'center',
   },
+  chatSidebar: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: width * 0.75,
+    height: height,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1000,
+  },
+  darkModeChatSidebar: {
+    backgroundColor: '#333333',
+  },
+  closeChatButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1001,
+  },
+  webView: {
+    flex: 1,
+  },
 });
-
 
 export default TaskPanel;
