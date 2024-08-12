@@ -417,69 +417,6 @@ const ChatSidebar = ({ visible, onClose, uri, darkMode }) => {
   );
 };
 
-const WorkoutPlanner = ({ darkMode }) => {
-  const [workoutPlan, setWorkoutPlan] = useState({});
-  const [prompt, setPrompt] = useState('');
-
-  const generateWorkoutPlan = async () => {
-    // TODO: Implement AI integration here
-    // For now, we'll use a mock response
-    const mockAIResponse = JSON.stringify({
-      workoutPlan: {
-        'Monday': [
-          { exercise: 'Push-ups', sets: 3, reps: 10 },
-          { exercise: 'Squats', sets: 3, reps: 15 },
-        ],
-        'Wednesday': [
-          { exercise: 'Pull-ups', sets: 3, reps: 8 },
-          { exercise: 'Lunges', sets: 3, reps: 10 },
-        ],
-        'Friday': [
-          { exercise: 'Plank', sets: 3, duration: '30 seconds' },
-          { exercise: 'Bicycle Crunches', sets: 3, reps: 20 },
-        ],
-      }
-    });
-
-    const parsedResponse = JSON.parse(mockAIResponse);
-    setWorkoutPlan(parsedResponse.workoutPlan);
-  };
-
-  const renderWorkoutItem = ({ item }) => (
-    <View style={[styles.workoutItem, darkMode && styles.darkModeWorkoutItem]}>
-      <Text style={[styles.workoutExercise, darkMode && styles.darkModeText]}>{item.exercise}</Text>
-      <Text style={[styles.workoutDetails, darkMode && styles.darkModeText]}>
-        {item.sets} sets x {item.reps || item.duration}
-      </Text>
-    </View>
-  );
-
-  return (
-    <View style={styles.workoutContainer}>
-      <Text style={[styles.workoutTitle, darkMode && styles.darkModeText]}>AI Workout Planner</Text>
-      <TextInput
-        style={[styles.input, darkMode && styles.darkModeInput]}
-        value={prompt}
-        onChangeText={setPrompt}
-        placeholder="Enter your workout goals..."
-        placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-      />
-      <TouchableOpacity style={styles.generateButton} onPress={generateWorkoutPlan}>
-        <Text style={styles.generateButtonText}>Generate Workout Plan</Text>
-      </TouchableOpacity>
-      {Object.entries(workoutPlan).map(([day, exercises]) => (
-        <View key={day} style={styles.workoutDay}>
-          <Text style={[styles.workoutDayText, darkMode && styles.darkModeText]}>{day}</Text>
-          <FlatList
-            data={exercises}
-            renderItem={renderWorkoutItem}
-            keyExtractor={(item, index) => `${day}-${index}`}
-          />
-        </View>
-      ))}
-    </View>
-  );
-};
 
 const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks, darkMode }) => {
   const [editedTask, setEditedTask] = useState(null);
@@ -883,7 +820,6 @@ const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect, darkMode }) => {
     const [isLoadingGithub, setIsLoadingGithub] = useState(false);
     const [showChatSidebar, setShowChatSidebar] = useState(false);
     const [interactiveUri, setInteractiveUri] = useState("");
-    const [workoutModeEnabled, setWorkoutModeEnabled] = useState(false);
   
     useEffect(() => {
       const loadInitialData = async () => {
@@ -1387,112 +1323,100 @@ const AGiXTOptionsModal = ({ visible, onClose, onOptionSelect, darkMode }) => {
             >
               <MaterialIcons name="account-tree" size={24} color={showDependentTasks ? "#FFFFFF" : "#BBBBBB"} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.integrationButton, workoutModeEnabled && styles.integrationButtonActive]}
-              onPress={() => setWorkoutModeEnabled(!workoutModeEnabled)}
-            >
-              <MaterialIcons name="fitness-center" size={24} color={workoutModeEnabled ? "#FFFFFF" : "#BBBBBB"} />
-            </TouchableOpacity>
           </View>
   
           {selectedGroup && (
             <Text style={[styles.selectedGroupTitle, darkMode && styles.darkModeText]}>{selectedGroup}</Text>
           )}
   
-          {workoutModeEnabled ? (
-            <WorkoutPlanner darkMode={darkMode} />
-          ) : (
-            <>
-              <View style={styles.filterContainer}>
-                <View style={styles.filterItem}>
-                  <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Group By:</Text>
-                  <CustomPicker
-                    selectedValue={groupBy}
-                    onValueChange={(itemValue) => setGroupBy(itemValue)}
-                    items={[
-                      { label: "None", value: "none" },
-                      { label: "Priority", value: "priority" },
-                      { label: "Due Date", value: "dueDate" },
-                      { label: "Custom Group", value: "group" },
-                    ]}
-                    darkMode={darkMode}
-                  />
-                </View>
-                <View style={styles.filterItem}>
-                  <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Sort By:</Text>
-                  <CustomPicker
-                    selectedValue={sortBy}
-                    onValueChange={(itemValue) => setSortBy(itemValue)}
-                    items={[
-                      { label: "Due Date", value: "dueDate" },
-                      { label: "Priority", value: "priority" },
-                      { label: "Alphabetical", value: "alphabetical" },
-                    ]}
-                    darkMode={darkMode}
-                  />
-                </View>
-                <View style={styles.filterItem}>
-                  <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Show Completed:</Text>
-                  <CustomSwitch
-                    value={showCompletedTasks}
-                    onValueChange={setShowCompletedTasks}
-                  />
-                </View>
-              </View>
+          <View style={styles.filterContainer}>
+            <View style={styles.filterItem}>
+              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Group By:</Text>
+              <CustomPicker
+                selectedValue={groupBy}
+                onValueChange={(itemValue) => setGroupBy(itemValue)}
+                items={[
+                  { label: "None", value: "none" },
+                  { label: "Priority", value: "priority" },
+                  { label: "Due Date", value: "dueDate" },
+                  { label: "Custom Group", value: "group" },
+                ]}
+                darkMode={darkMode}
+              />
+            </View>
+            <View style={styles.filterItem}>
+              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Sort By:</Text>
+              <CustomPicker
+                selectedValue={sortBy}
+                onValueChange={(itemValue) => setSortBy(itemValue)}
+                items={[
+                  { label: "Due Date", value: "dueDate" },
+                  { label: "Priority", value: "priority" },
+                  { label: "Alphabetical", value: "alphabetical" },
+                ]}
+                darkMode={darkMode}
+              />
+            </View>
+            <View style={styles.filterItem}>
+              <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Show Completed:</Text>
+              <CustomSwitch
+                value={showCompletedTasks}
+                onValueChange={setShowCompletedTasks}
+              />
+            </View>
+          </View>
   
-              <KeyboardAvoidingView 
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.keyboardAvoidingView}
-              >
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={[styles.input, darkMode && styles.darkModeInput]}
-                    value={newTaskText}
-                    onChangeText={setNewTaskText}
-                    placeholder="Enter a task"
-                    placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-                  />
-                  <TouchableOpacity style={styles.addButton} onPress={addTask}>
-                    <MaterialIcons name="add" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.keyboardAvoidingView}
+          >
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, darkMode && styles.darkModeInput]}
+                value={newTaskText}
+                onChangeText={setNewTaskText}
+                placeholder="Enter a task"
+                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+              />
+              <TouchableOpacity style={styles.addButton} onPress={addTask}>
+                <MaterialIcons name="add" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+  
+            {showGithubIntegration && (
+              <GitHubIntegration 
+                data={githubData} 
+                isLoading={isLoadingGithub}
+                darkMode={darkMode}
+              />
+            )}
+  
+            <FlatList
+              data={Object.entries(taskGroups)}
+              keyExtractor={(item) => item[0]}
+              renderItem={({ item: [groupName, groupTasks] }) => (
+                <View style={styles.taskGroup}>
+                  <Text style={[styles.groupTitle, darkMode && styles.darkModeText]}>{groupName}</Text>
+                  {groupTasks.map(task => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onEdit={() => editTask(task)}
+                      onRemove={() => removeTask(task.id)}
+                      onAGiXTOptions={(task) => {
+                        setSelectedTaskForAGiXT(task);
+                        setShowAGiXTOptionsModal(true);
+                      }}
+                      onToggleComplete={onToggleComplete}
+                      showDependencies={showDependentTasks}
+                      allTasks={tasks}
+                      darkMode={darkMode}
+                    />
+                  ))}
                 </View>
-  
-                {showGithubIntegration && (
-                  <GitHubIntegration 
-                    data={githubData} 
-                    isLoading={isLoadingGithub}
-                    darkMode={darkMode}
-                  />
-                )}
-  
-                <FlatList
-                  data={Object.entries(taskGroups)}
-                  keyExtractor={(item) => item[0]}
-                  renderItem={({ item: [groupName, groupTasks] }) => (
-                    <View style={styles.taskGroup}>
-                      <Text style={[styles.groupTitle, darkMode && styles.darkModeText]}>{groupName}</Text>
-                      {groupTasks.map(task => (
-                        <TaskCard
-                          key={task.id}
-                          task={task}
-                          onEdit={() => editTask(task)}
-                          onRemove={() => removeTask(task.id)}
-                          onAGiXTOptions={(task) => {
-                            setSelectedTaskForAGiXT(task);
-                            setShowAGiXTOptionsModal(true);
-                          }}
-                          onToggleComplete={onToggleComplete}
-                          showDependencies={showDependentTasks}
-                          allTasks={tasks}
-                          darkMode={darkMode}
-                        />
-                      ))}
-                    </View>
-                  )}
-                />
-              </KeyboardAvoidingView>
-            </>
-          )}
+              )}
+            />
+          </KeyboardAvoidingView>
   
           <FloatingActionButton onPress={() => setShowEditModal(true)} />
   
@@ -2034,54 +1958,6 @@ const styles = StyleSheet.create({
   },
   integrationButtonActive: {
     backgroundColor: '#3498DB',
-  },
-  workoutContainer: {
-    flex: 1,
-    padding: 20,
-  },
-  workoutTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#000000',
-  },
-  generateButton: {
-    backgroundColor: '#3498DB',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  generateButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  workoutDay: {
-    marginBottom: 20,
-  },
-  workoutDayText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#000000',
-  },
-  workoutItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 5,
-  },
-  darkModeWorkoutItem: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  workoutExercise: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  workoutDetails: {
-    fontSize: 14,
-    color: '#666666',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
