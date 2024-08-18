@@ -33,6 +33,32 @@ const { width, height } = Dimensions.get('window');
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
 
+const GENERATE_SUBTASKS_PROMPT = `
+Given the following task details:
+Task Name: {taskName}
+Description: {taskDescription}
+Due Date: {dueDate}
+Priority: {priority}
+Additional Context: {additionalContext}
+
+Generate a list of 3-5 subtasks that break down this main task into smaller, actionable items. Each subtask should be specific, measurable, and contribute to the completion of the main task. 
+
+Format the response as a JSON array of objects, where each object has the following properties:
+- id: A unique identifier (you can use numbers starting from 1)
+- text: The description of the subtask
+- completed: Boolean value (set to false for new subtasks)
+
+Example format:
+[
+  {
+    "id": 1,
+    "text": "Subtask description here",
+    "completed": false
+  },
+  ...
+]
+`;
+
 interface Task {
   id: number;
   text: string;
@@ -46,14 +72,6 @@ interface Task {
   completed: boolean;
   group: string;
 }
-
-const getSubtasks = async (taskText: string, taskName: string, taskData: any, apiUri: string, apiKey: string, clarificationText: string): Promise<Task[]> => {
-  console.log("Getting subtasks for:", taskText, taskName, taskData, apiUri, apiKey, clarificationText);
-  return [
-    { id: Date.now() + 1, text: "Subtask 1 Example", completed: false, group: 'Default', subtasks: [] },
-    { id: Date.now() + 2, text: "Subtask 2 Example", completed: false, group: 'Default', subtasks: [] },
-  ];
-};
 
 const ProgressBar = ({ progress, color }: { progress: number, color: string }) => (
   <View style={styles.progressBarContainer}>
@@ -661,6 +679,7 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedA
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
+
             <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleOk} disabled={!selectedAgent || !selectedChain}>
               <Text style={styles.buttonText}>OK</Text>
             </TouchableOpacity>
@@ -1122,22 +1141,37 @@ const TaskPanel = () => {
   }, []);
 
   const handleGetSubtasks = useCallback(async () => {
-    if (selectedTaskForAGiXT) {
+    if (selectedTaskForAGiXT && selectedAgent) {
       setShowSubtaskClarificationModal(false);
       setIsLoading(true);
       try {
-        const subtasks = await getSubtasks(
-          selectedTaskForAGiXT.text,
-          selectedTaskForAGiXT.text,
-          {
-            note: selectedTaskForAGiXT.note,
-            dueDate: selectedTaskForAGiXT.dueDate,
-            priority: selectedTaskForAGiXT.priority,
-          },
-          agixtApiUri,
-          agixtApiKey,
-          subtaskClarificationText
+        const agixt = new AGiXTSDK({
+          baseUri: agixtApiUri,
+          apiKey: agixtApiKey,
+        });
+  
+        const promptName = "Get Task List";
+        const promptArgs = {
+          task_name: selectedTaskForAGiXT.text,
+          task_description: selectedTaskForAGiXT.note || '',
+          due_date: selectedTaskForAGiXT.dueDate || 'Not set',
+          priority: selectedTaskForAGiXT.priority || 'Not set',
+          additional_context: subtaskClarificationText,
+          conversation_name: `Subtasks_${selectedTaskForAGiXT.id}`,
+        };
+  
+        console.log("Calling promptAgent with:", selectedAgent, promptName, promptArgs);
+  
+        const result = await agixt.promptAgent(
+          selectedAgent,
+          promptName,
+          promptArgs
         );
+  
+        console.log("Result from promptAgent:", result);
+  
+        const subtasks = parseSubtasks(result);
+        
         const updatedTasks = tasks.map(task => 
           task.id === selectedTaskForAGiXT.id 
             ? { ...task, subtasks: [...(task.subtasks || []), ...subtasks] }
@@ -1151,8 +1185,39 @@ const TaskPanel = () => {
       } finally {
         setIsLoading(false);
       }
+    } else {
+      console.error("No task or agent selected");
+      showAlert("Error", "No task or agent selected. Please try again.");
     }
-  }, [selectedTaskForAGiXT, subtaskClarificationText, tasks, saveTasks, agixtApiUri, agixtApiKey, showAlert]);
+  }, [selectedTaskForAGiXT, selectedAgent, subtaskClarificationText, tasks, saveTasks, agixtApiUri, agixtApiKey, showAlert]);
+
+  const parseSubtasks = (result: string): Task[] => {
+    try {
+      let parsedResult;
+      if (typeof result === 'string') {
+        parsedResult = JSON.parse(result);
+      } else if (typeof result === 'object') {
+        parsedResult = result;
+      } else {
+        throw new Error('Unexpected result format');
+      }
+
+      if (!Array.isArray(parsedResult)) {
+        throw new Error('Parsed result is not an array');
+      }
+
+      return parsedResult.map(subtask => ({
+        id: Date.now() + Math.random(), // Generate a unique id
+        text: subtask.text,
+        completed: false,
+        group: 'Default',
+        subtasks: []
+      }));
+    } catch (error) {
+      console.error('Error parsing subtasks:', error);
+      return [];
+    }
+  };
 
   const handleRecurringTasks = useCallback(() => {
     const now = new Date();
@@ -1382,7 +1447,7 @@ const TaskPanel = () => {
             />
           )}
 
-          <FlatList
+<FlatList
             data={Object.entries(taskGroups)}
             keyExtractor={(item) => item[0]}
             renderItem={({ item: [groupName, groupTasks] }) => (
@@ -1431,7 +1496,7 @@ const TaskPanel = () => {
           darkMode={darkMode}
         />
 
-<AGiXTModal
+        <AGiXTModal
           visible={showAGiXTModal}
           onClose={() => setShowAGiXTModal(false)}
           onAgentSelect={handleAgentSelect}
