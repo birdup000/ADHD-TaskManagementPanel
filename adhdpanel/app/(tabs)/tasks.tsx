@@ -638,20 +638,46 @@ const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks,
   );
 };
 
-const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent, darkMode }: { visible: boolean, onClose: () => void, onAgentSelect: (agent: string, chain: string, input: string) => void, chains: string[], agents: { name: string }[], selectedAgent: string, setSelectedAgent: (agent: string) => void, darkMode: boolean }) => {
-  const [selectedChain, setSelectedChain] = useState("");
+const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent, darkMode, getAgents, getChains }: { visible: boolean, onClose: () => void, onAgentSelect: (agent: string, chain: string, input: string) => void, chains: string[], agents: { name: string }[], selectedAgent: string, setSelectedAgent: (agent: string) => void, darkMode: boolean, getAgents: () => Promise<void>, getChains: () => Promise<void> }) => {  const [selectedChain, setSelectedChain] = useState("");
   const [chainInput, setChainInput] = useState("");
+  const [agentOnlyMode, setAgentOnlyMode] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      getAgents();
+      getChains();
+    }
+  }, [visible]);
 
   const handleOk = () => {
-    onAgentSelect(selectedAgent, selectedChain, chainInput);
-    onClose();
+    if (selectedAgent) {
+      if (agentOnlyMode) {
+        onAgentSelect(selectedAgent, "", "");
+      } else if (selectedChain) {
+        onAgentSelect(selectedAgent, selectedChain, chainInput);
+      } else {
+        showAlert("Selection Required", "Please select a chain or switch to agent-only mode.");
+        return;
+      }
+      onClose();
+    } else {
+      showAlert("Selection Required", "Please select an agent before proceeding.");
+    }
+  };
+
+  const toggleAgentOnlyMode = () => {
+    setAgentOnlyMode(!agentOnlyMode);
+    if (!agentOnlyMode) {
+      setSelectedChain("");
+      setChainInput("");
+    }
   };
 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={[styles.modalOverlay, darkMode && styles.darkModeOverlay]}>
         <View style={[styles.modalContent, darkMode && styles.darkModeModalContent]}>
-          <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>Select an Agent and Chain</Text>
+          <Text style={[styles.modalTitle, darkMode && styles.darkModeText]}>Select an Agent {!agentOnlyMode && 'and Chain'}</Text>
           {agents.length > 0 ? (
             <CustomPicker
               selectedValue={selectedAgent}
@@ -662,25 +688,44 @@ const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedA
           ) : (
             <Text style={[styles.noAgentsText, darkMode && styles.darkModeText]}>No agents available</Text>
           )}
-          <CustomPicker
-            selectedValue={selectedChain}
-            onValueChange={setSelectedChain}
-            items={[{ label: "Select a chain", value: "" }, ...chains.map(chain => ({ label: chain, value: chain }))]}
-            darkMode={darkMode}
-          />
-          <TextInput
-            style={[styles.chainInput, darkMode && styles.darkModeInput]}
-            value={chainInput}
-            onChangeText={setChainInput}
-            placeholder="Enter chain input"
-            placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
-          />
+          
+          <View style={styles.checkboxContainer}>
+            <Switch
+              value={agentOnlyMode}
+              onValueChange={toggleAgentOnlyMode}
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={agentOnlyMode ? "#f5dd4b" : "#f4f3f4"}
+            />
+            <Text style={[styles.checkboxLabel, darkMode && styles.darkModeText]}>Agent Only Mode</Text>
+          </View>
+
+          {!agentOnlyMode && (
+            <>
+              <CustomPicker
+                selectedValue={selectedChain}
+                onValueChange={setSelectedChain}
+                items={[{ label: "Select a chain", value: "" }, ...chains.map(chain => ({ label: chain, value: chain }))]}
+                darkMode={darkMode}
+              />
+              <TextInput
+                style={[styles.chainInput, darkMode && styles.darkModeInput]}
+                value={chainInput}
+                onChangeText={setChainInput}
+                placeholder="Enter chain input"
+                placeholderTextColor={darkMode ? "#FFFFFF80" : "#00000080"}
+              />
+            </>
+          )}
+          
           <View style={styles.modalFooter}>
             <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleOk} disabled={!selectedAgent || !selectedChain}>
+            <TouchableOpacity 
+              style={[styles.button, styles.saveButton, (!selectedAgent || (!agentOnlyMode && !selectedChain)) && styles.disabledButton]} 
+              onPress={handleOk} 
+              disabled={!selectedAgent || (!agentOnlyMode && !selectedChain)}
+            >
               <Text style={styles.buttonText}>OK</Text>
             </TouchableOpacity>
           </View>
@@ -946,29 +991,124 @@ const TaskPanel = () => {
     }
   };
 
-  const getAgents = async () => {
+  const getAgents = async (retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+  
+    if (!agixtApiUri || !agixtApiKey) {
+      console.error("AGiXT API URI or API Key is missing");
+      showAlert("Configuration Error", "AGiXT API URI or API Key is not set. Please check your settings.");
+      return;
+    }
+  
     try {
+      console.log(`Attempting to fetch agents (Attempt ${retryCount + 1}/${maxRetries + 1})`);
+      
       const agixt = new AGiXTSDK({
         baseUri: agixtApiUri,
         apiKey: agixtApiKey,
       });
+  
+      console.log("AGiXT SDK initialized. Fetching agents...");
       const agentList = await agixt.getAgents();
-      
+      console.log("Agents fetched successfully:", agentList);
+  
       let formattedAgents: { name: string }[] = [];
       if (Array.isArray(agentList)) {
-        formattedAgents = agentList;
-      } else if (typeof agentList === 'object') {
+        formattedAgents = agentList.map(agent => ({ name: typeof agent === 'string' ? agent : agent.name }));
+      } else if (typeof agentList === 'object' && agentList !== null) {
         formattedAgents = Object.keys(agentList).map(name => ({ name }));
+      } else {
+        throw new Error("Unexpected agent list format");
       }
-      
+  
+      console.log("Formatted agents:", formattedAgents);
       setAgents(formattedAgents);
-      if (formattedAgents.length > 0) {
+  
+      if (formattedAgents.length > 0 && !selectedAgent) {
+        console.log("Setting selected agent to:", formattedAgents[0].name);
         setSelectedAgent(formattedAgents[0].name);
+      } else if (formattedAgents.length === 0) {
+        console.warn("No agents found");
+        showAlert("No Agents", "No agents were found. You may need to create an agent first.");
       }
     } catch (error) {
       console.error("Error fetching agents:", error);
-      setAgents([]);
-      throw error;
+  
+      if (error instanceof Error && error.message.includes("401")) {
+        showAlert("Authentication Error", "Invalid API key. Please check your API key and try again.");
+        return; // Don't retry on authentication errors
+      }
+  
+      if (retryCount < maxRetries) {
+        console.log(`Retrying in ${retryDelay / 1000} seconds...`);
+        setTimeout(() => getAgents(retryCount + 1), retryDelay);
+      } else {
+        showAlert("Error", "Failed to fetch agents after multiple attempts. Please try again later.");
+        setAgents([]);
+      }
+    }
+  };
+  
+  // Function to validate and update AGiXT configuration
+  const updateAGiXTConfig = async (newApiUri?: string, newApiKey?: string) => {
+    let updatedUri = newApiUri || agixtApiUri;
+    let updatedKey = newApiKey || agixtApiKey;
+  
+    if (!updatedUri || !updatedKey) {
+      showAlert("Configuration Error", "Both AGiXT API URI and API Key must be provided.");
+      return false;
+    }
+  
+    try {
+      // Remove trailing slash from URI if present
+      updatedUri = updatedUri.replace(/\/$/, '');
+  
+      // Test the configuration
+      const testAgixt = new AGiXTSDK({
+        baseUri: updatedUri,
+        apiKey: updatedKey,
+      });
+  
+      await testAgixt.getAgents(); // This will throw an error if the configuration is invalid
+  
+      // If successful, update the stored values
+      await AsyncStorage.setItem(AGIXT_API_URI_KEY, updatedUri);
+      await AsyncStorage.setItem(AGIXT_API_KEY_KEY, updatedKey);
+  
+      setAgixtApiUri(updatedUri);
+      setAgixtApiKey(updatedKey);
+  
+      console.log("AGiXT configuration updated successfully");
+      showAlert("Success", "AGiXT configuration updated successfully.");
+  
+      // Refresh the agents list with the new configuration
+      await getAgents();
+  
+      return true;
+    } catch (error) {
+      console.error("Error updating AGiXT configuration:", error);
+      showAlert("Configuration Error", "Failed to validate the new configuration. Please check your API URI and Key.");
+      return false;
+    }
+  };
+  
+  // Use this function in your component's useEffect or wherever you need to load the initial configuration
+  const loadAGiXTConfig = async () => {
+    try {
+      const storedUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
+      const storedKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
+  
+      if (storedUri && storedKey) {
+        setAgixtApiUri(storedUri);
+        setAgixtApiKey(storedKey);
+        await getAgents(); // Fetch agents with the loaded configuration
+      } else {
+        showAlert("Configuration Missing", "AGiXT API URI or API Key is not set. Please configure them in settings.");
+      }
+    } catch (error) {
+      console.error("Error loading AGiXT configuration:", error);
+      showAlert("Error", "Failed to load AGiXT configuration. Please check your settings.");
     }
   };
 
@@ -1098,6 +1238,19 @@ const TaskPanel = () => {
     setShowEditModal(true);
   }, []);
 
+
+  const updateAGiXTApiKey = async (newApiKey: string) => {
+    try {
+      await AsyncStorage.setItem(AGIXT_API_KEY_KEY, newApiKey);
+      setAgixtApiKey(newApiKey);
+      // Optionally, you can refresh the agents list here
+      await getAgents();
+    } catch (error) {
+      console.error('Error updating AGiXT API key:', error);
+      showAlert("Error", "Failed to update AGiXT API key. Please try again.");
+    }
+  };
+
   const handleSaveTask = useCallback((editedTask: Task) => {
     const updatedTasks = tasks.map((task) =>
       task.id === editedTask.id ? editedTask : task
@@ -1141,7 +1294,13 @@ const TaskPanel = () => {
   }, []);
 
   const handleGetSubtasks = useCallback(async () => {
-    if (selectedTaskForAGiXT && selectedAgent) {
+    if (!selectedAgent) {
+      showAlert("No Agent Selected", "Please select an agent before generating subtasks.");
+      setShowAGiXTModal(true);
+      return;
+    }
+  
+    if (selectedTaskForAGiXT) {
       setShowSubtaskClarificationModal(false);
       setIsLoading(true);
       try {
@@ -1150,25 +1309,25 @@ const TaskPanel = () => {
           apiKey: agixtApiKey,
         });
   
-        const promptName = "Get Task List";
-        const promptArgs = {
-          task_name: selectedTaskForAGiXT.text,
-          task_description: selectedTaskForAGiXT.note || '',
-          due_date: selectedTaskForAGiXT.dueDate || 'Not set',
-          priority: selectedTaskForAGiXT.priority || 'Not set',
-          additional_context: subtaskClarificationText,
-          conversation_name: `Subtasks_${selectedTaskForAGiXT.id}`,
-        };
+        const userInput = `Generate subtasks for the following task:
+  Task Name: ${selectedTaskForAGiXT.text}
+  Description: ${selectedTaskForAGiXT.note || 'No description provided'}
+  Due Date: ${selectedTaskForAGiXT.dueDate || 'Not set'}
+  Priority: ${selectedTaskForAGiXT.priority || 'Not set'}
+  Additional Context: ${subtaskClarificationText}
   
-        console.log("Calling promptAgent with:", selectedAgent, promptName, promptArgs);
+  Please provide a list of 3-5 subtasks for this main task. Each subtask should be specific, measurable, and contribute to the completion of the main task. Format the response as a JSON array of objects, where each object has 'id', 'text', and 'completed' properties.`;
   
-        const result = await agixt.promptAgent(
+        console.log("Calling chat with:", selectedAgent, userInput);
+  
+        const result = await agixt.chat(
           selectedAgent,
-          promptName,
-          promptArgs
+          userInput,
+          `Subtasks_${selectedTaskForAGiXT.id}`,
+          4 // contextResults, adjust as needed
         );
   
-        console.log("Result from promptAgent:", result);
+        console.log("Result from chat:", result);
   
         const subtasks = parseSubtasks(result);
         
@@ -1186,11 +1345,11 @@ const TaskPanel = () => {
         setIsLoading(false);
       }
     } else {
-      console.error("No task or agent selected");
-      showAlert("Error", "No task or agent selected. Please try again.");
+      console.error("No task selected");
+      showAlert("Error", "No task selected. Please select a task and try again.");
     }
-  }, [selectedTaskForAGiXT, selectedAgent, subtaskClarificationText, tasks, saveTasks, agixtApiUri, agixtApiKey, showAlert]);
-
+  }, [selectedTaskForAGiXT, selectedAgent, subtaskClarificationText, tasks, saveTasks, agixtApiUri, agixtApiKey, showAlert, setShowAGiXTModal]);
+  
   const parseSubtasks = (result: string): Task[] => {
     try {
       let parsedResult;
@@ -1201,11 +1360,11 @@ const TaskPanel = () => {
       } else {
         throw new Error('Unexpected result format');
       }
-
+  
       if (!Array.isArray(parsedResult)) {
         throw new Error('Parsed result is not an array');
       }
-
+  
       return parsedResult.map(subtask => ({
         id: Date.now() + Math.random(), // Generate a unique id
         text: subtask.text,
@@ -1496,16 +1655,18 @@ const TaskPanel = () => {
           darkMode={darkMode}
         />
 
-        <AGiXTModal
-          visible={showAGiXTModal}
-          onClose={() => setShowAGiXTModal(false)}
-          onAgentSelect={handleAgentSelect}
-          chains={chains}
-          agents={agents}
-          selectedAgent={selectedAgent}
-          setSelectedAgent={setSelectedAgent}
-          darkMode={darkMode}
-        />
+<AGiXTModal
+  visible={showAGiXTModal}
+  onClose={() => setShowAGiXTModal(false)}
+  onAgentSelect={handleAgentSelect}
+  chains={chains}
+  agents={agents}
+  selectedAgent={selectedAgent}
+  setSelectedAgent={setSelectedAgent}
+  darkMode={darkMode}
+  getAgents={getAgents}
+  getChains={getChains}
+/>
 
         <AGiXTOptionsModal
           visible={showAGiXTOptionsModal}
@@ -2216,6 +2377,16 @@ const styles = StyleSheet.create({
     color: '#E74C3C',
     textAlign: 'center',
     marginBottom: 10,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#000000',
   },
 });
 
