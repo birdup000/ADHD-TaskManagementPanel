@@ -1352,14 +1352,19 @@ const TaskPanel = () => {
   
   const parseSubtasks = (result: string): Task[] => {
     try {
-      let parsedResult;
-      if (typeof result === 'string') {
-        parsedResult = JSON.parse(result);
-      } else if (typeof result === 'object') {
-        parsedResult = result;
-      } else {
-        throw new Error('Unexpected result format');
+      // Find the start and end of the JSON array within the response
+      const startIndex = result.indexOf('```\n[') + 4; // +4 to skip "```\n["
+      const endIndex = result.lastIndexOf(']\n```');
+  
+      if (startIndex === -1 || endIndex === -1) {
+        throw new Error('Could not find JSON array in the response');
       }
+  
+      // Extract the JSON string
+      const jsonString = result.substring(startIndex, endIndex + 1);
+  
+      // Parse the JSON string
+      const parsedResult = JSON.parse(jsonString);
   
       if (!Array.isArray(parsedResult)) {
         throw new Error('Parsed result is not an array');
@@ -1374,6 +1379,7 @@ const TaskPanel = () => {
       }));
     } catch (error) {
       console.error('Error parsing subtasks:', error);
+      showAlert("Error", "Failed to parse subtasks. Please check the agent's response format.");
       return [];
     }
   };
