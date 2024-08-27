@@ -638,7 +638,8 @@ const EditTaskModal = ({ visible, task, onClose, onSave, repositories, allTasks,
   );
 };
 
-const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent, darkMode, getAgents, getChains }: { visible: boolean, onClose: () => void, onAgentSelect: (agent: string, chain: string, input: string) => void, chains: string[], agents: { name: string }[], selectedAgent: string, setSelectedAgent: (agent: string) => void, darkMode: boolean, getAgents: () => Promise<void>, getChains: () => Promise<void> }) => {  const [selectedChain, setSelectedChain] = useState("");
+const AGiXTModal = ({ visible, onClose, onAgentSelect, chains, agents, selectedAgent, setSelectedAgent, darkMode, showAlert, getAgents, getChains }: { visible: boolean, onClose: () => void, onAgentSelect: (agent: string, chain: string, input: string) => void, chains: string[], agents: { name: string }[], selectedAgent: string, setSelectedAgent: (agent: string) => void, darkMode: boolean, showAlert: (title: string, message: string) => void, getAgents: () => Promise<void>, getChains: () => Promise<void> }) => {
+  const [selectedChain, setSelectedChain] = useState("");
   const [chainInput, setChainInput] = useState("");
   const [agentOnlyMode, setAgentOnlyMode] = useState(false);
 
@@ -792,7 +793,7 @@ const SubtaskClarificationModal = ({ visible, onClose, onContinue, clarification
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={onContinue} disabled={isLoading}>
-              {isLoading ? (
+            {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={styles.buttonText}>Continue</Text>
@@ -1612,7 +1613,7 @@ const TaskPanel = () => {
             />
           )}
 
-<FlatList
+          <FlatList
             data={Object.entries(taskGroups)}
             keyExtractor={(item) => item[0]}
             renderItem={({ item: [groupName, groupTasks] }) => (
@@ -1661,18 +1662,19 @@ const TaskPanel = () => {
           darkMode={darkMode}
         />
 
-<AGiXTModal
-  visible={showAGiXTModal}
-  onClose={() => setShowAGiXTModal(false)}
-  onAgentSelect={handleAgentSelect}
-  chains={chains}
-  agents={agents}
-  selectedAgent={selectedAgent}
-  setSelectedAgent={setSelectedAgent}
-  darkMode={darkMode}
-  getAgents={getAgents}
-  getChains={getChains}
-/>
+        <AGiXTModal
+          visible={showAGiXTModal}
+          onClose={() => setShowAGiXTModal(false)}
+          onAgentSelect={handleAgentSelect}
+          chains={chains}
+          agents={agents}
+          selectedAgent={selectedAgent}
+          setSelectedAgent={setSelectedAgent}
+          darkMode={darkMode}
+          showAlert={showAlert} // Pass the showAlert function
+          getAgents={getAgents}
+          getChains={getChains}
+        />
 
         <AGiXTOptionsModal
           visible={showAGiXTOptionsModal}
@@ -2393,6 +2395,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     color: '#000000',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 
