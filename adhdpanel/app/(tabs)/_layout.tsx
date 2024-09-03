@@ -19,56 +19,55 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <FontAwesome
-                    name="gear"
-                    size={25}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Task List',
-          tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="three"
-        options={{
-          title: 'Task Map',
-          tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="four"
-        options={{
-          title: 'Calendar',
-          tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
-        }}
-      />
-  
-    </Tabs>
+<Tabs
+  screenOptions={{
+    tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+    // Disable the static render of the header on web
+    // to prevent a hydration error in React Navigation v6.
+    headerShown: useClientOnlyValue(false, true),
+    headerRight: () => (
+      <Link href="/settings" asChild>
+        <Pressable>
+          {({ pressed }) => (
+            <FontAwesome
+              name="gear"
+              size={25}
+              color={Colors[colorScheme ?? 'light'].text}
+              style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+            />
+          )}
+        </Pressable>
+      </Link>
+    ),
+  }}>
+  <Tabs.Screen
+    name="index"
+    options={{
+      title: 'Home',
+      tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+    }}
+  />
+  <Tabs.Screen
+    name="tasks"
+    options={{
+      title: 'Task List',
+      tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
+    }}
+  />
+  <Tabs.Screen
+    name="taskmap"
+    options={{
+      title: 'Task Map',
+      tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
+    }}
+  />
+  <Tabs.Screen
+    name="calendar"
+    options={{
+      title: 'Calendar',
+      tabBarIcon: ({ color }) => <TabBarIcon name="calendar" color={color} />,
+    }}
+  />
+</Tabs>
   );
 }
