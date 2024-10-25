@@ -26,7 +26,7 @@
     "@react-native-picker/picker": "2.6.1",
     "@react-navigation/native": "^6.0.2",
     "agixt": "^1.0.55",
-    "expo": "~50.0.14",
+    "expo": "^51.0.37",
     "expo-blur": "^13.0.2",
     "expo-font": "~11.10.3",
     "expo-linear-gradient": "^13.0.2",
