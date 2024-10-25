@@ -26,6 +26,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import AGiXTSDK from "agixt";
 import { WebView } from 'react-native-webview';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 const { width, height } = Dimensions.get('window');
 
@@ -105,11 +107,11 @@ const Sidebar = ({ groups, tasks, onGroupSelect, onClose, darkMode }: { groups: 
         <Text style={[styles.progressPercentage, darkMode && styles.darkModeText]}>{totalProgress.toFixed(0)}%</Text>
       </View>
       <ScrollView style={styles.groupList}>
-        {groups.map((group) => (
+        {groups .map((group) => (
           <TouchableOpacity
             key={group}
             style={styles.groupItem}
-            onPress={() => onGroupSelect (group)}
+            onPress={() => onGroupSelect(group)}
           >
             <Text style={[styles.groupName, darkMode && styles.darkModeText]}>{group}</Text>
             <ProgressBar progress={calculateGroupProgress(group)} color="#2ECC71" />
@@ -222,7 +224,7 @@ const TaskCard = ({ task, onEdit, onRemove, onAGiXTOptions, onToggleComplete, sh
             )}
             {task.recurrence && (
               <View style={styles.recurrenceBadge}>
-                <MaterialIcons name="repeat" size={16} color={darkMode ? "#FFFFFF" : "#000000"} />
+                <MaterialIcons name="repeat" size ={16} color={darkMode ? "#FFFFFF" : "#000000"} />
                 <Text style={[styles.recurrenceText, darkMode && styles.darkModeText]}>{task.recurrence}</Text>
               </View>
             )}
@@ -315,19 +317,19 @@ const TaskList = () => {
   };
 
   return (
-    <View style={styles.taskList}>
+    <View style={styles.container}>
       <Text style={styles.taskListTitle}>Task List</Text>
-      <Text style={styles.taskListDescription}>
+      <Text style={styles.taskDescription}>
         Use this template to track your personal tasks.<br />
-        Click <Text style={styles.highlightText}>New</Text> to create a new task directly on this board.<br />
+        Click <Text style={styles.highlightText}>New</Text> to create a new task directly on this board.
         Click an existing task to add additional context or <Text style={styles.highlightText}>subtasks</Text>.
       </Text>
       <View style={styles.viewToggle}>
         <TouchableOpacity style={styles.viewToggleButton}>
-          <Text style={styles.viewToggleButtonText}>Board View</Text>
+          <Text style={styles.viewToggleButton}>Board View</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.viewToggleButton}>
-          <Text style={styles.viewToggleButtonText}>List View</Text>
+          <Text style={styles.viewToggleButton}>List View</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.taskColumns}>
@@ -339,13 +341,22 @@ const TaskList = () => {
   );
 };
 
+const TaskColumn = ({ title, tasks }: { title: string; tasks: string[] }) => (
+  <View style={styles.taskColumns}>
+    <Text style={styles.taskColumns}>{title}</Text>
+    {tasks.map((task, index) => (
+      <Text key={index} style ={styles.taskColumns}>{task}</Text>
+    ))}
+  </View>
+);
+
 const TaskPanel = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [githubUsername, setGithubUsername] = useState("");
   const [showAGiXTModal, setShowAGiXTModal] = useState(false);
-  const [chains, setChains ] = useState<string[]>([]);
+  const [chains, setChains] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [agixtApiUri, setAgixtApiUri] = useState("");
   const [agixtApiKey, setAgixtApiKey] = useState("");
@@ -370,7 +381,13 @@ const TaskPanel = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(true);
-  const [githubData, setGithubData] = useState(null);
+  interface GithubData {
+    bio: string;
+    public_repos: number;
+    // Add other properties as needed
+  }
+  
+  const [githubData, setGithubData] = useState<GithubData | null>(null);
   const [isLoadingGithub, setIsLoadingGithub] = useState(false);
   const [showChatSidebar, setShowChatSidebar] = useState(false);
   const [interactiveUri, setInteractiveUri] = useState("");
@@ -438,7 +455,7 @@ const TaskPanel = () => {
         setAgixtApiKey(storedAgixtApiKey);
       }
     } catch (error) {
-      console.error('Error getting AGiXT data from AsyncStorage:', error);
+      console.error('Error getting AG iXT data from AsyncStorage:', error);
       throw error;
     }
   };
@@ -458,7 +475,7 @@ const TaskPanel = () => {
     try {
       const storedTasks = await AsyncStorage.getItem("tasks");
       if (storedTasks !== null) {
-        const parsedTasks: Task[] = JSON.parse (storedTasks);
+        const parsedTasks: Task[] = JSON.parse(storedTasks);
         // Ensure loaded tasks have the 'group' property
         const tasksWithGroup = parsedTasks.map(task => ({ ...task, group: task.group || 'Default' }));
         setTasks(tasksWithGroup);
@@ -568,7 +585,7 @@ const TaskPanel = () => {
     let updatedKey = newApiKey || agixtApiKey;
 
     if (!updatedUri || !updatedKey) {
-      showAlert("Configuration Error", "Both AGiXT API URI and API Key must be provided.");
+      showAlert ("Configuration Error", "Both AGiXT API URI and API Key must be provided.");
       return false;
     }
 
@@ -610,7 +627,6 @@ const TaskPanel = () => {
     try {
       const storedUri = await AsyncStorage.getItem(AGIXT_API_URI_KEY);
       const storedKey = await AsyncStorage.getItem(AGIXT_API_KEY_KEY);
-
       if (storedUri && storedKey) {
         setAgixtApiUri(storedUri);
         setAgixtApiKey(storedKey);
@@ -727,7 +743,7 @@ const TaskPanel = () => {
       }
 
       if (taskToRemove.dependencies && taskToRemove.dependencies.length > 0) {
-        const incomplete Dependencies = taskToRemove.dependencies.filter(depId => 
+        const incompleteDependencies = taskToRemove.dependencies.filter(depId => 
           tasks.find(t => t.id === depId && !t.completed)
         );
 
@@ -853,7 +869,7 @@ const TaskPanel = () => {
         console.error("Error getting subtasks:", error);
         showAlert("Error", "Failed to get subtasks. Please try again.");
       } finally {
-        setIs Loading(false);
+        setIsLoading(false);
       }
     } else {
       console.error("No task selected");
@@ -961,7 +977,7 @@ const TaskPanel = () => {
         case 'dueDate':
           return (new Date(a.dueDate || '9999-12-31')).getTime() - (new Date(b.dueDate || '9999-12-31')).getTime();
         case 'priority':
-          const priorityOrder: { [key: string]: number } = { High: 0, Medium: 1, Low: 2, undefined: 3 };
+          const priorityOrder: { [key: string]: number } = { High : 0, Medium: 1, Low: 2, undefined: 3 };
           return (priorityOrder[a.priority || 'undefined'] || 3) - (priorityOrder[b.priority || 'undefined'] || 3);
         case 'alphabetical':
           return a.text.localeCompare(b.text);
@@ -1042,7 +1058,7 @@ const TaskPanel = () => {
               <MaterialIcons
                 name={item.completed ? "check-box" : "check-box-outline-blank"}
                 size={24}
-                color={item.completed ? "#4CAF50" : (darkMode ? "#FFFFFF" : "#000000")}
+                color={item.completed ? "#4CAF50" : darkMode ? "#FFFFFF" : "#000000"}
               />
             </TouchableOpacity>
             <Text style={[styles.taskText, darkMode && styles.darkModeText]}>
@@ -1080,31 +1096,44 @@ const TaskPanel = () => {
                 Due: {new Date(item.dueDate).toLocaleDateString()}
               </Text>
             )}
-            <Text
-              style={[
-                styles.taskPriority,
-                darkMode && styles.darkModeText,
-                getPriorityStyle(item.priority || 'Low'), // Provide a default priority
-              ]}
-            >
-              {item.priority || 'Low'} {/* Display default priority if not set */}
-            </Text>
-            <Text
-              style={[
-                styles.taskStatus,
-                darkMode && styles.darkModeText,
-                getStatusStyle(item.status || 'Pending'), // Provide a default status
-              ]}
-            >
-              {item.status || 'Pending'} {/* Display default status if not set */}
-            </Text>
+            {item.priority && (
+              <Text
+                style={[
+                  styles.taskPriority,
+                  darkMode && styles.darkModeText,
+                  getPriorityStyle(item.priority || 'Low'), // Provide a default priority
+                ]}
+              >
+                {item.priority || 'Low'} {/* Display default priority if not set */}
+              </Text>
+            )}
+            {item.repo && (
+              <Text
+                style={[
+                  styles.taskRepo,
+                  darkMode && styles.darkModeText,
+                ]}
+              >
+                {item.repo}
+              </Text>
+            )}
+            {item.recurrence && (
+              <Text
+                style={[
+                  styles.taskRecurrence,
+                  darkMode && styles.darkModeText,
+                ]}
+              >
+                {item.recurrence}
+              </Text>
+            )}
           </View>
           <View style={styles.agixtButtons}>
             <TouchableOpacity
               style={styles.agixtButton}
               onPress={() => {
                 setSelectedTaskForAGiXT(item);
-                handleGenerateSubtasks(item);
+                handleGenerateSubtasks (item);
               }}
             >
               <Text style={styles.agixtButtonText}>Generate Subtasks</Text>
@@ -1180,24 +1209,37 @@ const TaskPanel = () => {
         </View>
       </View>
       <View style={styles.taskDetails}>
-        <Text
-          style={[
-            styles.taskPriority,
-            darkMode && styles.darkModeText,
-            getPriorityStyle(item.priority || 'Low'), // Provide a default priority
-          ]}
-        >
-          {item.priority || 'Low'} {/* Display default priority if not set */}
-        </Text>
-        <Text
-          style={[
-            styles.taskStatus,
-            darkMode && styles.darkModeText,
-            getStatusStyle(item.status || 'Pending'), // Provide a default status
-          ]}
-        >
-          {item.status || 'Pending'} {/* Display default status if not set */}
-        </Text>
+        {item.priority && (
+          <Text
+            style={[
+              styles.taskPriority,
+              darkMode && styles.darkModeText,
+              getPriorityStyle(item.priority || 'Low'), // Provide a default priority
+            ]}
+          >
+            {item.priority || 'Low'} {/* Display default priority if not set */}
+          </Text>
+        )}
+        {item.repo && (
+          <Text
+            style={[
+              styles.taskRepo,
+              darkMode && styles.darkModeText,
+            ]}
+          >
+            {item.repo}
+          </Text>
+        )}
+        {item.recurrence && (
+          <Text
+            style={[
+              styles.taskRecurrence,
+              darkMode && styles.darkModeText,
+            ]}
+          >
+            {item.recurrence}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -1212,21 +1254,6 @@ const TaskPanel = () => {
         return styles.mediumPriority;
       default: 
         return styles.lowPriority;
-    }
-  };
-
-  const getStatusStyle = (
-    status: 'Pending' | 'Running' | 'Completed' | 'Failed'
-  ) => {
-    switch (status) {
-      case 'Completed':
-        return styles.completedStatus;
-      case 'Running':
-        return styles.runningStatus;
-      case 'Failed':
-        return styles.failedStatus;
-      default:
-        return styles.pendingStatus;
     }
   };
 
@@ -1401,7 +1428,7 @@ const TaskPanel = () => {
               value={darkMode} 
               onValueChange={toggleDarkMode} 
               trackColor={{ false: "#767577", true: "#81b0ff" }}
-              thumbColor={darkMode ? "#f5dd4b" : "#f4f3f4"}
+              thumbColor={darkMode ? "#f5dd4b " : "#f4f3f4 "}
             />
           </View>
         </View>
@@ -1413,7 +1440,7 @@ const TaskPanel = () => {
           >
             <MaterialIcons name="code" size={24} color={showGithubIntegration ? "#FFFFFF" : (darkMode ? "#FFFFFF80" : "#BBBBBB")} />
           </TouchableOpacity>
- <TouchableOpacity
+          <TouchableOpacity
             style={[styles.integrationButton, showDependentTasks && styles.integrationButtonActive, darkMode && styles.darkModeIntegrationButton]}
             onPress={() => setShowDependentTasks(!showDependentTasks)}
           >
@@ -1438,30 +1465,30 @@ const TaskPanel = () => {
         <View style={styles.filterContainer}>
           <View style={styles.filterItem}>
             <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Group By:</Text>
-            <CustomPicker
+            <Picker
               selectedValue={groupBy}
               onValueChange={(itemValue) => setGroupBy(itemValue)}
-              items={[
-                { label: "None", value: "none" },
-                { label: "Priority", value: "priority" },
-                { label: "Due Date", value: "dueDate" },
-                { label: "Custom Group", value: "group" },
-              ]}
-              darkMode={darkMode}
-            />
+              style={styles.picker}
+              itemStyle={styles.pickerItem}
+            >
+              <Picker.Item label="None" value="none" />
+              <Picker.Item label="Priority" value="priority" />
+              <Picker.Item label="Due Date" value="dueDate" />
+              <Picker.Item label="Custom Group" value="group" />
+            </Picker>
           </View>
           <View style={styles.filterItem}>
             <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Sort By:</Text>
-            <CustomPicker
+            <Picker
               selectedValue={sortBy}
               onValueChange={(itemValue) => setSortBy(itemValue)}
-              items={[
-                { label: "Due Date", value: "dueDate" },
-                { label: "Priority", value: "priority" },
-                { label: "Alphabetical", value: "alphabetical" },
-              ]}
-              darkMode={darkMode}
-            />
+              style={styles.picker}
+              itemStyle={styles.pickerItem}
+            >
+              <Picker.Item label="Due Date" value="dueDate" />
+              <Picker.Item label="Priority" value="priority" />
+              <Picker.Item label="Alphabetical" value="alphabetical" />
+            </Picker>
           </View>
           <View style={styles.filterItem}>
             <Text style={[styles.filterLabel, darkMode && styles.darkModeText]}>Show Completed:</Text>
@@ -1492,11 +1519,32 @@ const TaskPanel = () => {
           </View>
 
           {showGithubIntegration && (
-            <GitHubIntegration 
-              data={githubData} 
-              isLoading={isLoadingGithub}
-              darkMode={darkMode}
-            />
+            <View style={styles.githubIntegration}>
+              <Text style={[styles.githubUsername, darkMode && styles.darkModeText]}>{githubUsername}</Text>
+              {githubData && 'bio' in githubData && (
+                <>
+                  <Text style={[styles.githubBio, darkMode && styles.darkModeText]}>{githubData.bio}</Text>
+                </>
+              )}
+              {githubData && (
+                <Text style={[styles.githubBio, darkMode && styles.darkModeText]}>{githubData.bio}</Text>
+              )}
+              {githubData && (
+                <Text style={[styles.githubStats, darkMode && styles.darkModeText]}>
+                  {githubData.public_repos} Public Repositories
+                </Text>
+              )}
+              {repositories && repositories.length > 0 && (
+                <View>
+                  <Text style={[styles.repoTitle, darkMode && styles.darkModeText]}>Repositories:</Text>
+                  {repositories.map((repo, index) => (
+                    <Text key={index} style={[styles.repoItem, darkMode && styles.darkModeText]}>
+                      {repo.name}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
           )}
 
           <FlatList
@@ -1511,7 +1559,9 @@ const TaskPanel = () => {
           />
         </KeyboardAvoidingView>
 
-        <FloatingActionButton onPress={() => setShowEditModal(true)} />
+        <TouchableOpacity onPress={() => setShowEditModal(true)} style={styles.fab}>
+          <MaterialIcons name="add" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
 
         {showSidebar && (
           <Sidebar
@@ -1523,68 +1573,261 @@ const TaskPanel = () => {
           />
         )}
 
-        <EditTaskModal
-          visible={showEditModal}
-          task={selectedTask}
-          onClose={() => setShowEditModal(false)}
-          onSave={handleSaveTask}
-          repositories={repositories}
-          allTasks={tasks}
-          darkMode={darkMode}
+<Modal
+  visible={showEditModal}
+  onRequestClose={() => setShowEditModal(false)}
+  transparent={true}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Edit Task</Text>
+        <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.closeButton}>
+          <MaterialIcons name="close" size={24} color="#000000" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.modalBody}>
+        <TextInput
+          style={styles.multilineInput}
+          value={selectedTask?.text || ''}
+          onChangeText={(text) => setSelectedTask(prevTask => prevTask ? { ...prevTask, text, completed: prevTask.completed || false } : null)}
+          placeholder="Task Name"
+          multiline={true}
         />
+        <TextInput
+          style={styles.multilineInput}
+          value={selectedTask?.description || ''}
+          onChangeText={(description) => setSelectedTask(prevTask => prevTask ? { ...prevTask, description } : null)}
+          placeholder="Task Description"
+          multiline={true}
+        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Due Date:</Text>
+          <DatePicker
+            selected={selectedTask?.dueDate ? new Date(selectedTask.dueDate) : null}
+            onChange={(date) => setSelectedTask(prevTask => prevTask ? { ...prevTask, dueDate: date?.toISOString() } : null)}
+            placeholderText="Select a date"
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Priority:</Text>
+          <Picker
+            selectedValue={selectedTask?.priority || 'Low'}
+            onValueChange={(itemValue) => setSelectedTask(prevTask => prevTask ? { ...prevTask, priority: itemValue } : null)}
+            style={styles.picker}
+            itemStyle={styles.pickerItem}
+          >
+            <Picker.Item label="Low" value="Low" />
+            <Picker.Item label="Medium" value="Medium" />
+            <Picker.Item label="High" value="High" />
+          </Picker>
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Repository:</Text>
+          <Picker
+            selectedValue={selectedTask?.repo || ''}
+            onValueChange={(itemValue) => setSelectedTask(prevTask => prevTask ? { ...prevTask, repo: itemValue } : null)}
+            style={styles.picker}
+            itemStyle={styles.pickerItem}
+          >
+            <Picker.Item label="None" value="" />
+            {repositories.map((repo) => (
+              <Picker.Item key={repo.id} label={repo.name} value={repo.name} />
+            ))}
+          </Picker>
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Recurrence:</Text>
+          <Picker
+            selectedValue={selectedTask?.recurrence || ''}
+            onValueChange={(itemValue) => setSelectedTask(prevTask => prevTask ? { ...prevTask, recurrence: itemValue } : null)}
+            style={styles.picker}
+            itemStyle={styles.pickerItem}
+          >
+            <Picker.Item label="None" value="" />
+            <Picker.Item label="Daily" value="daily" />
+            <Picker.Item label="Weekly" value="weekly" />
+            <Picker.Item label="Monthly" value="monthly" />
+            <Picker.Item label="Yearly" value="yearly" />
+          </Picker>
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Dependencies:</Text>
+          <FlatList
+            data={tasks}
+            keyExtractor={(task) => task.id.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.dependencyItem,
+                  darkMode && styles.darkModeDependencyItem,
+                  selectedTask?.dependencies?.includes(item.id) && styles.dependencyItemSelected,
+                ]}
+                onPress={() => {
+                  setSelectedTask(prevTask => {
+                    if (!prevTask) return null;
+                    const newDependencies = prevTask.dependencies?.includes(item.id)
+                      ? prevTask.dependencies.filter((id) => id !== item.id)
+                      : [...(prevTask.dependencies || []), item.id];
+                    return { ...prevTask, dependencies: newDependencies };
+                  });
+                }}
+              >
+                <Text style={[styles.dependencyItemText, darkMode && styles.darkModeText]}>{item.text}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+        <TouchableOpacity onPress={() => handleSaveTask(selectedTask!)} style={styles.saveButton}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
 
-        <AGiXTModal
+        <Modal
           visible={showAGiXTModal}
-          onClose={() => setShowAGiXTModal(false)}
-          onAgentSelect={(agent, chain, input) => {
-            handleAgentSelect(agent, chain, input);
-            if (selectedTaskForAGiXT) {
-              handleRunChain(selectedTaskForAGiXT);
-            }
-          }}
-          chains={chains}
-          agents={agents}
-          selectedAgent={selectedAgent}
-          setSelectedAgent={setSelectedAgent}
-          darkMode={darkMode}
-          showAlert={showAlert} 
-          getAgents={getAgents}
-          getChains={getChains}
-        />
+          onRequestClose={() => setShowAGiXTModal(false)}
+          transparent={true}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>AGiXT Options</Text>
+                <TouchableOpacity onPress={() => setShowAGiXTModal(false)} style={styles.closeButton}>
+                  <MaterialIcons name="close" size={24} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.modalBody}>
+                <Picker
+                  selectedValue={selectedAgent}
+                  onValueChange={(itemValue) => setSelectedAgent(itemValue)}
+                  style={styles.picker}
+                  itemStyle={styles.pickerItem}
+                >
+                  {agents.map((agent) => (
+                    <Picker.Item key={agent.name} label={agent.name} value={agent.name} />
+                  ))}
+                </Picker>
+                <Picker
+                  selectedValue={chains[0]}
+                  onValueChange={(itemValue) => console.log(itemValue)}
+                  style={styles.picker}
+                  itemStyle={styles.pickerItem}
+                >
+                  {chains.map((chain) => (
+                    <Picker.Item key={chain} label={chain} value={chain} />
+                  ))}
+                </Picker>
+                <TextInput
+                  style={styles.chainInput}
+                  placeholder="Input for chain"
+                  onChangeText={(text) => console.log(text)}
+                />
+                <TouchableOpacity onPress={() => handleAgentSelect(selectedAgent, chains[0], '')} style={styles.saveButton}>
+                  <Text style={styles.buttonText}>Run Chain</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
-        <AGiXTOptionsModal
+        <Modal
           visible={showAGiXTOptionsModal}
-          onClose={() => setShowAGiXTOptionsModal(false)}
-          onOptionSelect={handleAGiXTOptionSelect}
-          darkMode={darkMode}
-        />
+          onRequestClose={() => setShowAGiXTOptionsModal(false)}
+          transparent={true}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>AGiXT Options</Text>
+                <TouchableOpacity onPress={() => setShowAGiXTOptionsModal(false)} style={styles.closeButton}>
+                  <MaterialIcons name="close" size={24} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.modalBody}>
+                <TouchableOpacity onPress={() => handleAGiXTOptionSelect('getSubtasks')} style={styles.modalOption}>
+                  <Text style={styles.modalOptionText}>Generate Subtasks</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleAGiXTOptionSelect('runChain')} style={styles.modalOption}>
+                  <Text style={styles.modalOptionText}>Run Chain</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
-        <SubtaskClarificationModal
+        <Modal
           visible={showSubtaskClarificationModal}
-          onClose={() => setShowSubtaskClarificationModal(false)}
-          onContinue={handleGetSubtasks}
-          clarificationText={subtaskClarificationText}
-          onChangeClarificationText={setSubtaskClarificationText}
-          isLoading={isLoading}
-          darkMode={darkMode}
-        />
+          onRequestClose={() => setShowSubtaskClarificationModal(false)}
+          transparent={true}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Subtask Clarification</Text>
+                <TouchableOpacity onPress={() => setShowSubtaskClarificationModal(false)} style={styles.closeButton}>
+                  <MaterialIcons name="close" size={24} color="#000000" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.modalBody}>
+                <TextInput
+                  style={styles.clarificationInput}
+                  value={subtaskClarificationText}
+                  onChangeText={setSubtaskClarificationText}
+                  placeholder="Additional context for subtask generation"
+                  multiline={true}
+                />
+                <TouchableOpacity onPress={handleGetSubtasks} style={styles.saveButton}>
+                  <Text style={styles.buttonText}>Generate Subtasks</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
-        <AlertModal
+        <Modal
           visible={showAlertModal}
-          title={alertTitle}
-          message={alertMessage}
-          onClose={() => setShowAlertModal(false)}
-          darkMode={darkMode}
-        />
+          onRequestClose={() => setShowAlertModal(false)}
+          transparent={true}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{alertTitle}</Text>
+              </View>
+              <View style={styles.modalBody}>
+                <Text style={styles.alertMessage}>{alertMessage}</Text>
+                <TouchableOpacity onPress={() => setShowAlertModal(false)} style={styles.saveButton}>
+                  <Text style={styles.buttonText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
-        <ChatSidebar
+        <Modal
           visible={showChatSidebar}
-          onClose={() => setShowChatSidebar(false)}
-          uri={interactiveUri || ""}
-          darkMode={darkMode}
-        />
+          onRequestClose={() => setShowChatSidebar(false)}
+          transparent={true}
+        >
+          <View style={styles.chatSidebar}>
+            <TouchableOpacity onPress={() => setShowChatSidebar(false)} style={styles.closeChatButton}>
+              <MaterialIcons name="close" size={24} color="#000000" />
+            </TouchableOpacity>
+            <WebView
+              source={{ uri: interactiveUri }}
+              style={styles.webView}
+            />
+          </View>
+        </Modal>
 
-        {isLoading && <LoadingOverlay darkMode={darkMode} />}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3498DB" />
+          </View>
+        )}
       </LinearGradient>
     </SafeAreaView>
   );
@@ -1602,6 +1845,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  taskListTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 10,
+  },
+  highlightText: {
+    color: '#3498DB',
+    fontWeight: 'bold',
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  viewToggleButton: {
+    padding: 10,
+    backgroundColor: '#3498DB',
+    borderRadius: 5,
+  },
+  taskColumns: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 
   // Header Styles
@@ -1731,7 +1998,7 @@ const styles = StyleSheet.create({
 
   // Task Item Styles (from the first code)
   taskItem: {
-    backgroundColor: '#FFFFFF',
+ backgroundColor: '#FFFFFF',
     padding: 15,
     marginBottom: 10,
     borderRadius: 10,
@@ -1761,7 +2028,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginTop: 5,
   },
-  taskDetails: {
+  details: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
@@ -1775,6 +2042,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 5,
+  },
+  taskRepo: {
+    color: '#666666',
+    marginRight: 10,
+  },
+  taskRecurrence: {
+    color: '#666666',
+    marginRight: 10,
   },
   taskStatus: {
     paddingHorizontal: 5,
@@ -1941,27 +2216,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',  
     borderRadius: 5,
-   marginBottom: 10,
+    marginBottom: 10,
     backgroundColor: '#FFFFFF', // Add this line
   },
   darkModePickerContainer: {
     borderColor: '#555',
-    backgroundColor: '#333333', // Addthis line
+    backgroundColor: '#333333', // Add this line
   },
   picker: {
     height: 40,
     color: '#000000',
     width: '100%', // Add this line
-   },
-   darkModePicker: {
+  },
+  darkModePicker: {
     color: '#FFFFFF',
   },
   pickerItem: {
-    color: darkMode ? '#FFFFFF' : '#000000', // Update this line}
+    color: '#000000', // Update this line
   },
-   darkModePickerItem: {
+  darkModePickerItem: {
     color: '#FFFFFF',
-   },
+  },
 
   // Date Picker Styles
   datePickerButton: {
@@ -2079,14 +2354,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  actionButton: {
+  actionButtonContainer: {
     padding: 5,
   },
 
   // Link Styles
   link: {
     color: '#3498DB',
-    textDecorationLine : 'underline',
+    textDecorationLine: 'underline',
   },
 
   // Sidebar Styles
@@ -2096,9 +2371,8 @@ const styles = StyleSheet.create({
     left: 0,
     width: width * 0.75,
     height: height,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    padding: 20,
-    paddingTop: 50,
+    backgroundColor: '#FFFFFF',
+    zIndex: 1000,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -2109,7 +2383,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   darkModeSidebar: {
-    backgroundColor: 'rgba(52, 52, 52, 0.95)',
+    backgroundColor: '#333333',
   },
   sidebarTitle: {
     fontSize: 24,
@@ -2284,7 +2558,6 @@ const styles = StyleSheet.create({
   },
   alertButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: 'bold',
   },
 
@@ -2457,7 +2730,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   taskDetailsInfoLabel: {
-    fontSize : 16,
+    fontSize: 16,
     fontWeight: 'bold',
     marginRight: 10,
   },
