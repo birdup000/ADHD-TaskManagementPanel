@@ -14,14 +14,17 @@ import {
   FaCog,
   FaEllipsisH,
   FaTrash,
+  FaEdit,
 } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import LocalForage from 'localforage';
 import { FaArrowLeft, FaArrowRight, FaCheck } from 'react-icons/fa';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 // Define Task interface
 interface Task {
   id: number;
+  projectId: number; // Add this
   task: string;
   isComplete: boolean;
   description: string;
@@ -41,6 +44,24 @@ interface Credentials {
   key: string;
 }
 
+const resizeHandleStyles = {
+  padding: "0 4px",
+  backgroundColor: "#1f2937", // gray-800
+};
+
+const ResizeHandle = () => (
+  <PanelResizeHandle className="group flex items-center justify-center" style={{ width: '12px' }}>
+    <div 
+      className="w-1.5 h-16 rounded-full bg-gray-600 group-hover:bg-blue-500 group-active:bg-blue-600 cursor-col-resize transition-colors"
+    >
+      <div className="flex flex-col gap-1.5 h-full items-center justify-center">
+        <div className="w-0.5 h-4 bg-gray-400 rounded group-hover:bg-blue-300" />
+        <div className="w-0.5 h-4 bg-gray-400 rounded group-hover:bg-blue-300" />
+      </div>
+    </div>
+  </PanelResizeHandle>
+);
+
 const Page: NextPage = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -56,6 +77,40 @@ const Page: NextPage = () => {
   const [newTask, setNewTask] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
+
+  const [draggedProject, setDraggedProject] = useState<Project | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+
+  // Add task reorder handlers
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+
+  const handleTaskDragStart = (e: React.DragEvent, task: Task) => {
+    setDraggedTask(task);
+    e.currentTarget.classList.add('opacity-50');
+  };
+
+  const handleTaskDragEnd = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('opacity-50');
+    setDraggedTask(null);
+  };
+
+  const handleTaskDragOver = (e: React.DragEvent, task: Task) => {
+    e.preventDefault();
+    if (!draggedTask || draggedTask.id === task.id) return;
+    
+    const newTasks = [...tasks];
+    const draggedIndex = tasks.findIndex(t => t.id === draggedTask.id);
+    const dropIndex = tasks.findIndex(t => t.id === task.id);
+    
+    // Only allow vertical movement (adjacent positions)
+    if (Math.abs(draggedIndex - dropIndex) !== 1) return;
+    
+    newTasks.splice(draggedIndex, 1);
+    newTasks.splice(dropIndex, 0, draggedTask);
+    
+    setTasks(newTasks);
+    LocalForage.setItem('tasks', newTasks);
+  };
 
   useEffect(() => {
     LocalForage.config({
@@ -111,18 +166,15 @@ const Page: NextPage = () => {
   };
 
   const handleAddTask = async () => {
-    if (!newTask.trim()) {
-      console.error('Cannot add an empty task');
-      return;
-    }
-    if (!selectedProject) {
-      console.error('No project selected');
+    if (!newTask.trim() || !selectedProject) {
+      console.error('Cannot add task: missing name or project');
       return;
     }
     try {
       const taskId = Date.now(); // Generate a unique ID
       const newTaskData: Task = {
         id: taskId,
+        projectId: selectedProject.id, // Add project ID
         task: newTask.trim(),
         description: newTaskDescription.trim(),
         isComplete: false,
@@ -171,16 +223,90 @@ const Page: NextPage = () => {
   const handleMoveTaskToStage = async (taskId: number, stage: 'toDo' | 'inProgress' | 'completed') => {
     try {
       const updatedTasks = tasks.map((task) =>
-        task.id === taskId
-       ? {...task, stage }
-          : task
+        task.id === taskId ? { ...task, stage } : task
       );
       setTasks(updatedTasks);
+      
+      // Update selected task if it's the one being moved
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask({ ...selectedTask, stage });
+      }
+      
       await LocalForage.setItem('tasks', updatedTasks);
     } catch (error) {
       console.error('Error moving task to stage:', error);
     }
   };
+
+  const handleDragStart = (e: React.DragEvent, taskId: number) => {
+    e.dataTransfer.setData('taskId', taskId.toString());
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+  
+  const handleDrop = (e: React.DragEvent, targetStage: 'toDo' | 'inProgress' | 'completed') => {
+    e.preventDefault();
+    const taskId = parseInt(e.dataTransfer.getData('taskId'));
+    if (!isNaN(taskId)) {
+      handleMoveTaskToStage(taskId, targetStage);
+    }
+  };
+
+  const handleUpdateTaskStage = async (taskId: number, newStage: 'toDo' | 'inProgress' | 'completed') => {
+    try {
+      const updatedTasks = tasks.map((task) =>
+        task.id === taskId ? { ...task, stage: newStage } : task
+      );
+      setTasks(updatedTasks);
+      await LocalForage.setItem('tasks', updatedTasks);
+    } catch (error) {
+      console.error('Error updating task stage:', error);
+    }
+  };
+
+  const handleProjectDragStart = (e: React.DragEvent, project: Project) => {
+    setDraggedProject(project);
+    e.currentTarget.classList.add('opacity-50');
+  };
+  
+  const handleProjectDragEnd = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('opacity-50');
+    setDraggedProject(null);
+  };
+  
+  const handleProjectDragOver = (e: React.DragEvent, project: Project) => {
+    e.preventDefault();
+    if (!draggedProject || draggedProject.id === project.id) return;
+    
+    const newProjects = [...projects];
+    const draggedIndex = projects.findIndex(p => p.id === draggedProject.id);
+    const dropIndex = projects.findIndex(p => p.id === project.id);
+    
+    newProjects.splice(draggedIndex, 1);
+    newProjects.splice(dropIndex, 0, draggedProject);
+    
+    setProjects(newProjects);
+    LocalForage.setItem('projects', newProjects);
+  };
+  
+  const handleProjectRename = async (projectId: number, newName: string) => {
+    if (!newName.trim()) return;
+    
+    const updatedProjects = projects.map(project => 
+      project.id === projectId ? { ...project, name: newName.trim() } : project
+    );
+    
+    setProjects(updatedProjects);
+    await LocalForage.setItem('projects', updatedProjects);
+    setEditingProjectId(null);
+  };
+
+  // Filter tasks by project in render
+  const projectTasks = tasks.filter(task => 
+    selectedProject && task.projectId === selectedProject.id
+  );
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -215,12 +341,47 @@ const Page: NextPage = () => {
           {projects.map((project: Project) => (
             <li
               key={project.id}
-              onClick={() => handleSelectProject(project)}
-              className={`mb-2 cursor-pointer ${
-                selectedProject?.id === project.id? 'text-blue-500' : ''
-              }`}
+              draggable="true"
+              onDragStart={(e) => handleProjectDragStart(e, project)}
+              onDragEnd={handleProjectDragEnd}
+              onDragOver={(e) => handleProjectDragOver(e, project)}
+              className={`mb-2 flex items-center justify-between p-2 rounded cursor-move 
+                ${selectedProject?.id === project.id ? 'bg-gray-700' : 'hover:bg-gray-800'}
+                transition-colors duration-200`}
             >
-              {project.name}
+              <div className="flex items-center gap-2 flex-1">
+                {editingProjectId === project.id ? (
+                  <input
+                    type="text"
+                    defaultValue={project.name}
+                    className="bg-gray-700 px-2 py-1 rounded text-white w-full"
+                    onBlur={(e) => handleProjectRename(project.id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleProjectRename(project.id, e.currentTarget.value);
+                      } else if (e.key === 'Escape') {
+                        setEditingProjectId(null);
+                      }
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <>
+                    <span 
+                      onClick={() => handleSelectProject(project)}
+                      className="flex-1"
+                    >
+                      {project.name}
+                    </span>
+                    <button
+                      onClick={() => setEditingProjectId(project.id)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-white"
+                    >
+                      <FaEdit size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
             </li>
           ))}
           <li className="flex items-center mb-2">
@@ -242,240 +403,191 @@ const Page: NextPage = () => {
       </div>
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-700 flex justify-between">
-          <h1 className="text-xl font-bold">
+        {/* Header - Remove border-b and adjust styling */}
+        <div className="p-4 flex justify-between">
+          <h1 className="text-xl font-bold text-gray-200">
             {selectedProject?.name || 'Task Dashboard'}
           </h1>
           <div className="flex items-center">
-            <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2">
+            <button className="bg-blue-500 text-white px-4 py-2 rounded mr-2 hover:bg-blue-600 transition-colors">
               New Task
             </button>
-            <FaEllipsisH size={24} />
+            <FaEllipsisH size={24} className="text-gray-400 hover:text-gray-300 cursor-pointer" />
           </div>
         </div>
+
         {/* Content */}
         <div className="flex flex-1">
-          {/* Task List */}
-          <div className="w-2/3 p-4 bg-gray-800 rounded-xl shadow-md">
-            <h2 className="text-2xl font-bold mb-4 text-white">Tasks</h2>
-            <div className="flex items-center mb-4">
-              <input
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                placeholder="Task Name"
-                className="flex-1 p-2 bg-gray-700 rounded text-white mr-2"
-              />
-              <input
-                value={newTaskDescription}
-                onChange={(e) => setNewTaskDescription(e.target.value)}
-                placeholder="Description"
-                className="flex-1 p-2 bg-gray-700 rounded text-white mr-2"
-              />
-              <button
-                onClick={handleAddTask}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
-                style={{ minWidth: '100px' }} // Added minimum width for better visibility
-              >
-                Add Task
-              </button>
-            </div>
-            <ul>
-              {tasks.map((task) => (
-                <li
-                  key={task.id}
-                  className={`mb-2 p-4 flex justify-between items-center rounded-lg ${
-                    task.isComplete
-                   ? "bg-green-500 text-white"
-                      : "bg-gray-700 text-white hover:bg-gray-600"
-                  }`}
-                  onClick={() => handleSelectTask(task)}
-                >
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={task.isComplete}
-                      onChange={() => handleToggleTaskCompletion(task.id)}
-                      className="mr-2"
-                    />
-                    <span
-                      className={` ${
-                        task.isComplete? "line-through" : ""
-                      } text-lg`}
-                    >
-                      {task.task}
-                    </span>
-                  </div>
-                  <FaTrash
-                    size={16}
-                    className="text-red-500 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveTask(task.id);
-                    }}
-                    style={{ marginLeft: 'auto' }} // Added margin to push to the right
+          <PanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+            {/* Task List */}
+            <Panel defaultSize={25} minSize={20} className="overflow-hidden">
+              <div className="h-full p-4 bg-gray-800 rounded-xl shadow-md overflow-auto">
+                <h2 className="text-2xl font-bold mb-4 text-white">Tasks</h2>
+                <div className="flex items-center mb-4">
+                  <input
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    placeholder="Task Name"
+                    className="flex-1 p-2 bg-gray-700 rounded text-white mr-2"
                   />
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Kanban Board */}
-          <div className="flex-1 p-4 bg-gray-800 rounded-xl shadow-md mt-8">
-            <h2 className="text-2xl font-bold mb-4 text-white">Kanban Board</h2>
-            <div className="flex" style={{ height: 'calc(100vh - 250px)', overflowY: 'auto' }}>
-              {[
-                { stage: "toDo", title: "To Do", color: "bg-red-500" },
-                { stage: "inProgress", title: "In Progress", color: "bg-yellow-500" },
-                { stage: "completed", title: "Completed", color: "bg-green-500" },
-              ].map((column) => (
-                <div
-                  key={column.stage}
-                  className={`bg-gray-700 p-4 rounded-lg ${column.color} text-white`}
-                  style={{ minWidth: '250px', flex: 1, marginRight: '16px' }}
-                >
-                  <h3 className="text-lg font-bold mb-2">{column.title}</h3>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, overflowY: 'auto' }}>
-                    {tasks
-                     .filter((task) => task.stage === column.stage)
-                     .map((task) => (
-                        <li key={task.id} className="mb-2 p-4 flex justify-between items-center rounded-lg bg-gray-800 hover:bg-gray-600 relative" style={{ lineHeight: '1.5' }}>
-                          <span className="text-lg" style={{ maxWidth: '60%', marginRight: '16px', display: 'inline-block', verticalAlign: 'middle' }}>{task.task}</span>
-                          <div className="absolute right-4 top-4 flex space-x-2" style={{ top: '50%', transform: 'translateY(-50%)' }}>
-                            {column.stage!== "toDo" && (
-                              <button
-                                onClick={() => handleMoveTaskToStage(task.id, "toDo")}
-                                className="bg-gray-500 text-xs px-2 py-1 rounded text-sm hover:bg-gray-600"
-                                title="Move to To Do"
-                                style={{ lineHeight: '1.2', padding: '4px 8px' }}
-                              >
-                                <FaArrowLeft size={8} /> To Do <span className="hidden md:inline">To Do</span>
-                              </button>
-                            )}
-                            {column.stage === "toDo" && (
-                              <button
-                                onClick={() => handleMoveTaskToStage(task.id, "inProgress")}
-                                className="bg-yellow-500 text-xs px-2 py-1 rounded text-sm hover:bg-yellow-600"
-                                title="Move to In Progress"
-                                style={{ lineHeight: '1.2', padding: '4px 8px' }}
-                              >
-                                <FaArrowRight size={8} /> In Progress <span className="hidden md:inline">In Progress</span>
-                              </button>
-                            )}
-                            {column.stage === "inProgress" && (
-                              <>
-                                <button
-                                  onClick={() => handleMoveTaskToStage(task.id, "toDo")}
-                                  className="bg-gray-500 text-xs px-2 py-1 rounded text-sm hover:bg-gray-600"
-                                  title="Move to To Do"
-                                  style={{ lineHeight: '1.2', padding: '4px 8px' }}
-                                >
-                                  <FaArrowLeft size={8} /> To Do <span className="hidden md:inline">To Do</span>
-                                </button>
-                                <button
-                                  onClick={() => handleMoveTaskToStage(task.id, "completed")}
-                                  className="bg-green-500 text-xs px-2 py-1 rounded text-sm hover:bg-green-600"
-                                  title="Move to Completed"
-                                  style={{ lineHeight: '1.2', padding: '4px 8px' }}
-                                >
-                                  <FaArrowRight size={8} /> Completed <span className="hidden md:inline">Completed</span>
-                                </button>
-                              </>
-                            )}
-                            {column.stage === "completed" && (
-                              <button
-                                onClick={() => handleMoveTaskToStage(task.id, "inProgress")}
-                                className="bg-yellow-500 text-xs px-2 py-1 rounded text-sm hover:bg-yellow-600"
-                                title="Move to In Progress"
-                                style={{ lineHeight: '1.2', padding: '4px 8px' }}
-                              >
-                                <FaArrowLeft size={8} /> In Progress <span className="hidden md:inline">In Progress</span>
-                              </button>
-                            )}
-                            <FaTrash
-                              size={12}
-                              className="text-red-500 cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveTask(task.id);
-                              }}
-                              title="Delete Task"
-                            />
-                          </div>
-                        </li>
-                      ))}
-                  </ul>
+                  <input
+                    value={newTaskDescription}
+                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                    placeholder="Description"
+                    className="flex-1 p-2 bg-gray-700 rounded text-white mr-2"
+                  />
+                  <button
+                    onClick={handleAddTask}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    style={{ minWidth: '100px' }} // Added minimum width for better visibility
+                  >
+                    Add Task
+                  </button>
                 </div>
-              ))}
-            </div>
-          </div>
-          {/* Task Details */}
-          <div className="w-1/3 p-4 border-l border-gray-700">
-            {selectedTask? (
-              <>
-                <h2 className="text-2xl font-bold mb-2">Task Details</h2>
-                <p>
-                  <span className="font-bold">Name:</span> {selectedTask.task}
-                </p>
-                <p>
-                  <span className="font-bold">Description:</span>{' '}
-                  {selectedTask.description}
-                </p>
-                <p>
-                  <span className="font-bold">Due Date:</span>{' '}
-                  {selectedTask.dueDate || 'None'}
-                </p>
-                <p>
-                  <span className="font-bold">Status:</span>{' '}
-                  {selectedTask.isComplete? 'Completed' : 'Pending'}
-                </p>
-              </>
-            ) : (
-              <p>Select a task to view its details</p>
-            )}
-          </div>
-          {/* Automation Panel */}
-          <div className="w-1/4 bg-gray-900 p-4 border-l border-gray-700">
-            <h2 className="text-2xl font-bold mb-4">Automation</h2>
-            <div className="mb-4">
-              <label htmlFor="agent-selection" className="block text-sm font-bold mb-2">
-                Select Agent:
-              </label>
-              <select
-                id="agent-selection"
-                className="w-full p-2 bg-gray-800 rounded text-white mb-4"
-              >
-                <option value="agent-1">Agent 1</option>
-                <option value="agent-2">Agent 2</option>
-                <option value="agent-3">Agent 3</option>
-              </select>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="automation-type" className="block text-sm font-bold mb-2">
-                Select Automation Type:
-              </label>
-              <select
-                id="automation-type"
-                className="w-full p-2 bg-gray-800 rounded text-white mb-4"
-              >
-                <option value="run-chain">Run Chain</option>
-                <option value="run-prompt">Run Prompt</option>
-              </select>
-            </div>
-            <div className="mb-4">
-              <label htmlFor="automation-input" className="block text-sm font-bold mb-2">
-                Input:
-              </label>
-              <textarea
-                id="automation-input"
-                rows={4}
-                placeholder="Enter your prompt or chain..."
-                className="w-full p-2 bg-gray-800 rounded text-white mb-4"
-              ></textarea>
-            </div>
-            <button className="bg-blue-500 text-white px-4 py-2 rounded w-full">
-              Execute
-            </button>
-          </div>
+                <ul>
+                  {projectTasks.map((task) => (
+                    <li 
+                      key={task.id} 
+                      className="mb-2 p-3 flex flex-col gap-2 rounded-lg bg-gray-800 hover:bg-gray-600 cursor-move"
+                      draggable="true"
+                      onDragStart={(e) => handleTaskDragStart(e, task)}
+                      onDragEnd={handleTaskDragEnd}
+                      onDragOver={(e) => handleTaskDragOver(e, task)}
+                      onClick={() => setSelectedTask(task)} // Add click handler
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={task.isComplete}
+                          onChange={() => handleToggleTaskCompletion(task.id)}
+                          className="mr-2"
+                          onClick={(e) => e.stopPropagation()} // Prevent task selection on checkbox click
+                        />
+                        <span className={task.isComplete ? "line-through" : ""}>
+                          {task.task}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Panel>
+
+            <ResizeHandle />
+
+            {/* Kanban Board */}
+            <Panel defaultSize={50} minSize={30} className="overflow-hidden">
+              <div className="h-full p-4 bg-gray-800 rounded-xl shadow-md overflow-auto">
+                <h2 className="text-2xl font-bold mb-4 text-white">Kanban Board</h2>
+                <div className="flex" style={{ height: 'calc(100vh - 250px)', overflowY: 'auto' }}>
+                  {[
+                    { stage: "toDo" as 'toDo', title: "To Do", color: "bg-red-500" },
+                      { stage: "inProgress" as 'inProgress', title: "In Progress", color: "bg-yellow-500" },
+                      { stage: "completed" as 'completed', title: "Completed", color: "bg-green-500" },
+                  ].map((column) => (
+                    <div
+                      key={column.stage}
+                      className={`bg-gray-700 p-4 rounded-lg ${column.color} text-white transition-colors duration-200`}
+                      style={{ minWidth: '250px', flex: 1, marginRight: '16px' }}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, column.stage)}
+                    >
+                      <h3 className="text-lg font-bold mb-2">{column.title}</h3>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, overflowY: 'auto' }}>
+                        {projectTasks  // Change from tasks to projectTasks
+                         .filter((task) => task.stage === column.stage)
+                         .map((task) => (
+                            <li 
+                              key={task.id} 
+                              className="mb-2 p-3 flex flex-col gap-2 rounded-lg bg-gray-800 hover:bg-gray-600 cursor-move"
+                              draggable="true"
+                              onDragStart={(e) => handleDragStart(e, task.id)}
+                            >
+                              {/* Task Content */}
+                              <span className="text-lg break-words">{task.task}</span>
+                              
+                              {/* Action Buttons */}
+                              <div className="flex items-center gap-2">
+                                {column.stage === "inProgress" && (
+                                  <button
+                                    onClick={() => handleMoveTaskToStage(task.id, "toDo")}
+                                    className="bg-gray-500 text-xs px-2 py-1 rounded hover:bg-gray-600"
+                                    title="Move to To Do"
+                                  >
+                                    <FaArrowLeft size={8} className="inline mr-1" /> To Do
+                                  </button>
+                                )}
+                                
+                                {column.stage === "toDo" && (
+                                  <button
+                                    onClick={() => handleMoveTaskToStage(task.id, "inProgress")}
+                                    className="bg-yellow-500 text-xs px-2 py-1 rounded hover:bg-yellow-600"
+                                    title="Move to In Progress"
+                                  >
+                                    <FaArrowRight size={8} className="inline mr-1" /> In Progress
+                                  </button>
+                                )}
+                                
+                                {column.stage === "completed" && (
+                                  <button
+                                    onClick={() => handleMoveTaskToStage(task.id, "inProgress")}
+                                    className="bg-yellow-500 text-xs px-2 py-1 rounded hover:bg-yellow-600"
+                                    title="Move to In Progress"
+                                  >
+                                    <FaArrowLeft size={8} className="inline mr-1" /> In Progress
+                                  </button>
+                                )}
+                                
+                                {column.stage === "inProgress" && (
+                                  <button
+                                    onClick={() => handleMoveTaskToStage(task.id, "completed")}
+                                    className="bg-green-500 text-xs px-2 py-1 rounded hover:bg-green-600"
+                                    title="Move to Completed"
+                                  >
+                                    <FaArrowRight size={8} className="inline mr-1" /> Completed
+                                  </button>
+                                )}
+                                
+                                <FaTrash
+                                  size={12}
+                                  className="text-red-500 cursor-pointer ml-auto"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTask(task.id);
+                                  }}
+                                  title="Delete Task"
+                                />
+                              </div>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Panel>
+
+            <ResizeHandle />
+
+            {/* Task Details */}
+            <Panel defaultSize={25} minSize={20} className="overflow-hidden">
+              <div className="h-full p-4 bg-gray-800 rounded-xl shadow-md border-l border-gray-700 overflow-auto">
+                {selectedTask ? (
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold mb-4">Task Details</h2>
+                    <p><span className="font-bold">Name:</span> {selectedTask.task}</p>
+                    <p><span className="font-bold">Description:</span> {selectedTask.description}</p>
+                    <p><span className="font-bold">Status:</span> {selectedTask.stage}</p>
+                    <p><span className="font-bold">Due Date:</span> {selectedTask.dueDate || 'Not set'}</p>
+                    
+                    {/* Add status update buttons if needed */}
+                  </div>
+                ) : (
+                  <p className="text-gray-400">Select a task to view details</p>
+                )}
+              </div>
+            </Panel>
+          </PanelGroup>
         </div>
       </div>
     </div>
