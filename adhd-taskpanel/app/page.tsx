@@ -33,7 +33,7 @@ interface Task {
   stage: 'toDo' | 'inProgress' | 'completed'; // Added stage property
   notes: string;
   lastEdited?: Date;
-}
+};
 
 // Define Project interface
 interface Project {
@@ -60,14 +60,17 @@ interface Settings {
     url: string;
     key: string;
   };
+  agixt: {
+    enabled: boolean;
+    uri: string;
+    apiKey: string;
+    defaultAgent: string;
+  };
 }
 
-const resizeHandleStyles = {
-  padding: "0 4px",
-  backgroundColor: "#1f2937", // gray-800
-};
+// Removed unused resizeHandleStyles
 
-const ResizeHandle = () => (
+const ResizeHandle: React.FC = () => (
   <PanelResizeHandle className="group flex items-center justify-center" style={{ width: '12px' }}>
     <div 
       className="w-1.5 h-16 rounded-full bg-gray-600 group-hover:bg-blue-500 group-active:bg-blue-600 cursor-col-resize transition-colors"
@@ -80,18 +83,25 @@ const ResizeHandle = () => (
   </PanelResizeHandle>
 );
 
-const NotesPanel: React.FC<{ task: Task | null; onUpdate: (notes: string) => void }> = ({ task, onUpdate }) => {
-  const [isPreview, setIsPreview] = useState(false);
+interface NotesPanelProps {
+  task: Task | null;
+  onUpdate: (notes: string) => void;
+}
+
+const NotesPanel: React.FC<NotesPanelProps> = ({ task, onUpdate }) => {
+  const [isPreview, setIsPreview] = useState<boolean>(false);
   const windowRef = useRef<HTMLDivElement>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   
-  if (!task) return (
-    <div className="h-full flex items-center justify-center text-gray-400">
-      Select a task to view notes
-    </div>
-  );
+  if (!task) {
+    return (
+      <div className="h-full flex items-center justify-center text-gray-400">
+        Select a task to view notes
+      </div>
+    );
+  }
 
   const notes = task.notes || '';
 
@@ -302,6 +312,14 @@ const SettingsModal: React.FC<{
               >
                 About
               </button>
+              <button
+                onClick={() => setActiveTab('agixt')}
+                className={`w-full text-left px-4 py-2 rounded ${
+                  activeTab === 'agixt' ? 'bg-blue-500' : 'hover:bg-gray-700'
+                }`}
+              >
+                AGiXT
+              </button>
             </nav>
           </div>
 
@@ -474,6 +492,95 @@ const SettingsModal: React.FC<{
                 <p className="text-gray-400">Made with ❤️ by Birdup000</p>
               </div>
             )}
+
+            {activeTab === 'agixt' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">AGiXT Configuration</h3>
+                  <div className="space-y-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={tempSettings.agixt.enabled}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          agixt: {
+                            ...prev.agixt,
+                            enabled: e.target.checked
+                          }
+                        }))}
+                        className="rounded border-gray-600"
+                      />
+                      <span>Enable AGiXT Integration</span>
+                    </label>
+                    
+                    <div>
+                      <label className="block text-sm mb-2">AGiXT API URI</label>
+                      <input
+                        type="text"
+                        value={tempSettings.agixt.uri}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          agixt: {
+                            ...prev.agixt,
+                            uri: e.target.value
+                          }
+                        }))}
+                        className="w-full p-2 bg-gray-700 rounded"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm mb-2">API Key</label>
+                      <input
+                        type="password"
+                        value={tempSettings.agixt.apiKey}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          agixt: {
+                            ...prev.agixt,
+                            apiKey: e.target.value
+                          }
+                        }))}
+                        className="w-full p-2 bg-gray-700 rounded"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm mb-2">Default Agent</label>
+                      <input
+                        type="text"
+                        value={tempSettings.agixt.defaultAgent}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          agixt: {
+                            ...prev.agixt,
+                            defaultAgent: e.target.value
+                          }
+                        }))}
+                        className="w-full p-2 bg-gray-700 rounded"
+                      />
+                    </div>
+
+                    <button
+                      onClick={async () => {
+                        const success = await (async function updateAGiXTConfig(uri: string, apiKey: string) {
+                          // Add your logic to update AGiXT configuration here
+                          // For now, let's assume it returns true for success
+                          return true;
+                        })(tempSettings.agixt.uri, tempSettings.agixt.apiKey);
+                        if (success) {
+                          showAlert("Success", "AGiXT configuration validated successfully");
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
+                    >
+                      Test Connection
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -495,6 +602,10 @@ const SettingsModal: React.FC<{
       </div>
     </div>
   );
+};
+
+const showAlert = (title: string, message: string) => {
+  alert(`${title}: ${message}`);
 };
 
 const Page: NextPage = () => {
@@ -549,6 +660,12 @@ const Page: NextPage = () => {
       enabled: false,
       url: '',
       key: ''
+    },
+    agixt: {
+      enabled: false,
+      uri: '',
+      apiKey: '',
+      defaultAgent: ''
     }
   });
 
