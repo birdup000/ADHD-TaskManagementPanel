@@ -22,6 +22,7 @@ import { FaArrowLeft, FaArrowRight, FaCheck } from 'react-icons/fa';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useRef } from 'react';
 
+
 // Define Task interface
 interface Task {
   id: number;
@@ -68,6 +69,18 @@ interface Settings {
   };
 }
 
+// Types for document structure
+interface NotesDocument {
+  id: string;
+  title: string;
+  content: string;
+  parent?: string;
+  children: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  icon?: string;
+}
+
 // Removed unused resizeHandleStyles
 
 const ResizeHandle: React.FC = () => (
@@ -88,153 +101,206 @@ interface NotesPanelProps {
   onUpdate: (notes: string) => void;
 }
 
+// Types
+interface TextSelection {
+  start: number;
+  end: number;
+}
+
+interface EditorState {
+  content: string;
+  selection: TextSelection | null;
+}
+
+// Custom Editor Component
+const RichEditor: React.FC<{
+  value: string;
+  onChange: (content: string) => void;
+}> = ({ value, onChange }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [state, setState] = useState<EditorState>({
+    content: value,
+    selection: null
+  });
+
+  const execCommand = (command: string, value: string = '') => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const Toolbar = () => (
+    <div className="flex gap-2 p-2 border-b border-gray-700">
+      <button onClick={() => execCommand('bold')} className="p-1 hover:bg-gray-700 rounded">
+        <strong>B</strong>
+      </button>
+      <button onClick={() => execCommand('italic')} className="p-1 hover:bg-gray-700 rounded">
+        <em>I</em>
+      </button>
+      <button onClick={() => execCommand('underline')} className="p-1 hover:bg-gray-700 rounded">
+        <u>U</u>
+      </button>
+      <div className="w-px bg-gray-700" />
+      <button onClick={() => execCommand('insertOrderedList')} className="p-1 hover:bg-gray-700 rounded">
+        1.
+      </button>
+      <button onClick={() => execCommand('insertUnorderedList')} className="p-1 hover:bg-gray-700 rounded">
+        •
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col border border-gray-700 rounded">
+      <Toolbar />
+      <div
+        ref={editorRef}
+        contentEditable
+        className="flex-1 p-4 focus:outline-none prose prose-invert max-w-none"
+        onInput={(e) => onChange(e.currentTarget.innerHTML)}
+        dangerouslySetInnerHTML={{ __html: value }}
+      />
+    </div>
+  );
+};
+
+// Modified NotesPanel component
 const NotesPanel: React.FC<NotesPanelProps> = ({ task, onUpdate }) => {
-  const [isPreview, setIsPreview] = useState<boolean>(false);
-  const windowRef = useRef<HTMLDivElement>(null);
-  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  
-  if (!task) {
-    return (
-      <div className="h-full flex items-center justify-center text-gray-400">
-        Select a task to view notes
-      </div>
-    );
-  }
+  const [documents, setDocuments] = useState<NotesDocument[]>([]);
+  const [activeDocument, setActiveDocument] = useState<NotesDocument | null>(null);
+  const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const [commandQuery, setCommandQuery] = useState('');
 
-  const notes = task.notes || '';
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-      if (!windowRef.current) return;
-      const container = windowRef.current.parentElement;
-      if (!container) return;
-      
-      const containerRect = container.getBoundingClientRect();
-      const windowRect = windowRef.current.getBoundingClientRect();
-      
-      setDragOffset({
-          x: e.clientX - windowRect.left + containerRect.left,
-          y: e.clientY - windowRect.top + containerRect.top,
-      });
-      
-      setIsDragging(true);
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+  const createNewDocument = () => {
+    const newDoc: NotesDocument = {
+      id: Date.now().toString(),
+      title: 'Untitled',
+      content: '',
+      children: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    setDocuments(prev => [...prev, newDoc]);
+    setActiveDocument(newDoc);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !windowRef.current) return;
-      
-      const container = windowRef.current.parentElement;
-      if (!container) return;
-      
-      const containerRect = container.getBoundingClientRect();
-      const windowRect = windowRef.current.getBoundingClientRect();
-      
-      let newX = e.clientX - dragOffset.x;
-      let newY = e.clientY - dragOffset.y;
-      
-      // Bound checks
-      newX = Math.max(0, Math.min(newX, containerRect.width - windowRect.width));
-      newY = Math.max(0, Math.min(newY, containerRect.height - windowRect.height));
-      
-      // Snap zones
-      const snapX = [0, containerRect.width / 3, (containerRect.width / 3) * 2];
-      const threshold = 50;
-      
-      snapX.forEach(snap => {
-        if (Math.abs(newX - snap) < threshold) {
-          newX = snap;
-        }
-      });
-      
-      setPosition({ x: newX, y: newY });
-  };
-
-  const handleMouseUp = () => {
-      setIsDragging(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+  const updateDocument = (content: string) => {
+    if (activeDocument) {
+      const updatedDoc = {
+        ...activeDocument,
+        content,
+        updatedAt: new Date()
+      };
+      setDocuments(prev => 
+        prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
+      );
+      setActiveDocument(updatedDoc);
+    }
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-800 rounded-xl overflow-hidden">
-      {/* Editor Toolbar */}
-      <div className="flex items-center justify-between p-2 bg-gray-900 border-b border-gray-700">
-        <div className="flex gap-2">
-          <button 
-            onClick={() => {
-              const textarea = document.querySelector('textarea');
-              if (!textarea) return;
-              const start = textarea.selectionStart;
-              const end = textarea.selectionEnd;
-              const text = textarea.value;
-              onUpdate(`${text.substring(0, start)}**${text.substring(start, end)}**${text.substring(end)}`);
-            }}
-            className="p-1.5 hover:bg-gray-700 rounded text-sm"
-          >
-            <strong>B</strong>
-          </button>
-          <button 
-            onClick={() => {
-              const textarea = document.querySelector('textarea');
-              if (!textarea) return;
-              const start = textarea.selectionStart;
-              const end = textarea.selectionEnd;
-              const text = textarea.value;
-              onUpdate(`${text.substring(0, start)}_${text.substring(start, end)}_${text.substring(end)}`);
-            }}
-            className="p-1.5 hover:bg-gray-700 rounded text-sm"
-          >
-            <em>I</em>-
-          </button>
-          <span className="border-r border-gray-600 mx-2" />
-          <button 
-            className="p-1.5 hover:bg-gray-700 rounded text-sm"
-            onClick={() => onUpdate(notes + '\n- ')}
-          >
-            •
-          </button>
-        </div>
-        <button 
-          onClick={() => setIsPreview(!isPreview)}
-          className={`px-3 py-1 text-sm rounded ${
-            isPreview ? 'bg-blue-500' : 'bg-gray-700'
-          }`}
-        >
-          {isPreview ? 'Edit' : 'Preview'}
-        </button>
+    <div className="h-full flex bg-gray-800">
+      {/* Document tree */}
+      <div className="w-64 border-r border-gray-700 p-4">
+        <DocumentTree 
+          documents={documents}
+          activeDoc={activeDocument?.id || null}
+          onSelect={id => setActiveDocument(documents.find(d => d.id === id) || null)}
+        />
       </div>
 
-      {/* Editor/Preview */}
-      <div className="flex-1 overflow-auto">
-        {isPreview ? (
-          <div className="p-4 prose prose-invert max-w-none">
-            {notes}
-          </div>
-        ) : (
-          <textarea
-            value={notes}
-            onChange={(e) => {
-              e.preventDefault();
-              onUpdate(e.target.value);
-            }}
-            className="w-full h-full p-4 bg-transparent text-white resize-none
-              focus:outline-none font-mono text-sm leading-relaxed"
-            placeholder="Write your notes here... (Supports Markdown)"
-            style={{ lineHeight: '1.7' }}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
+      {/* Editor */}
+      <div className="flex-1">
+        {activeDocument ? (
+          <RichEditor
+            value={activeDocument.content}
+            onChange={updateDocument}
           />
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-500">
+            Select a document to start editing
+          </div>
         )}
       </div>
+    </div>
+  );
+};
 
-      {/* Status Bar */}
-      <div className="px-4 py-2 text-xs text-gray-500 flex justify-between border-t border-gray-700">
-        <span>Last edited: {task.lastEdited?.toLocaleString() || 'Never'}</span>
-        <span>{notes.length} characters</span>
+// Document tree component
+const DocumentTree: React.FC<{
+  documents: NotesDocument[];
+  activeDoc: string | null;
+  onSelect: (id: string) => void;
+}> = ({ documents, activeDoc, onSelect }) => {
+  const rootDocs = documents.filter(d => !d.parent);
+  
+  return (
+    <div className="space-y-1">
+      {rootDocs.map(doc => (
+        <DocumentNode 
+          key={doc.id}
+          document={doc}
+          documents={documents}
+          level={0}
+          activeDoc={activeDoc}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Individual document node component
+const DocumentNode: React.FC<{
+  document: NotesDocument;
+  documents: NotesDocument[];
+  level: number;
+  activeDoc: string | null;
+  onSelect: (id: string) => void;
+}> = ({ document, documents, level, activeDoc, onSelect }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const children = documents.filter(d => d.parent === document.id);
+  
+  return (
+    <div>
+      <div 
+        className={`
+          flex items-center px-2 py-1 rounded cursor-pointer
+          ${activeDoc === document.id ? 'bg-gray-700' : 'hover:bg-gray-700'}
+        `}
+        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        onClick={() => onSelect(document.id)}
+      >
+        {children.length > 0 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="mr-1"
+          >
+            {isExpanded ? '▼' : '▶'}
+          </button>
+        )}
+        {document.icon && <span className="mr-2">{document.icon}</span>}
+        <span className="truncate">{document.title || 'Untitled'}</span>
       </div>
+      
+      {isExpanded && children.length > 0 && (
+        <div>
+          {children.map(child => (
+            <DocumentNode
+              key={child.id}
+              document={child}
+              documents={documents}
+              level={level + 1}
+              activeDoc={activeDoc}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
