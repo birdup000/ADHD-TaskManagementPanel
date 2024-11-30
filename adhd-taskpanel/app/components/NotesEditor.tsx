@@ -377,9 +377,6 @@ const NotesEditor: React.FC<{
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400">
-            <div className="mb-4">
-              <img src="/notion-logo.png" alt="Notion-style Logo" className="w-16 h-16 opacity-20" />
-            </div>
             <p className="text-xl font-medium mb-2">No note selected</p>
             <p className="text-sm">Select a note or create a new one to get started</p>
           </div>

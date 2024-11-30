@@ -20,7 +20,6 @@ import { useState, useEffect, useRef } from 'react';
 import LocalForage from 'localforage';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
-// Interfaces
 // Global styles for animations
 const globalStyles = `
   @keyframes pulseScale {
@@ -102,8 +101,6 @@ interface Project {
   isExpanded?: boolean;
 }
 
-// Keep other existing interfaces...
-
 const ResizeHandle = () => (
   <PanelResizeHandle className="w-1 hover:w-1.5 transition-all bg-gray-100/10 rounded-full mx-1" />
 );
@@ -128,6 +125,32 @@ const Page: NextPage = () => {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
+  // Add global styles
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = globalStyles;
+    document.head.appendChild(styleElement);
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const tasksData = await LocalForage.getItem('tasks');
+        if (tasksData) setTasks(tasksData as Task[]);
+
+        const projectsData = await LocalForage.getItem('projects');
+        if (projectsData) setProjects(projectsData as Project[]);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+    loadInitialData();
+  }, []);
+
   const handleDragStart = (e: DragEvent<HTMLDivElement>, taskId: number) => {
     e.dataTransfer.setData('taskId', taskId.toString());
     const task = tasks.find(t => t.id === taskId);
@@ -142,7 +165,6 @@ const Page: NextPage = () => {
   };
 
   const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    // Only clear dragOverStage if we're leaving the column (not entering a child element)
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setDragOverStage(null);
     }
@@ -165,8 +187,7 @@ const Page: NextPage = () => {
       );
       setTasks(updatedTasks);
       
-      // Update selected task if it's the one being moved
-      if (selectedTask && selectedTask.id === taskId) {
+      if (selectedTask?.id === taskId) {
         setSelectedTask({ ...selectedTask, stage });
       }
       
@@ -176,7 +197,6 @@ const Page: NextPage = () => {
     }
   };
 
-  // Filter tasks by project
   const projectTasks = tasks.filter(task => 
     selectedProject && task.projectId === selectedProject.id
   );
@@ -195,13 +215,11 @@ const Page: NextPage = () => {
       const taskToUpdate = tasks.find(task => task.id === taskId);
       if (!taskToUpdate) return;
 
-      // First update the completion status
       const updatedTasks = tasks.map((task) =>
         task.id === taskId ? { ...task, isComplete: !task.isComplete } : task
       );
       setTasks(updatedTasks);
 
-      // If task is being completed, move it to completed stage after a short delay
       if (!taskToUpdate.isComplete) {
         setTimeout(async () => {
           const finalTasks = updatedTasks.map((task) =>
@@ -240,33 +258,7 @@ const Page: NextPage = () => {
     }
   };
 
-  // Add global styles
-  useEffect(() => {
-    const styleElement = document.createElement('style');
-    styleElement.textContent = globalStyles;
-    document.head.appendChild(styleElement);
-    return () => {
-      document.head.removeChild(styleElement);
-    };
-  }, []);
-
-  // Load initial data
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const tasksData = await LocalForage.getItem('tasks');
-        if (tasksData) setTasks(tasksData as Task[]);
-
-        const projectsData = await LocalForage.getItem('projects');
-        if (projectsData) setProjects(projectsData as Project[]);
-      } catch (error) {
-        console.error('Error loading initial data:', error);
-      }
-    };
-    loadInitialData();
-  }, []);
-
-  // Notion-style breadcrumb component
+  // Components
   const Breadcrumb = () => (
     <div className="flex items-center gap-2 text-gray-400 text-sm py-2 px-4 border-b border-gray-800">
       <span className="hover:bg-gray-800 px-2 py-1 rounded cursor-pointer">
@@ -283,7 +275,6 @@ const Page: NextPage = () => {
     </div>
   );
 
-  // Notion-style sidebar section
   const SidebarSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className="mb-4">
       <div className="flex items-center gap-2 text-gray-400 text-sm mb-2 px-2 py-1 hover:bg-gray-800 rounded cursor-pointer">
@@ -294,7 +285,6 @@ const Page: NextPage = () => {
     </div>
   );
 
-  // Notion-style task item
   interface TaskItemProps {
     task: Task;
   }
@@ -357,7 +347,6 @@ const Page: NextPage = () => {
     </div>
   );
 
-  // Add Project Modal
   const AddProjectModal = () => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-[#191919] rounded-lg p-6 w-full max-w-md">
@@ -400,70 +389,95 @@ const Page: NextPage = () => {
     </div>
   );
 
-  // Add Task Modal
-  const AddTaskModal = () => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#191919] rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-medium mb-4">New Task</h3>
-        <div className="space-y-4">
-          <input
-            type="text"
-            value={newTask}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setNewTask(e.target.value)}
-            placeholder="Task name"
-            className="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            autoFocus
-          />
-          <textarea
-            value={newTaskDescription}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewTaskDescription(e.target.value)}
-            placeholder="Description (optional)"
-            className="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none h-24"
-          />
-          <input
-            type="date"
-            value={newTaskDueDate}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setNewTaskDueDate(e.target.value)}
-            className="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button
-            onClick={() => setShowAddTaskForm(false)}
-            className="px-4 py-2 text-gray-400 hover:text-gray-200"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={async () => {
-              if (!selectedProject || !newTask.trim()) return;
-              const newTaskItem: Task = {
-                id: Date.now(),
-                projectId: selectedProject.id,
-                task: newTask.trim(),
-                description: newTaskDescription.trim(),
-                isComplete: false,
-                dueDate: newTaskDueDate || null,
-                stage: 'toDo',
-                notes: '',
-                lastEdited: new Date()
-              };
-              const updatedTasks = [...tasks, newTaskItem];
-              setTasks(updatedTasks);
-              await LocalForage.setItem('tasks', updatedTasks);
-              setNewTask('');
-              setNewTaskDescription('');
-              setNewTaskDueDate('');
-              setShowAddTaskForm(false);
-            }}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Create
-          </button>
+  const AddTaskModal = () => {
+    const [error, setError] = useState<string | null>(null);
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-[#191919] rounded-lg p-6 w-full max-w-md">
+          <h3 className="text-lg font-medium mb-4">New Task</h3>
+          {!selectedProject && (
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-200 text-sm">
+              Please select a project first before creating a task.
+            </div>
+          )}
+          {error && (
+            <div className="mb-4 p-3 bg-red-900/50 border border-red-500/50 rounded-lg text-red-200 text-sm">
+              {error}
+            </div>
+          )}
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={newTask}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setNewTask(e.target.value)}
+              placeholder="Task name"
+              className="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              autoFocus
+            />
+            <textarea
+              value={newTaskDescription}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewTaskDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none h-24"
+            />
+            <input
+              type="date"
+              value={newTaskDueDate}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setNewTaskDueDate(e.target.value)}
+              className="w-full p-2 bg-gray-800 rounded border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              onClick={() => setShowAddTaskForm(false)}
+              className="px-4 py-2 text-gray-400 hover:text-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (!selectedProject) {
+                  setError('Please select a project first');
+                  return;
+                }
+                if (!newTask.trim()) {
+                  setError('Task name cannot be empty');
+                  return;
+                }
+                const newTaskItem: Task = {
+                  id: Date.now(),
+                  projectId: selectedProject.id,
+                  task: newTask.trim(),
+                  description: newTaskDescription.trim(),
+                  isComplete: false,
+                  dueDate: newTaskDueDate || null,
+                  stage: 'toDo',
+                  notes: '',
+                  lastEdited: new Date()
+                };
+                const updatedTasks = [...tasks, newTaskItem];
+                setTasks(updatedTasks);
+                await LocalForage.setItem('tasks', updatedTasks);
+                setNewTask('');
+                setNewTaskDescription('');
+                setNewTaskDueDate('');
+                setShowAddTaskForm(false);
+              }}
+              className={`px-4 py-2 rounded ${
+                !selectedProject 
+                  ? 'bg-gray-600 cursor-not-allowed text-gray-400' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              }`}
+              disabled={!selectedProject}
+            >
+              Create
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="flex h-screen bg-[#191919] text-gray-100">
