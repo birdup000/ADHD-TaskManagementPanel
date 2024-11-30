@@ -56,6 +56,35 @@ const globalStyles = `
     border-radius: 0.5rem;
     border: 1px dashed rgba(156, 163, 175, 0.2);
   }
+
+  .sidebar-button {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+
+  .sidebar-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+  }
+
+  .task-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .task-item-complete {
+    text-decoration: line-through;
+    color: gray;
+  }
 `;
 
 interface NotesEditorProps {
@@ -291,15 +320,14 @@ const Page: NextPage = () => {
 
   const TaskItem: React.FC<TaskItemProps> = ({ task }) => (
     <div
-      className={`group flex items-start gap-3 p-2 rounded-lg transition-all duration-200 relative
-        ${draggedTask?.id === task.id ? 'opacity-50 bg-gray-700' : 'hover:bg-gray-800/50'}`}
+      className={`task-item flex items-start gap-3 p-2 rounded-lg transition-all duration-200 relative
+        ${task.isComplete ? 'task-item-complete' : ''}`}
       onMouseEnter={(e: MouseEvent<HTMLDivElement>) => setHoveredTaskId(task.id)}
       onMouseLeave={(e: MouseEvent<HTMLDivElement>) => setHoveredTaskId(null)}
       onClick={() => handleSelectTask(task)}
       draggable
       onDragStart={(e) => handleDragStart(e, task.id)}
     >
-      <div className="absolute left-0 top-0 bottom-0 w-1 group-hover:w-1.5 opacity-0 group-hover:opacity-100 bg-gray-600 rounded-l transition-all duration-200" />
       <div className="flex items-center gap-3 w-full">
         <button
           onClick={(e) => {
@@ -511,7 +539,7 @@ const Page: NextPage = () => {
                   {['All Tasks', 'Today', 'Upcoming'].map((item) => (
                     <button
                       key={item}
-                      className="w-full text-left text-sm text-gray-400 hover:bg-gray-800 rounded px-4 py-1"
+                      className="sidebar-button w-full text-left text-sm text-gray-400"
                     >
                       {item}
                     </button>
@@ -546,7 +574,7 @@ const Page: NextPage = () => {
                   
                   <button
                     onClick={() => setShowAddProjectModal(true)}
-                    className="w-full text-left text-sm text-gray-400 hover:bg-gray-800 rounded px-4 py-1 flex items-center gap-2"
+                    className="sidebar-button w-full text-left text-sm text-gray-400 flex items-center gap-2"
                   >
                     <FaPlus size={12} />
                     <span>Add Project</span>
