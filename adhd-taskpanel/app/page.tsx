@@ -69,18 +69,6 @@ interface Settings {
   };
 }
 
-// Types for document structure
-interface NotesDocument {
-  id: string;
-  title: string;
-  content: string;
-  parent?: string;
-  children: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  icon?: string;
-}
-
 // Removed unused resizeHandleStyles
 
 const ResizeHandle: React.FC = () => (
@@ -166,144 +154,27 @@ const RichEditor: React.FC<{
 };
 
 // Modified NotesPanel component
+import dynamic from 'next/dynamic';
+
+const NotesEditor = dynamic(() => import('./components/NotesEditor'), { ssr: false });
+
 const NotesPanel: React.FC<NotesPanelProps> = ({ task, onUpdate }) => {
-  const [documents, setDocuments] = useState<NotesDocument[]>([]);
-  const [activeDocument, setActiveDocument] = useState<NotesDocument | null>(null);
-  const [showCommandMenu, setShowCommandMenu] = useState(false);
-  const [commandQuery, setCommandQuery] = useState('');
-
-  const createNewDocument = () => {
-    const newDoc: NotesDocument = {
-      id: Date.now().toString(),
-      title: 'Untitled',
-      content: '',
-      children: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setDocuments(prev => [...prev, newDoc]);
-    setActiveDocument(newDoc);
-  };
-
-  const updateDocument = (content: string) => {
-    if (activeDocument) {
-      const updatedDoc = {
-        ...activeDocument,
-        content,
-        updatedAt: new Date()
-      };
-      setDocuments(prev => 
-        prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
-      );
-      setActiveDocument(updatedDoc);
+  const handleChange = (content: string) => {
+    if (task) {
+      onUpdate(content);
     }
   };
 
   return (
-    <div className="h-full flex bg-gray-800">
-      {/* Document tree */}
-      <div className="w-64 border-r border-gray-700 p-4">
-        <DocumentTree 
-          documents={documents}
-          activeDoc={activeDocument?.id || null}
-          onSelect={id => setActiveDocument(documents.find(d => d.id === id) || null)}
-        />
-      </div>
-
-      {/* Editor */}
-      <div className="flex-1">
-        {activeDocument ? (
-          <RichEditor
-            value={activeDocument.content}
-            onChange={updateDocument}
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center text-gray-500">
-            Select a document to start editing
-          </div>
-        )}
-      </div>
+    <div className="h-full">
+      <NotesEditor
+        initialContent={task?.notes || ''}
+        onChange={handleChange}
+      />
     </div>
   );
 };
 
-// Document tree component
-const DocumentTree: React.FC<{
-  documents: NotesDocument[];
-  activeDoc: string | null;
-  onSelect: (id: string) => void;
-}> = ({ documents, activeDoc, onSelect }) => {
-  const rootDocs = documents.filter(d => !d.parent);
-  
-  return (
-    <div className="space-y-1">
-      {rootDocs.map(doc => (
-        <DocumentNode 
-          key={doc.id}
-          document={doc}
-          documents={documents}
-          level={0}
-          activeDoc={activeDoc}
-          onSelect={onSelect}
-        />
-      ))}
-    </div>
-  );
-};
-
-// Individual document node component
-const DocumentNode: React.FC<{
-  document: NotesDocument;
-  documents: NotesDocument[];
-  level: number;
-  activeDoc: string | null;
-  onSelect: (id: string) => void;
-}> = ({ document, documents, level, activeDoc, onSelect }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const children = documents.filter(d => d.parent === document.id);
-  
-  return (
-    <div>
-      <div 
-        className={`
-          flex items-center px-2 py-1 rounded cursor-pointer
-          ${activeDoc === document.id ? 'bg-gray-700' : 'hover:bg-gray-700'}
-        `}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
-        onClick={() => onSelect(document.id)}
-      >
-        {children.length > 0 && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-            className="mr-1"
-          >
-            {isExpanded ? '▼' : '▶'}
-          </button>
-        )}
-        {document.icon && <span className="mr-2">{document.icon}</span>}
-        <span className="truncate">{document.title || 'Untitled'}</span>
-      </div>
-      
-      {isExpanded && children.length > 0 && (
-        <div>
-          {children.map(child => (
-            <DocumentNode
-              key={child.id}
-              document={child}
-              documents={documents}
-              level={level + 1}
-              activeDoc={activeDoc}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const SettingsModal: React.FC<{
   isOpen: boolean;
