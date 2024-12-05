@@ -1,66 +1,113 @@
 "use client";
 
 import React from 'react';
-import { FaCheck, FaRegCircle } from 'react-icons/fa';
-
+import { FaCheck, FaRegCircle, FaClock, FaTrash, FaEdit } from 'react-icons/fa';
 import type { Task } from '../types';
 
 interface TaskItemProps {
   task: Task;
   onDragStart?: (task: Task) => void;
   onDragEnd?: () => void;
+  onDelete?: (task: Task) => void;
+  onEdit?: (task: Task) => void;
+  onToggleComplete?: (task: Task) => void;
 }
 
+export default React.forwardRef<HTMLDivElement, TaskItemProps>(
+  function TaskItem({ task, onDragStart, onDragEnd, onDelete, onEdit, onToggleComplete }, ref) {
+    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.isComplete;
+    
+    const handleDelete = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete?.(task);
+    };
 
+    const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onEdit?.(task);
+    };
 
-export default React.forwardRef<HTMLDivElement, TaskItemProps>(function TaskItem({ task, onDragStart, onDragEnd }, ref) {
-  return (
-    <div 
-      ref={ref}
-      className={`group p-3 bg-white dark:bg-gray-800/50 rounded-lg
-        border border-gray-200 dark:border-gray-700
-        hover:shadow-sm dark:hover:border-gray-600 transition-all duration-200
-        ${task.isComplete ? 'opacity-75' : ''}`}
-      draggable
-      onDragStart={(e) => {
-        e.preventDefault();
-        onDragStart?.(task);
-      }}
-      onDragEnd={() => onDragEnd?.()}
-    >
-      <div className="flex items-start gap-3">
-        <button 
-          className={`mt-1 p-1 rounded-full transition-colors
-            ${task.isComplete 
-              ? 'text-green-500 hover:text-green-600' 
-              : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400'
-            }`}
-        >
-          {task.isComplete ? <FaCheck size={12} /> : <FaRegCircle size={12} />}
-        </button>
-        
-        <div className="flex-1 min-w-0">
-          <h3 className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate
-            ${task.isComplete ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
-            {task.task}
-          </h3>
+    const handleToggleComplete = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onToggleComplete?.(task);
+    };
+
+    return (
+      <div 
+        ref={ref}
+        className={`group p-4 bg-white dark:bg-gray-800/50 rounded-lg
+          border border-gray-200 dark:border-gray-700
+          hover:shadow-md dark:hover:border-gray-600 transition-all duration-200
+          ${task.isComplete ? 'opacity-75' : ''}
+          ${isOverdue ? 'border-red-300 dark:border-red-700' : ''}`}
+        draggable
+        onDragStart={(e) => {
+          e.preventDefault();
+          onDragStart?.(task);
+        }}
+        onDragEnd={() => onDragEnd?.()}
+        role="article"
+        aria-label={`Task: ${task.task}`}
+      >
+        <div className="flex items-start gap-3">
+          <button 
+            onClick={handleToggleComplete}
+            className={`mt-1 p-1.5 rounded-full transition-colors
+              ${task.isComplete 
+                ? 'text-green-500 hover:text-green-600 bg-green-50 dark:bg-green-900/20' 
+                : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              }`}
+            aria-label={task.isComplete ? 'Mark as incomplete' : 'Mark as complete'}
+          >
+            {task.isComplete ? <FaCheck size={14} /> : <FaRegCircle size={14} />}
+          </button>
           
-          {task.description && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-              {task.description}
-            </p>
-          )}
-          
-          {task.dueDate && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 
-                text-gray-600 dark:text-gray-300">
-                {new Date(task.dueDate).toLocaleDateString()}
-              </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-4">
+              <h3 className={`text-sm font-medium text-gray-900 dark:text-gray-100
+                ${task.isComplete ? 'line-through text-gray-500 dark:text-gray-400' : ''}`}>
+                {task.task}
+              </h3>
+              
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={handleEdit}
+                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  aria-label="Edit task"
+                >
+                  <FaEdit size={14} />
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="p-1 text-gray-400 hover:text-red-500"
+                  aria-label="Delete task"
+                >
+                  <FaTrash size={14} />
+                </button>
+              </div>
             </div>
-          )}
+            
+            {task.description && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                {task.description}
+              </p>
+            )}
+            
+            {task.dueDate && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full
+                  ${isOverdue
+                    ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>
+                  <FaClock size={12} />
+                  {new Date(task.dueDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);

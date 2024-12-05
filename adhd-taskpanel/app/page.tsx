@@ -171,36 +171,40 @@ const Page: NextPage = () => {
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Tasks</h2>
                   <button
                     onClick={() => setShowAddTaskForm(true)}
-                    className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors duration-200"
                   >
-                    <FaPlus size={12} />
-                    <span>New</span>
+                    <FaPlus size={12} className="text-blue-100" />
+                    <span>Add Task</span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-6">
                   {[
-                    { stage: 'toDo' as const, title: "To Do", color: "border-red-500" },
-                    { stage: 'inProgress' as const, title: "In Progress", color: "border-yellow-500" },
-                    { stage: 'completed' as const, title: "Completed", color: "border-green-500" }
-                  ].map(({ stage, title, color }) => (
+                    { stage: 'toDo' as const, title: "To Do", color: "border-red-500", icon: "🎯" },
+                    { stage: 'inProgress' as const, title: "In Progress", color: "border-yellow-500", icon: "⚡" },
+                    { stage: 'completed' as const, title: "Completed", color: "border-green-500", icon: "✨" }
+                  ].map(({ stage, title, color, icon }) => (
                     <div
                       key={stage}
-                      className={`bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3
+                      className={`bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4
                         ${dragOverStage === stage ? 'ring-2 ring-blue-500 ring-opacity-50 scale-[1.02]' : ''}
                         transition-all duration-200 ease-in-out
-                        hover:shadow-sm dark:shadow-none`}
+                        hover:shadow-lg dark:shadow-none
+                        border-t-4 ${color}`}
+                      role="region"
+                      aria-label={`${title} tasks`}
                       onDragOver={(e) => handleDragOver(e, stage)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, stage)}
                     >
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-300 mb-3 flex items-center justify-between px-1">
+                      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-200 mb-4 flex items-center gap-2">
+                        <span>{icon}</span>
                         <span>{title}</span>
-                        <span className="text-xs bg-gray-200/50 dark:bg-gray-700 px-2 py-0.5 rounded-md text-gray-600 dark:text-gray-400">
+                        <span className="ml-auto text-sm bg-gray-200/70 dark:bg-gray-700/70 px-2.5 py-0.5 rounded-full text-gray-600 dark:text-gray-400">
                           {projectTasks.filter(task => task.stage === stage).length}
                         </span>
                       </h3>
-                      <div className="task-list space-y-1.5 min-h-[50px] transition-all duration-200">
+                      <div className="task-list space-y-3 min-h-[50px] transition-all duration-200" role="list">
                         {dragOverStage === stage && draggedTask?.stage !== stage && (
                           <div 
                             className="h-[60px] bg-gray-100 dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-600 transform transition-all duration-200 animate-pulse"
@@ -217,6 +221,20 @@ const Page: NextPage = () => {
                               task={task}
                               onDragStart={setDraggedTask}
                               onDragEnd={() => setDraggedTask(null)}
+                              onDelete={(task) => {
+                                setTasks(tasks.filter(t => t.id !== task.id));
+                                if (selectedTask?.id === task.id) setSelectedTask(null);
+                              }}
+                              onEdit={(task) => {
+                                setSelectedTask(task);
+                              }}
+                              onToggleComplete={(task) => {
+                                setTasks(tasks.map(t =>
+                                  t.id === task.id 
+                                    ? { ...t, isComplete: !t.isComplete }
+                                    : t
+                                ));
+                              }}
                             />
                           ))}
                       </div>
