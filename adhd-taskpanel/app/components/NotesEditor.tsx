@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   FaPlus, 
   FaEllipsisH, 
@@ -52,9 +52,12 @@ interface ContextMenu {
 const NotesEditor: React.FC<{
   initialContent?: string;
   onChange: (content: string) => void;
-}> = ({ initialContent = '', onChange }) => {
+  readOnly?: boolean;
+  placeholder?: string;
+}> = ({ initialContent = '', onChange, readOnly = false, placeholder }) => {
   // State
   const [documents, setDocuments] = useState<Document[]>([]);
+  const mounted = useRef(false);
   const [activeDocument, setActiveDocument] = useState<Document | null>(null);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 });
@@ -66,13 +69,20 @@ const NotesEditor: React.FC<{
 
   // Effects
   useEffect(() => {
+    mounted.current = true;
+
     const handleClickOutside = (e: MouseEvent) => {
       if (contextMenu && !e.defaultPrevented) {
         setContextMenu(null);
       }
     };
+
     document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    
+    return () => {
+      mounted.current = false;
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [contextMenu]);
 
   useEffect(() => {
@@ -94,7 +104,8 @@ const NotesEditor: React.FC<{
   }, [activeDocument?.id]);
 
   // Handlers
-  const createNewDocument = (parentId?: string) => {
+  const createNewDocument = useCallback((parentId?: string) => {
+    if (!mounted.current) return;
     const newDoc: Document = {
       id: Date.now().toString(),
       title: 'Untitled',
@@ -115,7 +126,7 @@ const NotesEditor: React.FC<{
       setDocuments(prev => [...prev, newDoc]);
     }
     setActiveDocument(newDoc);
-  };
+  }, []);
 
   const duplicateDocument = (docId: string) => {
     const docToDuplicate = documents.find(d => d.id === docId);
@@ -166,6 +177,7 @@ const NotesEditor: React.FC<{
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle special keys
     if (e.key === '/' && !showCommandMenu) {
       e.preventDefault();
       const selection = window.getSelection();
@@ -200,8 +212,8 @@ const NotesEditor: React.FC<{
         {docs.map(doc => (
           <div key={doc.id} style={{ paddingLeft: level * 12 + 'px' }}>
             <div
-              className={`group flex items-center px-2 py-1 rounded-sm cursor-pointer hover:bg-[#2D2D2D] transition-colors duration-150 ${
-                activeDocument?.id === doc.id ? 'bg-[#2D2D2D]' : ''
+              className={`group flex items-center px-2 py-1 rounded-sm cursor-pointer hover:bg-gray-700 transition-colors duration-150 ${
+                activeDocument?.id === doc.id ? 'bg-gray-700' : ''
               }`}
               onClick={() => setActiveDocument(doc)}
               onContextMenu={(e) => handleContextMenu(e, doc.id, 'document')}
@@ -239,15 +251,15 @@ const NotesEditor: React.FC<{
   };
 
   return (
-    <div className="h-full flex bg-[#191919] text-white">
+    <div className="h-full flex bg-gray-800 text-white">
       {/* Sidebar */}
-      <div className="w-64 border-r border-[#2D2D2D] bg-[#1F1F1F]">
-        <div className="p-4 border-b border-[#2D2D2D]">
+      <div className="w-64 border-r border-gray-700 bg-gray-800">
+        <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium text-gray-400 text-sm">WORKSPACE</h3>
             <button
               onClick={() => createNewDocument()}
-              className="p-1.5 hover:bg-[#2D2D2D] rounded-md transition-colors"
+              className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
             >
               <FaPlus className="w-3.5 h-3.5 text-gray-400" />
             </button>
@@ -258,7 +270,7 @@ const NotesEditor: React.FC<{
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="w-full bg-[#2D2D2D] text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-gray-700 text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -299,11 +311,11 @@ const NotesEditor: React.FC<{
       </div>
 
       {/* Editor */}
-      <div className="flex-1 flex flex-col bg-[#191919]">
+      <div className="flex-1 flex flex-col bg-gray-900">
         {activeDocument ? (
           <>
             {/* Editor Header */}
-            <div className="px-8 py-6 border-b border-[#2D2D2D]">
+            <div className="px-8 py-6 border-b border-gray-700">
               <div className="flex items-center gap-2 mb-4">
                 {activeDocument.emoji && (
                   <span className="text-2xl">{activeDocument.emoji}</span>
@@ -346,7 +358,7 @@ const NotesEditor: React.FC<{
             <div className="flex-1 overflow-y-auto px-8 py-6">
               <div
                 ref={editorRef}
-                className="prose prose-invert max-w-none focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500 empty:before:pointer-events-none"
+                className="prose prose-invert max-w-none focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500 empty:before:pointer-events-none bg-gray-900 rounded-lg p-4"
                 style={{
                   minHeight: '100%',
                   fontSize: '16px',
@@ -358,20 +370,57 @@ const NotesEditor: React.FC<{
                 onKeyDown={handleKeyDown}
                 onContextMenu={(e) => handleContextMenu(e, activeDocument.id, 'editor')}
                 onInput={(e) => {
-                  const content = e.currentTarget.innerHTML;
+  if (readOnly) return;
+                  if (!mounted.current) return;
+
+                  // Store selection state before any updates
+                  const selection = window.getSelection();
+                  const range = selection?.getRangeAt(0);
+                  const storedContainer = range?.startContainer;
+                  const storedOffset = range?.startOffset || 0;
+                  
+                  // Get content and create updated document
+                  const contentElement = e.currentTarget;
+                  const content = contentElement.innerHTML;
                   const updatedDoc = {
                     ...activeDocument,
                     blocks: [{ ...activeDocument.blocks[0], content }],
                     updatedAt: new Date()
                   };
+
+                  // Batch state updates
                   setDocuments(prev => 
                     prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
                   );
                   setActiveDocument(updatedDoc);
                   onChange(content);
+                  
+                  // Restore cursor position after state update
+                  if (selection && storedContainer && contentElement.isConnected) {
+                    requestAnimationFrame(() => {
+                      try {
+                        const newRange = document.createRange();
+                        
+                        if (contentElement.contains(storedContainer)) {
+                          newRange.setStart(storedContainer, storedOffset);
+                          newRange.setEnd(storedContainer, storedOffset);
+                        } else {
+                          const fallbackNode = contentElement.firstChild || contentElement;
+                          const maxOffset = Math.min(storedOffset, fallbackNode.textContent?.length || 0);
+                          newRange.setStart(fallbackNode, maxOffset);
+                          newRange.setEnd(fallbackNode, maxOffset);
+                        }
+                        
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                      } catch (err) {
+                        console.warn('Failed to restore cursor position:', err);
+                      }
+                    });
+                  }
                 }}
                 dangerouslySetInnerHTML={{ __html: activeDocument.blocks[0].content }}
-                data-placeholder="Type '/' for commands"
+                data-placeholder={placeholder || "Type '/' for commands"}
               />
             </div>
           </>
@@ -386,7 +435,7 @@ const NotesEditor: React.FC<{
       {/* Context Menu */}
       {contextMenu && (
         <div
-          className="fixed bg-[#2D2D2D] rounded-lg shadow-xl py-1 min-w-[180px] z-50"
+          className="fixed bg-gray-800 rounded-lg shadow-xl py-1 min-w-[180px] z-50"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           {contextMenu.type === 'document' ? (
@@ -419,9 +468,9 @@ const NotesEditor: React.FC<{
                 <FaLink className="w-3.5 h-3.5" />
                 <span>Copy link</span>
               </button>
-              <div className="border-t border-[#3D3D3D] my-1" />
+              <div className="border-t border-gray-700 my-1" />
               <button
-                className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2 text-red-500"
+                className="w-full px-3 py-1.5 text-left hover:bg-gray-700 flex items-center gap-2 text-red-500"
                 onClick={() => deleteDocument(contextMenu.documentId)}
               >
                 <FaTrash className="w-3.5 h-3.5" />
@@ -460,8 +509,8 @@ const NotesEditor: React.FC<{
       {/* Command Menu */}
       {showCommandMenu && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-32">
-          <div className="bg-[#2D2D2D] rounded-lg shadow-xl w-96 overflow-hidden">
-            <div className="p-4 border-b border-[#3D3D3D]">
+          <div className="bg-gray-800 rounded-lg shadow-xl w-96 overflow-hidden">
+            <div className="p-4 border-b border-gray-700">
               <input
                 type="text"
                 placeholder="Type a command..."
@@ -485,10 +534,10 @@ const NotesEditor: React.FC<{
               ].map((item, index) => (
                 <div
                   key={index}
-                  className="px-4 py-3 flex items-center gap-3 hover:bg-[#3D3D3D] cursor-pointer"
+                  className="px-4 py-3 flex items-center gap-3 hover:bg-gray-700 cursor-pointer"
                   onClick={() => setShowCommandMenu(false)}
                 >
-                  <div className="w-8 h-8 flex items-center justify-center bg-[#4D4D4D] rounded">
+                  <div className="w-8 h-8 flex items-center justify-center bg-gray-600 rounded">
                     {item.icon}
                   </div>
                   <div>
