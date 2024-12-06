@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from './providers';
-import Script from 'next/script';
-import { preloadCriticalCSS, loadNonCriticalCSS } from './lib/styles';
-import { ThemeToggle } from './theme-toggle';
+
+import { ThemeSettings } from './components/theme-settings';
+
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,22 +26,33 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "ADHD Task Panel",
   description: "A modern, accessible task management panel designed for ADHD users",
+  applicationName: "ADHD Task Panel",
+  authors: [{ name: "ADHD Task Panel Team" }],
+  keywords: ["ADHD", "task management", "productivity", "accessibility"],
+  robots: "index, follow",
+  manifest: "/manifest.json",
+  openGraph: {
+    type: "website",
+    title: "ADHD Task Panel",
+    description: "A modern, accessible task management panel designed for ADHD users",
+    siteName: "ADHD Task Panel",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
   other: {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "default",
     "format-detection": "telephone=no",
     "mobile-web-app-capable": "yes",
     "msapplication-tap-highlight": "no",
-  },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
   },
 };
 
@@ -50,19 +61,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Preload critical CSS
-  if (typeof window !== 'undefined') {
-    preloadCriticalCSS();
-  }
+  
   return (
-    <>
-      <Script id="init-css" strategy="beforeInteractive">
-        {`(${String(preloadCriticalCSS)})();`}
-      </Script>
-      <Script id="load-css" strategy="afterInteractive">
-        {`(${String(loadNonCriticalCSS)})();`}
-      </Script>
-      <html 
+    <html 
         lang="en" 
         suppressHydrationWarning
         className="antialiased"
@@ -77,10 +78,9 @@ export default function RootLayout({
             <main className="container mx-auto px-4 py-8">
               {children}
             </main>
-            <ThemeToggle />
+            <ThemeSettings />
           </ThemeProvider>
         </body>
       </html>
-    </>
   );
 }

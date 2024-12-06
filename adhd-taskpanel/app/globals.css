@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './styles/theme.css';
+@import './styles/variables.css';
+@import './styles/transitions.css';
+
 /* Import style dependencies */
 @import "./styles/dependencies.css";
 @import "./styles/task-panel.css";

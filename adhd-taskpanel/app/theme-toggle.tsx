@@ -1,6 +1,7 @@
 // Theme toggle component for dark mode
 'use client'
 
+import React from 'react'
 import { useTheme } from './providers'
 import { ButtonHTMLAttributes, DetailedHTMLProps } from 'react'
 
