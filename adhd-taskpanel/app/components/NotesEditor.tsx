@@ -387,32 +387,33 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
                 contentEditable={!readOnly}
                 onKeyDown={handleKeyDown}
                 onContextMenu={(e) => handleContextMenu(e, activeDocument.id, 'editor')}
-                onInput={(e) => {
+                onInput={useCallback((e: React.FormEvent<HTMLDivElement>) => {
                   if (readOnly || !mounted.current) return;
 
-                  // Store selection state before any updates
+                  const contentElement = e.currentTarget;
+                  const content = contentElement.innerHTML;
+
+                  const batchUpdate = () => {
+                    const updatedDoc = {
+                      ...activeDocument,
+                      blocks: [{ ...activeDocument.blocks[0], content }],
+                      updatedAt: new Date()
+                    };
+
+                    setDocuments(prev => 
+                      prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
+                    );
+                    setActiveDocument(updatedDoc);
+                    debouncedOnChange(content);
+                  };
+
                   const selection = window.getSelection();
                   const range = selection?.getRangeAt(0);
                   const storedContainer = range?.startContainer;
                   const storedOffset = range?.startOffset || 0;
-                  
-                  // Get content and create updated document
-                  const contentElement = e.currentTarget;
-                  const content = contentElement.innerHTML;
-                  const updatedDoc = {
-                    ...activeDocument,
-                    blocks: [{ ...activeDocument.blocks[0], content }],
-                    updatedAt: new Date()
-                  };
 
-                  // Batch state updates
-                  setDocuments(prev => 
-                    prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
-                  );
-                  setActiveDocument(updatedDoc);
-                  debouncedOnChange(content);
-                  
-                  // Restore cursor position after state update
+                  batchUpdate();
+
                   if (selection && storedContainer && contentElement.isConnected) {
                     requestAnimationFrame(() => {
                       try {
@@ -435,12 +436,13 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
                       }
                     });
                   }
-                }}
+                }, [readOnly, mounted, activeDocument, setDocuments, setActiveDocument, debouncedOnChange])}
+                data-placeholder={placeholder || "Type '/' for commands"}
+                suppressContentEditableWarning={true}
                 dangerouslySetInnerHTML={{ __html: activeDocument.blocks[0].content }}
-                  data-placeholder={placeholder || "Type '/' for commands"}
-                ></div>
-              </div>
+              />
             </div>
+          </div>
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400">
@@ -454,46 +456,50 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
       {contextMenu && (
         <div
           className="fixed bg-gray-800 rounded-lg shadow-xl py-1 min-w-[180px] z-50"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
+          style={{ top: contextMenu?.y ?? 0, left: contextMenu?.x ?? 0 }}
         >
-          {contextMenu.type === 'document' ? (
+          {contextMenu?.type === 'document' ? (
             <>
-              <button
-                className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
-                onClick={() => createNewDocument(contextMenu.documentId)}
-              >
-                <FaPlus className="w-3.5 h-3.5" />
-                <span>Add subpage</span>
-              </button>
-              <button
-                className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
-                onClick={() => duplicateDocument(contextMenu.documentId)}
-              >
-                <FaCopy className="w-3.5 h-3.5" />
-                <span>Duplicate</span>
-              </button>
-              <button
-                className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
-                onClick={() => toggleFavorite(contextMenu.documentId)}
-              >
-                <FaStar className="w-3.5 h-3.5" />
-                <span>{favorites.includes(contextMenu.documentId) ? 'Remove from favorites' : 'Add to favorites'}</span>
-              </button>
-              <button
-                className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
-                onClick={() => copyLink(contextMenu.documentId)}
-              >
-                <FaLink className="w-3.5 h-3.5" />
-                <span>Copy link</span>
-              </button>
-              <div className="border-t border-gray-700 my-1" />
-              <button
-                className="w-full px-3 py-1.5 text-left hover:bg-gray-700 flex items-center gap-2 text-red-500"
-                onClick={() => deleteDocument(contextMenu.documentId)}
-              >
-                <FaTrash className="w-3.5 h-3.5" />
-                <span>Delete</span>
-              </button>
+              {contextMenu?.documentId && (
+                <>
+                  <button
+                    className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
+                    onClick={() => createNewDocument(contextMenu.documentId)}
+                  >
+                    <FaPlus className="w-3.5 h-3.5" />
+                    <span>Add subpage</span>
+                  </button>
+                  <button
+                    className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
+                    onClick={() => duplicateDocument(contextMenu.documentId)}
+                  >
+                    <FaCopy className="w-3.5 h-3.5" />
+                    <span>Duplicate</span>
+                  </button>
+                  <button
+                    className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
+                    onClick={() => toggleFavorite(contextMenu.documentId)}
+                  >
+                    <FaStar className="w-3.5 h-3.5" />
+                    <span>{favorites.includes(contextMenu.documentId) ? 'Remove from favorites' : 'Add to favorites'}</span>
+                  </button>
+                  <button
+                    className="w-full px-3 py-1.5 text-left hover:bg-[#3D3D3D] flex items-center gap-2"
+                    onClick={() => copyLink(contextMenu.documentId)}
+                  >
+                    <FaLink className="w-3.5 h-3.5" />
+                    <span>Copy link</span>
+                  </button>
+                  <div className="border-t border-gray-700 my-1" />
+                  <button
+                    className="w-full px-3 py-1.5 text-left hover:bg-gray-700 flex items-center gap-2 text-red-500"
+                    onClick={() => deleteDocument(contextMenu.documentId)}
+                  >
+                    <FaTrash className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </>
+              )}
             </>
           ) : (
             <>
@@ -570,6 +576,6 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
       )}
     </div>
   );
-};
+}
 
 export default NotesEditor;

@@ -102,7 +102,29 @@ const ProjectNotesEditor: React.FC<ProjectNotesEditorProps> & { displayName?: st
         </div>
         {project.permissions?.canEditProjectNotes === false ? (
           <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-            <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: project.notes || '' }} />
+            <div className="prose dark:prose-invert max-w-none">
+              <div dangerouslySetInnerHTML={{ __html: project.notes || '' }} />
+              <div className="mt-4 border-t border-gray-700 pt-4">
+                <h4 className="text-sm font-medium text-gray-400 mb-2">Task Notes Overview:</h4>
+                <div className="space-y-2">
+                  {tasks.filter(task => task.notes).map(task => (
+                    <div key={task.id} className="p-2 bg-gray-800 rounded border border-gray-700">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-300">{task.task}</span>
+                        <button
+                          onClick={() => onTaskSelect(task.id)}
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        >
+                          <FaEdit size={12} />
+                          Edit Note
+                        </button>
+                      </div>
+                      <div className="text-xs text-gray-400 line-clamp-2" dangerouslySetInnerHTML={{ __html: task.notes }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <NotesEditor
