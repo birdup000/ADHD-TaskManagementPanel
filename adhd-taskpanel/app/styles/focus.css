@@ -30,19 +30,10 @@
            dark:ring-primary-light dark:ring-offset-gray-900;
   }
 
-  /* Skip-to-main focus style */
-  .skip-to-main:focus-visible {
-    @apply fixed top-0 left-0 z-50 m-3 
-           px-4 py-2 bg-background text-foreground
-           ring-2 ring-primary ring-offset-2;
+  
   [tabindex]:not([tabindex="-1"]):focus-visible {
     @apply ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
   }
 
-  /* Skip to main content link */
-  .skip-to-content {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 
-           focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-blue-600
-           focus:rounded-lg focus:shadow-lg focus:ring-2 focus:ring-blue-500;
-  }
+  
 }
