@@ -1,0 +1,38 @@
+@layer components {
+  .form-group {
+    @apply space-y-2 mb-4;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply w-full px-4 py-2 rounded-md border border-gray-300
+           bg-white text-gray-900
+           focus:ring-2 focus:ring-primary/50 focus:border-primary
+           disabled:opacity-50 disabled:cursor-not-allowed
+           dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100;
+  }
+
+  .form-checkbox,
+  .form-radio {
+    @apply h-4 w-4 text-primary border-gray-300 rounded
+           focus:ring-2 focus:ring-primary/50
+           dark:border-gray-700 dark:bg-gray-800;
+  }
+
+  .form-radio {
+    @apply rounded-full;
+  }
+
+  .form-error {
+    @apply text-sm text-red-500 dark:text-red-400 mt-1;
+  }
+
+  .form-hint {
+    @apply text-sm text-gray-500 dark:text-gray-400 mt-1;
+  }
+}

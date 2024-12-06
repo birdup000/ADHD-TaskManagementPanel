@@ -1,26 +1,30 @@
 @layer base {
-  :root {
-    --color-primary: 59 130 246;
-    --color-secondary: 99 102 241;
-    --color-accent: 139 92 246;
-    --color-background: 255 255 255;
-    --color-foreground: 17 24 39;
-  }
-
-  .dark {
-    --color-primary: 96 165 250;
-    --color-secondary: 129 140 248;
-    --color-accent: 167 139 250;
-    --color-background: 25 25 25;
-    --color-foreground: 243 244 246;
-  }
-
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply min-h-screen bg-background text-foreground antialiased transition-colors;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
 
   ::selection {
-    @apply bg-blue-500/20;
+    @apply bg-primary-light/20;
+  }
+
+  h1 {
+    @apply text-4xl font-semibold tracking-tight mb-6;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold tracking-tight mb-4;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold tracking-tight mb-3;
+  }
+
+  h4 {
+    @apply text-xl font-semibold tracking-tight mb-2;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
   }
 }

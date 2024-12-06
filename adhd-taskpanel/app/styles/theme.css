@@ -1,19 +1,104 @@
 @layer base {
   :root {
+    /* Modern Color System */
+    --color-primary: 99 102 241;    /* Indigo-500 */
+    --color-primary-light: 129 140 248;  /* Indigo-400 */
+    --color-primary-dark: 79 70 229;     /* Indigo-600 */
+    
+    --color-secondary: 16 185 129;   /* Emerald-500 */
+    --color-accent: 236 72 153;      /* Pink-500 */
+    
+    /* Neutral Colors */
+    --color-background: 255 255 255;  /* White background */
+    --color-foreground: 15 23 42;    /* Dark text color */
+    --color-gray-50: 249 250 251;
+    --color-gray-100: 243 244 246;
+    --color-gray-200: 229 231 235;
+    --color-gray-300: 209 213 219;
+    --color-gray-400: 156 163 175;
+    --color-gray-500: 107 114 128;
+    --color-gray-600: 75 85 99;
+    --color-gray-700: 55 65 81;
+    --color-gray-800: 31 41 55;
+    --color-gray-900: 17 24 39;
+    
+    /* Feedback Colors */
+    --color-success: 34 197 94;      /* Green-500 */
+    --color-error: 239 68 68;        /* Red-500 */
+    --color-warning: 245 158 11;     /* Amber-500 */
+    --color-info: 59 130 246;        /* Blue-500 */
+    --color-ring-offset: 255 255 255;  /* White */
+
+    /* Semantic Colors */
+    --color-background: 255 255 255;
+    --color-foreground: var(--color-gray-900);
+    --color-muted: var(--color-gray-500);
+    --color-border: var(--color-gray-200);
+
+    /* Typography */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    
+    /* Spacing */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+
+    /* Borders */
     --radius-sm: 0.25rem;
     --radius-md: 0.375rem;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
     --radius-2xl: 1rem;
+    --radius-full: 9999px;
+
+    /* Effects */
+    --ring-color: rgb(var(--color-primary) / 0.5);
+    --ring-offset: 2px;
     
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    /* Transitions */
+    --transition-all: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-colors: color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                        background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                        border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                        text-decoration-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                        fill 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                        stroke 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --color-background: var(--color-gray-900);
+    --color-foreground: var(--color-gray-50);
+    --color-muted: var(--color-gray-400);
+    --color-border: var(--color-gray-800);
+  }
+
+  /* Dark mode styles */
+  .dark {
+    --color-background: 15 23 42;      /* Gray-900 */
+    --color-foreground: 241 245 249;   /* Gray-100 */
+    --color-ring-offset: 17 24 39;     /* Gray-900 */
+
+    /* Primary colors */
+    --color-primary: 129 140 248;      /* Lighter primary for dark mode */
+    --color-primary-light: 165 180 252;/* Even lighter primary */
+    --color-primary-dark: 99 102 241;  /* Original primary */
     
-    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-in: cubic-bezier(0.4, 0, 1, 1);
-    --ease-out: cubic-bezier(0, 0, 0.2, 1);
-    --ease-linear: linear;
+    /* Semantic colors */
+    --color-border: var(--color-gray-700);
+    --color-muted: var(--color-gray-400);
+    
+    /* Feedback colors - adjusted for dark mode */
+    --color-success: 74 222 128;       /* Lighter green for dark mode */
+    --color-error: 248 113 113;        /* Lighter red for dark mode */
+    --color-warning: 250 204 21;       /* Lighter amber for dark mode */
+    --color-info: 96 165 250;          /* Lighter blue for dark mode */
   }
 }

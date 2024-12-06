@@ -384,7 +384,7 @@ const Page: NextPage = () => {
             </Panel>
           </PanelGroup>
         </div>
-      </div>
+      </main>
 
       {showAddProjectModal && (
         <AddProjectModal 
