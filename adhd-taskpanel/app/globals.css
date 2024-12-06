@@ -11,7 +11,7 @@
 /* Component styles */
 @import "./styles/animations.css";
 @import "./styles/components.css";
-@import "./styles/buttons.css";
+/* Buttons moved to components.css */
 @import "./styles/focus.css";
 @import "./styles/forms.css";
 @import "./styles/input.css";

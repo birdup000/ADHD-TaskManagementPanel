@@ -1,23 +1,40 @@
 @layer base {
+  /* Base focus styles */
+  :focus {
+    @apply outline-none;
+  }
+
+  /* Enhanced focus-visible styles */
   :focus-visible {
-    @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
+    @apply ring-2 ring-primary/70 ring-offset-2 
+           transition-shadow duration-200
+           dark:ring-primary-light/70 dark:ring-offset-gray-900
+           motion-reduce:transition-none;
   }
 
-  .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 
-           focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900;
-  }
-
-  /* Custom focus styles for interactive elements */
+  /* Interactive elements focus styles */
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    @apply ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900 outline-none;
+    @apply ring-2 ring-primary ring-offset-2 
+           outline-none shadow-sm
+           dark:ring-primary-light dark:ring-offset-gray-900;
   }
 
-  /* Better keyboard navigation indicators */
+  /* High contrast focus for keyboard users */
+  [data-keyboard-nav="true"] :focus-visible {
+    @apply ring-2 ring-primary ring-offset-4
+           outline-none shadow-md
+           dark:ring-primary-light dark:ring-offset-gray-900;
+  }
+
+  /* Skip-to-main focus style */
+  .skip-to-main:focus-visible {
+    @apply fixed top-0 left-0 z-50 m-3 
+           px-4 py-2 bg-background text-foreground
+           ring-2 ring-primary ring-offset-2;
   [tabindex]:not([tabindex="-1"]):focus-visible {
     @apply ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
   }

@@ -1,23 +1,51 @@
 @layer components {
+  /* Standard Button Base */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 
-           text-sm font-medium rounded-lg transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-offset-2 
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2
+           px-4 py-2 rounded-lg
+           text-sm font-medium
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           motion-reduce:transition-none;
   }
 
+  /* Primary Button */
   .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-dark 
-           focus:ring-primary dark:focus:ring-offset-gray-900;
+    @apply bg-primary text-white 
+           hover:bg-primary-dark hover:shadow-md
+           active:bg-primary-dark active:shadow-sm
+           focus:ring-primary/50
+           dark:bg-primary-light dark:hover:bg-primary
+           dark:focus:ring-offset-gray-900;
   }
 
+  /* Secondary Button */
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700
+           hover:bg-gray-200 hover:text-gray-900 hover:shadow-sm
+           active:bg-gray-300
+           focus:ring-gray-400
+           dark:bg-gray-800 dark:text-gray-200
+           dark:hover:bg-gray-700 dark:hover:text-white;
+  }
+
+  /* Ghost Button */
   .btn-ghost {
-    @apply text-gray-600 hover:bg-gray-100 dark:text-gray-300 
-           dark:hover:bg-gray-800 focus:ring-gray-400;
+    @apply bg-transparent text-gray-600 
+           hover:bg-gray-100 hover:text-gray-900
+           active:bg-gray-200
+           focus:ring-gray-400
+           dark:text-gray-300 dark:hover:bg-gray-800 
+           dark:hover:text-white dark:active:bg-gray-700;
   }
 
+  /* Success Button */
   .btn-success {
-    @apply bg-success text-white hover:opacity-90
+    @apply bg-success text-white 
+           hover:opacity-90 hover:shadow-md
+           active:opacity-100 active:shadow-sm
+           focus:ring-success/50;
            focus:ring-success dark:focus:ring-offset-gray-900;
   }
 
