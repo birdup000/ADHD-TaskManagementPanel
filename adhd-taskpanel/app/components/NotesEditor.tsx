@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import debounce from 'lodash/debounce';
 import { 
   FaPlus, 
   FaEllipsisH, 
@@ -54,7 +55,8 @@ const NotesEditor: React.FC<{
   onChange: (content: string) => void;
   readOnly?: boolean;
   placeholder?: string;
-}> = ({ initialContent = '', onChange, readOnly = false, placeholder }) => {
+  className?: string;
+}> = ({ initialContent = '', onChange, readOnly = false, placeholder, className = '' }) => {
   // State
   const [documents, setDocuments] = useState<Document[]>([]);
   const mounted = useRef(false);
@@ -85,23 +87,28 @@ const NotesEditor: React.FC<{
     };
   }, [contextMenu]);
 
+  // Save content when component unmounts or when activeDocument changes
   useEffect(() => {
-    if (activeDocument) {
-      const updatedDoc = {
-        ...activeDocument,
-        lastOpenedAt: new Date()
-      };
-      setDocuments(prev => prev.map(doc => 
-        doc.id === activeDocument.id ? updatedDoc : doc
-      ));
-      
-      // Update recent documents
-      setRecentDocuments(prev => {
-        const filtered = prev.filter(doc => doc.id !== activeDocument.id);
-        return [updatedDoc, ...filtered].slice(0, 5);
-      });
-    }
-  }, [activeDocument?.id]);
+    if (!mounted.current) return;
+    
+    const handleBeforeUnload = () => {
+      if (editorRef.current) {
+        const content = editorRef.current.innerHTML;
+        // Force immediate save without debounce on unload
+        onChange(content);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (editorRef.current) {
+        const content = editorRef.current.innerHTML;
+        onChange(content);
+      }
+    };
+  }, [onChange, mounted]);
 
   // Handlers
   const createNewDocument = useCallback((parentId?: string) => {
@@ -176,7 +183,17 @@ const NotesEditor: React.FC<{
     navigator.clipboard.writeText(`app://document/${docId}`);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // Debounce content updates
+const debouncedOnChange = useCallback(
+  debounce((content: string) => {
+    if (mounted.current) {
+      onChange(content);
+    }
+  }, 500),
+  [onChange]
+);
+
+const handleKeyDown = (e: React.KeyboardEvent) => {
     // Handle special keys
     if (e.key === '/' && !showCommandMenu) {
       e.preventDefault();
@@ -251,12 +268,12 @@ const NotesEditor: React.FC<{
   };
 
   return (
-    <div className="h-full flex bg-gray-800 text-white">
+    <div className="h-full flex bg-transparent text-inherit">
       {/* Sidebar */}
-      <div className="w-64 border-r border-gray-700 bg-gray-800">
+      <div className="w-64 border-r border-gray-700/50 bg-gray-800/30">
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-gray-400 text-sm">WORKSPACE</h3>
+            <h3 className="font-medium text-gray-400/80 text-xs uppercase tracking-wide">Notes</h3>
             <button
               onClick={() => createNewDocument()}
               className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
@@ -270,7 +287,7 @@ const NotesEditor: React.FC<{
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="w-full bg-gray-700 text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full bg-gray-700/50 text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 border border-gray-600/30"
             />
           </div>
         </div>
@@ -311,11 +328,11 @@ const NotesEditor: React.FC<{
       </div>
 
       {/* Editor */}
-      <div className="flex-1 flex flex-col bg-gray-900">
+      <div className="flex-1 flex flex-col bg-transparent">
         {activeDocument ? (
           <>
             {/* Editor Header */}
-            <div className="px-8 py-6 border-b border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-700/30">
               <div className="flex items-center gap-2 mb-4">
                 {activeDocument.emoji && (
                   <span className="text-2xl">{activeDocument.emoji}</span>
@@ -355,23 +372,23 @@ const NotesEditor: React.FC<{
             </div>
 
             {/* Editor Content */}
-            <div className="flex-1 overflow-y-auto px-8 py-6">
-              <div
-                ref={editorRef}
-                className="prose prose-invert max-w-none focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-500 empty:before:pointer-events-none bg-gray-900 rounded-lg p-4"
-                style={{
+            <div className={`flex-1 overflow-y-auto ${className}`}>
+              <div className="max-w-3xl mx-auto w-full">
+                <div
+                  ref={editorRef}
+                  className="prose prose-invert max-w-none focus:outline-none bg-transparent border-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none rounded-lg"
+                  style={{
                   minHeight: '100%',
-                  fontSize: '16px',
-                  lineHeight: '1.7',
-                  color: '#EBEBEB',
-                  padding: '0.5rem 0'
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  color: 'inherit',
+                  padding: '0.5rem'
                 }}
-                contentEditable
+                contentEditable={!readOnly}
                 onKeyDown={handleKeyDown}
                 onContextMenu={(e) => handleContextMenu(e, activeDocument.id, 'editor')}
                 onInput={(e) => {
-  if (readOnly) return;
-                  if (!mounted.current) return;
+                  if (readOnly || !mounted.current) return;
 
                   // Store selection state before any updates
                   const selection = window.getSelection();
@@ -393,7 +410,7 @@ const NotesEditor: React.FC<{
                     prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
                   );
                   setActiveDocument(updatedDoc);
-                  onChange(content);
+                  debouncedOnChange(content);
                   
                   // Restore cursor position after state update
                   if (selection && storedContainer && contentElement.isConnected) {
@@ -420,8 +437,9 @@ const NotesEditor: React.FC<{
                   }
                 }}
                 dangerouslySetInnerHTML={{ __html: activeDocument.blocks[0].content }}
-                data-placeholder={placeholder || "Type '/' for commands"}
-              />
+                  data-placeholder={placeholder || "Type '/' for commands"}
+                ></div>
+              </div>
             </div>
           </>
         ) : (

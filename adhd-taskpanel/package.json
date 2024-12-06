@@ -11,6 +11,7 @@
   "dependencies": {
     "fortawesome": "^0.0.1-security",
     "localforage": "^1.10.0",
+    "lodash": "^4.17.21",
     "next": "15.0.3",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
@@ -18,6 +19,7 @@
     "react-resizable-panels": "^2.1.7"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.13",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

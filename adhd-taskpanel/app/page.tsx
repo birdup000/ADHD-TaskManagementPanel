@@ -27,6 +27,7 @@ const AddProjectModal = dynamic(() => import('./components/AddProjectModal'), { 
 const AddTaskModal = dynamic(() => import('./components/AddTaskModal'), { ssr: false });
 const TaskItem = dynamic(() => import('./components/TaskItem'), { ssr: false });
 const Breadcrumb = dynamic(() => import('./components/Breadcrumb'), { ssr: false });
+const Sidebar = dynamic(() => import('./components/Sidebar'), { ssr: false });
 
 const ResizeHandle = () => (
   <PanelResizeHandle className="w-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" />
@@ -100,6 +101,21 @@ const globalStyles = `
 const Page: NextPage = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  
+  // Load tasks and projects from LocalForage
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const savedTasks = await LocalForage.getItem('tasks');
+        const savedProjects = await LocalForage.getItem('projects');
+        if (savedTasks) setTasks(savedTasks as Task[]);
+        if (savedProjects) setProjects(savedProjects as Project[]);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, []);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -122,7 +138,7 @@ const Page: NextPage = () => {
     setDragOverStage(null);
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, stage: 'toDo' | 'inProgress' | 'completed') => {
+  const handleDrop = async (e: DragEvent<HTMLDivElement>, stage: 'toDo' | 'inProgress' | 'completed') => {
     e.preventDefault();
     setDragOverStage(null);
     if (draggedTask && draggedTask.stage !== stage) {
@@ -130,24 +146,41 @@ const Page: NextPage = () => {
         t.id === draggedTask.id ? { ...t, stage } : t
       ) as Task[];
       setTasks(updatedTasks);
+      try {
+        await LocalForage.setItem('tasks', updatedTasks);
+      } catch (error) {
+        console.error('Error saving tasks:', error);
+      }
     }
   };
 
-  const handleUpdateNotes = (taskId: number, content: string) => {
-    setTasks(tasks.map(t =>
+  const handleUpdateNotes = async (taskId: number, content: string) => {
+    const updatedTasks = tasks.map(t =>
       t.id === taskId ? { ...t, notes: content, lastEdited: new Date() } : t
-    ) as Task[]);
+    ) as Task[];
+    setTasks(updatedTasks);
+    try {
+      await LocalForage.setItem('tasks', updatedTasks);
+    } catch (error) {
+      console.error('Error saving tasks:', error);
+    }
   };
 
   const handleSelectTask = (task: Task) => {
     setSelectedTask(task);
   };
 
-  const handleProjectNotesChange = (content: string) => {
+  const handleProjectNotesChange = async (content: string) => {
     if (selectedProject) {
-      setProjects(projects.map(p =>
+      const updatedProjects = projects.map(p =>
         p.id === selectedProject.id ? { ...p, notes: content } : p
-      ) as Project[]);
+      ) as Project[];
+      setProjects(updatedProjects);
+      try {
+        await LocalForage.setItem('projects', updatedProjects);
+      } catch (error) {
+        console.error('Error saving projects:', error);
+      }
     }
   };
 
@@ -157,7 +190,37 @@ const Page: NextPage = () => {
         <title>Task Manager</title>
       </Head>
 
-      {/* Sidebar code remains the same */}
+      {/* Sidebar */}
+      <Sidebar
+        projects={projects}
+        selectedProject={selectedProject}
+        collapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
+        onProjectSelect={setSelectedProject}
+        onAddProject={() => setShowAddProjectModal(true)}
+        onDeleteProject={(project) => {
+          setProjects(projects.filter(p => p.id !== project.id));
+          if (selectedProject?.id === project.id) setSelectedProject(null);
+        }}
+        onEditProject={async (project) => {
+          const updatedProject = { ...project, name: newProjectName };
+          const updatedProjects = projects.map(p => 
+            p.id === project.id ? updatedProject : p
+          );
+          setProjects(updatedProjects);
+          try {
+            await LocalForage.setItem('projects', updatedProjects);
+          } catch (error) {
+            console.error('Error saving projects:', error);
+          }
+          setEditingProjectId(null);
+        }}
+        onProjectExpandToggle={(project) => {
+          setProjects(projects.map(p =>
+            p.id === project.id ? { ...p, isExpanded: !p.isExpanded } : p
+          ));
+        }}
+      />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -221,19 +284,31 @@ const Page: NextPage = () => {
                               task={task}
                               onDragStart={setDraggedTask}
                               onDragEnd={() => setDraggedTask(null)}
-                              onDelete={(task) => {
-                                setTasks(tasks.filter(t => t.id !== task.id));
+                              onDelete={async (task) => {
+                                const updatedTasks = tasks.filter(t => t.id !== task.id);
+                                setTasks(updatedTasks);
                                 if (selectedTask?.id === task.id) setSelectedTask(null);
+                                try {
+                                  await LocalForage.setItem('tasks', updatedTasks);
+                                } catch (error) {
+                                  console.error('Error saving tasks:', error);
+                                }
                               }}
                               onEdit={(task) => {
                                 setSelectedTask(task);
                               }}
-                              onToggleComplete={(task) => {
-                                setTasks(tasks.map(t =>
+                              onToggleComplete={async (task) => {
+                                const updatedTasks = tasks.map(t =>
                                   t.id === task.id 
                                     ? { ...t, isComplete: !t.isComplete }
                                     : t
-                                ));
+                                );
+                                setTasks(updatedTasks);
+                                try {
+                                  await LocalForage.setItem('tasks', updatedTasks);
+                                } catch (error) {
+                                  console.error('Error saving tasks:', error);
+                                }
                               }}
                             />
                           ))}
@@ -259,6 +334,7 @@ const Page: NextPage = () => {
                     </div>
                     <div className="prose dark:prose-invert max-w-none">
                       <NotesEditor
+                        className="p-4 bg-gray-50/5 rounded-lg border border-gray-200 dark:border-gray-700/30 shadow-sm"
                         initialContent={selectedTask?.notes || ''}
                         onChange={(content) => selectedTask && handleUpdateNotes(selectedTask.id, content)}
                       />
@@ -306,13 +382,19 @@ const Page: NextPage = () => {
       {showAddProjectModal && (
         <AddProjectModal 
           onClose={() => setShowAddProjectModal(false)}
-          onAdd={(name) => {
+          onAdd={async (name) => {
             const newProject: Project = {
               id: Date.now(),
               name,
               isExpanded: false,
             };
-            setProjects([...projects, newProject] as Project[]);
+            const updatedProjects = [...projects, newProject] as Project[];
+            setProjects(updatedProjects);
+            try {
+              await LocalForage.setItem('projects', updatedProjects);
+            } catch (error) {
+              console.error('Error saving projects:', error);
+            }
             setShowAddProjectModal(false);
           }}
         />
@@ -320,7 +402,7 @@ const Page: NextPage = () => {
       {showAddTaskForm && (
         <AddTaskModal 
           onClose={() => setShowAddTaskForm(false)}
-          onAdd={(taskData) => {
+          onAdd={async (taskData) => {
             const newTask: Task = {
               id: Date.now(),
               projectId: selectedProject?.id || 0,
@@ -328,7 +410,13 @@ const Page: NextPage = () => {
               isComplete: false,
               notes: ''
             };
-            setTasks([...tasks, newTask] as Task[]);
+            const updatedTasks = [...tasks, newTask] as Task[];
+            setTasks(updatedTasks);
+            try {
+              await LocalForage.setItem('tasks', updatedTasks);
+            } catch (error) {
+              console.error('Error saving tasks:', error);
+            }
             setShowAddTaskForm(false);
           }}
         />
