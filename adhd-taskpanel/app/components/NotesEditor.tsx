@@ -57,9 +57,12 @@ const NotesEditor: React.FC<{
   placeholder?: string;
   className?: string;
 }> = ({ initialContent = '', onChange, readOnly = false, placeholder, className = '' }) => {
+  // Refs must be declared first
+  const mounted = useRef(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
   // State
   const [documents, setDocuments] = useState<Document[]>([]);
-  const mounted = useRef(false);
   const [activeDocument, setActiveDocument] = useState<Document | null>(null);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 });
@@ -67,7 +70,6 @@ const NotesEditor: React.FC<{
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recentDocuments, setRecentDocuments] = useState<Document[]>([]);
-  const editorRef = useRef<HTMLDivElement>(null);
 
   // Effects
   useEffect(() => {
@@ -183,15 +185,26 @@ const NotesEditor: React.FC<{
     navigator.clipboard.writeText(`app://document/${docId}`);
   };
 
-  // Debounce content updates
-const debouncedOnChange = useCallback(
-  debounce((content: string) => {
+  // Create and store debounced function instance
+const debouncedChangeRef = useRef<ReturnType<typeof debounce>>();
+
+// Initialize debounced function
+useEffect(() => {
+  debouncedChangeRef.current = debounce((content: string) => {
     if (mounted.current) {
       onChange(content);
     }
-  }, 500),
-  [onChange]
-);
+  }, 500);
+
+  return () => {
+    debouncedChangeRef.current?.cancel();
+  };
+}, [onChange]);
+
+// Create stable callback that uses the debounced function
+const debouncedOnChange = useCallback((content: string) => {
+  debouncedChangeRef.current?.(content);
+}, []);
 
 const handleKeyDown = (e: React.KeyboardEvent) => {
     // Handle special keys
@@ -393,27 +406,30 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
                   const contentElement = e.currentTarget;
                   const content = contentElement.innerHTML;
 
-                  const batchUpdate = () => {
-                    const updatedDoc = {
-                      ...activeDocument,
-                      blocks: [{ ...activeDocument.blocks[0], content }],
-                      updatedAt: new Date()
-                    };
-
-                    setDocuments(prev => 
-                      prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
-                    );
-                    setActiveDocument(updatedDoc);
-                    debouncedOnChange(content);
-                  };
-
+                  // Store selection state before updates
                   const selection = window.getSelection();
                   const range = selection?.getRangeAt(0);
                   const storedContainer = range?.startContainer;
                   const storedOffset = range?.startOffset || 0;
 
-                  batchUpdate();
+                  // Update document state
+                  const updatedDoc = {
+                    ...activeDocument,
+                    blocks: [{ ...activeDocument.blocks[0], content }],
+                    updatedAt: new Date()
+                  };
 
+                  setDocuments(prev => 
+                    prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
+                  );
+                  setActiveDocument(updatedDoc);
+                  
+                  // Trigger debounced save
+                  if (mounted.current) {
+                    debouncedOnChange(content);
+                  }
+
+                  // Restore selection in next frame
                   if (selection && storedContainer && contentElement.isConnected) {
                     requestAnimationFrame(() => {
                       try {
@@ -436,7 +452,7 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
                       }
                     });
                   }
-                }, [readOnly, mounted, activeDocument, setDocuments, setActiveDocument, debouncedOnChange])}
+                }, [readOnly, activeDocument, setDocuments, setActiveDocument, debouncedOnChange])}
                 data-placeholder={placeholder || "Type '/' for commands"}
                 suppressContentEditableWarning={true}
                 dangerouslySetInnerHTML={{ __html: activeDocument.blocks[0].content }}
