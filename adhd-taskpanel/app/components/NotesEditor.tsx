@@ -206,6 +206,61 @@ const debouncedOnChange = useCallback((content: string) => {
   debouncedChangeRef.current?.(content);
 }, []);
 
+// Handle input changes with proper cursor position management
+const handleInputChange = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+  if (readOnly || !mounted.current || !activeDocument) return;
+
+  const contentElement = e.currentTarget;
+  const content = contentElement.innerHTML;
+
+  // Store selection state before updates
+  const selection = window.getSelection();
+  const range = selection?.getRangeAt(0);
+  const storedContainer = range?.startContainer;
+  const storedOffset = range?.startOffset || 0;
+
+  // Update document state
+  const updatedDoc: Document = {
+    ...activeDocument,
+    blocks: [{ ...activeDocument.blocks[0], content }],
+    updatedAt: new Date()
+  };
+
+  setDocuments(prev => 
+    prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
+  );
+  setActiveDocument(updatedDoc);
+  
+  // Trigger debounced save
+  if (mounted.current) {
+    debouncedOnChange(content);
+  }
+
+  // Restore selection in next frame
+  if (selection && storedContainer && contentElement.isConnected) {
+    requestAnimationFrame(() => {
+      try {
+        const newRange = document.createRange();
+        
+        if (contentElement.contains(storedContainer)) {
+          newRange.setStart(storedContainer, storedOffset);
+          newRange.setEnd(storedContainer, storedOffset);
+        } else {
+          const fallbackNode = contentElement.firstChild || contentElement;
+          const maxOffset = Math.min(storedOffset, fallbackNode.textContent?.length || 0);
+          newRange.setStart(fallbackNode, maxOffset);
+          newRange.setEnd(fallbackNode, maxOffset);
+        }
+        
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      } catch (err) {
+        console.warn('Failed to restore cursor position:', err);
+      }
+    });
+  }
+}, [readOnly, activeDocument, setDocuments, setActiveDocument, debouncedOnChange]);
+
 const handleKeyDown = (e: React.KeyboardEvent) => {
     // Handle special keys
     if (e.key === '/' && !showCommandMenu) {
@@ -400,7 +455,7 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
                 contentEditable={!readOnly}
                 onKeyDown={handleKeyDown}
                 onContextMenu={(e) => handleContextMenu(e, activeDocument.id, 'editor')}
-                onInput={useCallback((e: React.FormEvent<HTMLDivElement>) => {
+                onInput={handleInputChange}
                   if (readOnly || !mounted.current) return;
 
                   const contentElement = e.currentTarget;
