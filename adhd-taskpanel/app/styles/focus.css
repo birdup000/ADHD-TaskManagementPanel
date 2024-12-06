@@ -1,0 +1,31 @@
+@layer base {
+  :focus-visible {
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
+  }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 
+           focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900;
+  }
+
+  /* Custom focus styles for interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900 outline-none;
+  }
+
+  /* Better keyboard navigation indicators */
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
+  }
+
+  /* Skip to main content link */
+  .skip-to-content {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 
+           focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-blue-600
+           focus:rounded-lg focus:shadow-lg focus:ring-2 focus:ring-blue-500;
+  }
+}

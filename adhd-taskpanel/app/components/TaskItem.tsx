@@ -35,9 +35,7 @@ export default React.forwardRef<HTMLDivElement, TaskItemProps>(
     return (
       <div 
         ref={ref}
-        className={`group p-4 bg-white dark:bg-gray-800/50 rounded-lg
-          border border-gray-200 dark:border-gray-700
-          hover:shadow-md dark:hover:border-gray-600 transition-all duration-200
+        className={`card group animate-slide-in
           ${task.isComplete ? 'opacity-75' : ''}
           ${isOverdue ? 'border-red-300 dark:border-red-700' : ''}`}
         draggable
@@ -52,7 +50,7 @@ export default React.forwardRef<HTMLDivElement, TaskItemProps>(
         <div className="flex items-start gap-3">
           <button 
             onClick={handleToggleComplete}
-            className={`mt-1 p-1.5 rounded-full transition-colors
+            className={`mt-1 p-1.5 rounded-full transition-all duration-200
               ${task.isComplete 
                 ? 'text-green-500 hover:text-green-600 bg-green-50 dark:bg-green-900/20' 
                 : 'text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
@@ -72,14 +70,14 @@ export default React.forwardRef<HTMLDivElement, TaskItemProps>(
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={handleEdit}
-                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="btn btn-ghost p-1"
                   aria-label="Edit task"
                 >
                   <FaEdit size={14} />
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="p-1 text-gray-400 hover:text-red-500"
+                  className="btn btn-ghost p-1 hover:text-red-500 dark:hover:text-red-400"
                   aria-label="Delete task"
                 >
                   <FaTrash size={14} />

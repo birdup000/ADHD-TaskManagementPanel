@@ -12,7 +12,7 @@ interface BreadcrumbProps {
 
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ items = [] }) => {
   return (
-    <nav className="flex px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <nav className="flex px-6 py-4 bg-background/50 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 animate-fade-in shadow-sm">
       <ol className="flex items-center space-x-2">
         <li>
           <a 

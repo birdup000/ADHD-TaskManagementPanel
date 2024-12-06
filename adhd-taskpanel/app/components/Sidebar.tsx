@@ -36,8 +36,8 @@ export default function Sidebar({
 }: SidebarProps) {
   return (
     <div
-      className={`flex flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50
-        transition-all duration-200 ease-in-out ${collapsed ? 'w-16' : 'w-64'}`}
+      className={`flex flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm
+        transition-all duration-300 ease-in-out ${collapsed ? 'w-16' : 'w-64'}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
@@ -60,12 +60,12 @@ export default function Sidebar({
       </div>
 
       {/* Projects List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">
+      <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
         {projects.map((project) => (
           <div key={project.id} className="relative group">
             <div
               onClick={() => onProjectSelect(project)}
-              className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors cursor-pointer
+              className={`w-full flex items-center gap-2 p-2.5 rounded-lg text-left transition-all duration-200 cursor-pointer
                 ${selectedProject?.id === project.id
                   ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -122,9 +122,7 @@ export default function Sidebar({
         {!collapsed && (
           <button
             onClick={onAddProject}
-            className="w-full flex items-center gap-2 p-2 text-sm text-gray-500 hover:text-gray-700
-              dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700
-              rounded-lg transition-colors"
+            className="btn btn-ghost w-full justify-start"
           >
             <FaPlus size={12} />
             <span>Add Project</span>

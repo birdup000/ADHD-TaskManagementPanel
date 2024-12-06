@@ -185,9 +185,15 @@ const Page: NextPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-white text-gray-900 dark:bg-[#191919] dark:text-gray-100">
+    <div className="flex h-screen bg-background text-foreground transition-colors duration-300">
+      <a href="#main" className="skip-to-content">
+        Skip to main content
+      </a>
       <Head>
         <title>Task Manager</title>
+        <meta name="description" content="A task management application designed for ADHD users" />
+        <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
       </Head>
 
       {/* Sidebar */}
@@ -223,25 +229,25 @@ const Page: NextPage = () => {
       />
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <main id="main" className="flex-1 flex flex-col min-w-0" role="main">
         <Breadcrumb items={selectedProject ? [{ label: selectedProject.name }] : []} />
         <div className="flex-1 overflow-hidden">
           <PanelGroup direction="horizontal">
             {/* Tasks list */}
             <Panel defaultSize={40} minSize={30}>
-              <div className="h-full p-6 overflow-y-auto">
+              <div className="h-full p-6 overflow-y-auto custom-scrollbar">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Tasks</h2>
                   <button
                     onClick={() => setShowAddTaskForm(true)}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors duration-200"
+                    className="btn btn-primary"
                   >
                     <FaPlus size={12} className="text-blue-100" />
                     <span>Add Task</span>
                   </button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {[
                     { stage: 'toDo' as const, title: "To Do", color: "border-red-500", icon: "🎯" },
                     { stage: 'inProgress' as const, title: "In Progress", color: "border-yellow-500", icon: "⚡" },
@@ -249,7 +255,7 @@ const Page: NextPage = () => {
                   ].map(({ stage, title, color, icon }) => (
                     <div
                       key={stage}
-                      className={`bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4
+                      className={`card animate-fade-in
                         ${dragOverStage === stage ? 'ring-2 ring-blue-500 ring-opacity-50 scale-[1.02]' : ''}
                         transition-all duration-200 ease-in-out
                         hover:shadow-lg dark:shadow-none
@@ -323,7 +329,7 @@ const Page: NextPage = () => {
 
             {/* Task details panel */}
             <Panel defaultSize={60} minSize={30}>
-              <div className="h-full p-4 overflow-y-auto">
+              <div className="h-full p-4 overflow-y-auto custom-scrollbar">
                 {selectedTask ? (
                   <div className="space-y-6">
                     <div className="flex items-start gap-4">
@@ -369,7 +375,8 @@ const Page: NextPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-gray-400">
+                  <div className="h-full flex flex-col items-center justify-center gap-4 text-gray-400">
+                    <span className="text-4xl">📋</span>
                     Select a project or task to view details
                   </div>
                 )}

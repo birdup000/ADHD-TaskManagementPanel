@@ -1,0 +1,62 @@
+import type { Config } from "tailwindcss";
+import colors from 'tailwindcss/colors';
+
+const config: Config = {
+  darkMode: "class",
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      screens: {
+        'xs': '400px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+      },
+      colors: {
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        foreground: "rgb(var(--color-foreground) / <alpha-value>)",
+        primary: colors.blue,
+        secondary: colors.indigo,
+        accent: colors.violet,
+      },
+      fontFamily: {
+        sans: ["var(--font-geist-sans)"],
+        mono: ["var(--font-geist-mono)"],
+      },
+      animation: {
+        "fade-in": "fadeIn 0.3s ease-out",
+        "slide-in": "slideIn 0.3s ease-out",
+        "pulse-scale": "pulseScale 1.5s ease-in-out infinite",
+      },
+      borderRadius: {
+        DEFAULT: "var(--radius-md)",
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
+      },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        DEFAULT: "var(--shadow)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+      },
+      transitionTimingFunction: {
+        "in-out": "var(--ease-in-out)",
+        "in": "var(--ease-in)",
+        "out": "var(--ease-out)",
+        "linear": "var(--ease-linear)",
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;

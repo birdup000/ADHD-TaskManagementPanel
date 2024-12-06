@@ -1,0 +1,29 @@
+@layer utilities {
+  .loading {
+    position: relative;
+  }
+
+  .loading::after {
+    content: '';
+    @apply absolute inset-0 bg-gray-200 dark:bg-gray-700
+           rounded animate-pulse;
+  }
+
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::after {
+    content: '';
+    @apply absolute inset-0 transform translate-x-[-100%]
+           bg-gradient-to-r from-transparent via-white/20 to-transparent;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}

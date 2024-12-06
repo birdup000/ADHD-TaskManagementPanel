@@ -32,8 +32,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[500px] overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+      <div className="bg-white dark:bg-gray-800/90 rounded-xl shadow-xl w-[500px] max-w-[90vw] overflow-hidden animate-slide-in">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Create New Task
@@ -91,7 +91,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              className="btn btn-primary"
             >
               Create
             </button>
