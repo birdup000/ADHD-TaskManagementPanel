@@ -186,14 +186,11 @@ const Page: NextPage = () => {
 
   return (
     <div className="flex h-screen bg-background text-foreground transition-colors duration-300">
-      <a href="#main" className="skip-to-content">
-        Skip to main content
-      </a>
       <Head>
-        <title>Task Manager</title>
-        <meta name="description" content="A task management application designed for ADHD users" />
-        <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+      <title>Task Manager</title>
+      <meta name="description" content="A task management application designed for ADHD users" />
+      <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+      <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
       </Head>
 
       {/* Sidebar */}

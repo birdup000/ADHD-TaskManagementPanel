@@ -76,7 +76,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased custom-scrollbar h-screen bg-background text-foreground transition-colors`}
         >
           <ThemeProvider>
-            <main className="container mx-auto w-full min-h-screen px-4 py-8">
+            <main className="w-full min-h-screen">
               {children}
             </main>
             <ThemeSettings />
