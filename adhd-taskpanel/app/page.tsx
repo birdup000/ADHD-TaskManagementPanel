@@ -226,7 +226,7 @@ const Page: NextPage = () => {
       />
 
       {/* Main content */}
-      <main id="main" className="flex-1 flex flex-col min-w-0" role="main">
+      <main className="flex-1 flex flex-col min-w-0">
         <Breadcrumb items={selectedProject ? [{ label: selectedProject.name }] : []} />
         <div className="flex-1 overflow-hidden">
           <PanelGroup direction="horizontal">
