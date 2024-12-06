@@ -99,7 +99,7 @@ export default React.forwardRef<HTMLDivElement, TaskItemProps>(
                     : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
                   }`}>
                   <FaClock size={12} />
-                  {new Date(task.dueDate).toLocaleDateString()}
+                  {new Date(task.dueDate).toISOString().split('T')[0]}
                 </span>
               </div>
             )}

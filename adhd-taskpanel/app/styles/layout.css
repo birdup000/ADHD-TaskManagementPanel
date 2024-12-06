@@ -1,0 +1,31 @@
+/* Layout styles */
+/* Base layout styles */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--container-padding);
+}
+
+/* Grid layout utilities */
+.grid {
+  display: grid;
+  gap: var(--grid-gap);
+}
+
+/* Flexbox layout utilities */
+.flex {
+  display: flex;
+}
+
+/* Layout spacing utilities */
+.spacing-base {
+  margin-bottom: var(--spacing-base);
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding: var(--container-padding-mobile);
+  }
+}

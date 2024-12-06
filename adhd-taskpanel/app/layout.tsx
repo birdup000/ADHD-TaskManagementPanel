@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import "./styles/layout.css";
 import { ThemeProvider } from './providers';
 
 import { ThemeSettings } from './components/theme-settings';
@@ -72,10 +73,10 @@ export default function RootLayout({
         }}
       >
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased custom-scrollbar min-h-screen bg-background text-foreground transition-colors`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased custom-scrollbar h-screen bg-background text-foreground transition-colors`}
         >
           <ThemeProvider>
-            <main className="container mx-auto px-4 py-8">
+            <main className="container mx-auto w-full min-h-screen px-4 py-8">
               {children}
             </main>
             <ThemeSettings />

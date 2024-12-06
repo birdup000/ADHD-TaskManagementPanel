@@ -371,8 +371,8 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
               <div className="flex items-center gap-4 text-sm text-gray-400">
                 <span className="flex items-center gap-1">
                   <FaClock className="w-3 h-3" />
-                  {new Date(activeDocument.updatedAt).toLocaleDateString()} •{' '}
-                  {new Date(activeDocument.updatedAt).toLocaleTimeString()}
+                  {new Date(activeDocument.updatedAt).toISOString().split('T')[0]} •{' '}
+                  {new Date(activeDocument.updatedAt).toLocaleTimeString('en-US')}
                 </span>
                 <button
                   onClick={() => toggleFavorite(activeDocument.id)}

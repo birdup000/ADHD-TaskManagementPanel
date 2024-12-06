@@ -1,4 +1,3 @@
-// For dark mode toggling and persistence
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
@@ -29,36 +28,51 @@ export function ThemeProvider({
   storageKey = 'theme',
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme)
-
-  useEffect(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
+    // During SSR and initial client render, use the default theme
+    if (typeof window === 'undefined') return defaultTheme
+    
+    // After hydration, check localStorage
     const savedTheme = window.localStorage.getItem(storageKey) as Theme | null
-    if (savedTheme) {
-      setTheme(savedTheme)
-    }
-  }, [storageKey])
+    return savedTheme || defaultTheme
+  })
 
   useEffect(() => {
     const root = window.document.documentElement
-    root.classList.remove('light', 'dark')
-
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
-        ? 'dark'
-        : 'light'
-      root.classList.add(systemTheme)
-      return
+    
+    const applyTheme = (newTheme: Theme) => {
+      root.classList.remove('light', 'dark')
+      
+      if (newTheme === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        root.classList.add(systemTheme)
+        return
+      }
+      
+      root.classList.add(newTheme)
     }
 
-    root.classList.add(theme)
+    applyTheme(theme)
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = () => {
+      if (theme === 'system') {
+        applyTheme('system')
+      }
+    }
+    
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme])
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      setTheme(theme)
-      window.localStorage.setItem(storageKey, theme)
+    setTheme: (newTheme: Theme) => {
+      setTheme(newTheme)
+      window.localStorage.setItem(storageKey, newTheme)
     },
   }
 
