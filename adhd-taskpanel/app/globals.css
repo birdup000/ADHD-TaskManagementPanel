@@ -4,20 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Theme styles */
-@import "./styles/theme.css";
-/* Base styles */
-@import "./styles/base.css";
-/* Component styles */
-@import "./styles/animations.css";
-@import "./styles/components.css";
-/* Buttons moved to components.css */
-@import "./styles/focus.css";
-@import "./styles/forms.css";
-@import "./styles/input.css";
-@import "./styles/loading.css";
-@import "./styles/responsiveness.css";
-@import "./styles/scrollbars.css";
+/* Import style dependencies */
+@import "./styles/dependencies.css";
 @import "./styles/task-panel.css";
 
 /* Animations */

@@ -1,0 +1,27 @@
+/* Critical CSS for immediate render path */
+@layer critical {
+  /* Core theme variables */
+  :root {
+    --color-primary: 67 56 202;
+    --color-primary-light: 99 102 241;
+    --color-primary-dark: 49 46 129;
+    --color-background: 255 255 255;
+    --color-foreground: 17 24 39;
+  }
+
+  /* Critical layout styles */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Critical typography */
+  body {
+    font-family: var(--font-geist-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
