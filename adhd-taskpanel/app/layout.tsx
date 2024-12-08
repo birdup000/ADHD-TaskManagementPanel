@@ -3,7 +3,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import "./styles/layout.css";
 import { ThemeProvider } from './providers';
-
 import { ThemeSettings } from './components/theme-settings';
 
 
@@ -57,6 +56,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { StrictMode } from 'react';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -75,12 +76,14 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased custom-scrollbar h-screen bg-background text-foreground transition-colors`}
         >
-          <ThemeProvider>
-            <main className="w-full min-h-screen">
-              {children}
-            </main>
-            <ThemeSettings />
-          </ThemeProvider>
+          <StrictMode>
+            <ThemeProvider>
+              <main className="w-full min-h-screen">
+                {children}
+                <ThemeSettings />
+              </main>
+            </ThemeProvider>
+          </StrictMode>
         </body>
       </html>
   );

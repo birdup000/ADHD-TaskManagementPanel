@@ -15,6 +15,7 @@ interface TaskItemProps {
 
 export default React.forwardRef<HTMLDivElement, TaskItemProps>(
   function TaskItem({ task, onDragStart, onDragEnd, onDelete, onEdit, onToggleComplete }, ref) {
+    // Calculate overdue status
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !task.isComplete;
     
     const handleDelete = (e: React.MouseEvent) => {

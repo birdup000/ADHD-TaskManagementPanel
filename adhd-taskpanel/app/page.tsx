@@ -99,8 +99,20 @@ const globalStyles = `
 `;
 
 const Page: NextPage = () => {
+  // Group all useState hooks together at the top
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [hoveredTaskId, setHoveredTaskId] = useState<number | null>(null);
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<'toDo' | 'inProgress' | 'completed' | null>(null);
   
   // Load tasks and projects from LocalForage
   useEffect(() => {
@@ -116,17 +128,6 @@ const Page: NextPage = () => {
     };
     loadData();
   }, []);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showAddProjectModal, setShowAddProjectModal] = useState(false);
-  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
-  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [hoveredTaskId, setHoveredTaskId] = useState<number | null>(null);
-  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
-  const [dragOverStage, setDragOverStage] = useState<'toDo' | 'inProgress' | 'completed' | null>(null);
   const projectTasks = tasks.filter(task => selectedProject && task.projectId === selectedProject.id);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>, stage: 'toDo' | 'inProgress' | 'completed') => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 
 interface AddTaskModalProps {
   onClose?: () => void;
@@ -13,6 +13,7 @@ interface AddTaskModalProps {
 }
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
+  // Always declare hooks first, before any conditional logic
   const [taskData, setTaskData] = useState({
     task: '',
     description: '',
@@ -20,16 +21,19 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ onClose, onAdd }) => {
     stage: 'toDo' as const
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle submission with proper hook usage
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (onAdd) {
+    // Combine conditionals to ensure consistent execution
+    if (onAdd && taskData) {
       onAdd({
         ...taskData,
         dueDate: taskData.dueDate || null
       });
+      // Only close after successful add
+      onClose?.();
     }
-    if (onClose) onClose();
-  };
+  }, [onAdd, onClose, taskData]);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">

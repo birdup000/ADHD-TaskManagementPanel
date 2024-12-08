@@ -1,4 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import type { Document } from '../types';
+import { DocumentTree } from './DocumentTree';
+
+import { handleSelectionUpdate } from './selection-utils';
+import { useMountedRef } from '../hooks/useMountedRef';
 import debounce from 'lodash/debounce';
 import { 
   FaPlus, 
@@ -28,7 +33,7 @@ interface Block {
   };
 }
 
-interface Document {
+interface NoteDocument {
   id: string;
   title: string;
   icon?: string;
@@ -36,7 +41,7 @@ interface Document {
   emoji?: string;
   favorite?: boolean;
   blocks: Block[];
-  children: Document[];
+  children: NoteDocument[];
   createdAt: Date;
   updatedAt: Date;
   lastOpenedAt?: Date;
@@ -50,72 +55,83 @@ interface ContextMenu {
   type: 'document' | 'editor';
 }
 
-const NotesEditor: React.FC<{
+interface NotesEditorProps {
   initialContent?: string;
   onChange: (content: string) => void;
   readOnly?: boolean;
   placeholder?: string;
   className?: string;
-}> = ({ initialContent = '', onChange, readOnly = false, placeholder, className = '' }) => {
-  // Refs must be declared first
-  const mounted = useRef(false);
-  const editorRef = useRef<HTMLDivElement>(null);
+}
 
-  // State
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [activeDocument, setActiveDocument] = useState<Document | null>(null);
+const NotesEditor: React.FC<NotesEditorProps> = ({ 
+  initialContent = '', 
+  onChange, 
+  readOnly = false, 
+  placeholder, 
+  className = '' 
+}) => {
+  // 1. Refs
+  const editorRef = useRef<HTMLDivElement>(null);
+  const { ref: mounted, isMounted } = useMountedRef();
+
+  // 2. State hooks - grouped by functionality
+  const [documents, setDocuments] = useState<NoteDocument[]>([]);
+  const [activeDocument, setActiveDocument] = useState<NoteDocument | null>(null);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [commandMenuPosition, setCommandMenuPosition] = useState({ x: 0, y: 0 });
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [recentDocuments, setRecentDocuments] = useState<Document[]>([]);
+  const [recentDocuments, setRecentDocuments] = useState<NoteDocument[]>([]);
 
-  // Effects
-  useEffect(() => {
-    mounted.current = true;
+  // 3. Callbacks
+  const debouncedOnChange = useCallback(
+    debounce((content: string) => {
+      onChange(content);
+    }, 500),
+    [onChange]
+  );
 
-    const handleClickOutside = (e: MouseEvent) => {
-      if (contextMenu && !e.defaultPrevented) {
-        setContextMenu(null);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
+  const handleContentInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    const content = e.currentTarget.innerHTML;
+    debouncedOnChange(content);
     
-    return () => {
-      mounted.current = false;
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [contextMenu]);
-
-  // Save content when component unmounts or when activeDocument changes
-  useEffect(() => {
-    if (!mounted.current) return;
+    if (!isMounted() || readOnly || !activeDocument) {
+      return;
+    }
     
-    const handleBeforeUnload = () => {
-      if (editorRef.current) {
-        const content = editorRef.current.innerHTML;
-        // Force immediate save without debounce on unload
-        onChange(content);
-      }
+    const updatedDoc = {
+      ...activeDocument,
+      blocks: [{ ...activeDocument.blocks[0], content }],
+      updatedAt: new Date()
     };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
     
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (editorRef.current) {
-        const content = editorRef.current.innerHTML;
-        onChange(content);
-      }
-    };
-  }, [onChange, mounted]);
+    setDocuments(prev => 
+      prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
+    );
+    setActiveDocument(updatedDoc);
+  }, [readOnly, activeDocument, debouncedOnChange, isMounted]);
 
-  // Handlers
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === '/' && !showCommandMenu) {
+      e.preventDefault();
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setCommandMenuPosition({
+          x: rect.left,
+          y: rect.bottom
+        });
+        setShowCommandMenu(true);
+      }
+    }
+  }, [showCommandMenu]);
+
+  // Document management callback hooks
   const createNewDocument = useCallback((parentId?: string) => {
-    if (!mounted.current) return;
-    const newDoc: Document = {
+    if (!isMounted()) return;
+    const newDoc: NoteDocument = {
       id: Date.now().toString(),
       title: 'Untitled',
       blocks: [{ id: '1', type: 'text', content: '' }],
@@ -135,13 +151,80 @@ const NotesEditor: React.FC<{
       setDocuments(prev => [...prev, newDoc]);
     }
     setActiveDocument(newDoc);
-  }, []);
+  }, [isMounted, setDocuments, setActiveDocument]);
 
+  // 4. Effect hooks - ordered by dependency complexity
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isMounted() && contextMenu && !e.defaultPrevented) {
+        setContextMenu(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [contextMenu, isMounted]);
+
+  useEffect(() => {
+    if (!editorRef.current || !activeDocument) return;
+    
+    const selection = window.getSelection();
+    if (!selection) return;
+    
+    const range = selection.getRangeAt(0);
+    if (!range) return;
+    
+    const storedContainer = range.startContainer;
+    const storedOffset = range.startOffset;
+    
+    if (storedContainer && editorRef.current.isConnected) {
+      requestAnimationFrame(() => {
+        try {
+          const newRange = document.createRange();
+          if (editorRef.current?.contains(storedContainer)) {
+            newRange.setStart(storedContainer, storedOffset);
+            newRange.setEnd(storedContainer, storedOffset);
+          } else {
+            const fallbackNode = editorRef.current?.firstChild || editorRef.current;
+            if (fallbackNode) {
+              const maxOffset = Math.min(storedOffset, fallbackNode.textContent?.length || 0);
+              newRange.setStart(fallbackNode, maxOffset);
+              newRange.setEnd(fallbackNode, maxOffset);
+            }
+          }
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        } catch (err) {
+          console.warn('Failed to restore cursor position:', err);
+        }
+      });
+    }
+  }, [activeDocument]);
+
+  // Content save effect
+  useEffect(() => {
+    const isMountedValue = mounted.current;
+    
+    const handleBeforeUnload = () => {
+      const content = editorRef.current?.innerHTML;
+      if (content && isMountedValue) {
+        onChange(content);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      handleBeforeUnload();
+    };
+  }, [onChange, mounted]);  // Added missing dependencies
+
+  // All regular functions (non-hooks) below this point
   const duplicateDocument = (docId: string) => {
     const docToDuplicate = documents.find(d => d.id === docId);
     if (!docToDuplicate) return;
 
-    const duplicate: Document = {
+    const duplicate: NoteDocument = {
       ...docToDuplicate,
       id: Date.now().toString(),
       title: `${docToDuplicate.title} (Copy)`,
@@ -155,7 +238,7 @@ const NotesEditor: React.FC<{
 
   const deleteDocument = (docId: string) => {
     setDocuments(prev => {
-      const removeDoc = (docs: Document[]): Document[] => {
+      const removeDoc = (docs: NoteDocument[]): NoteDocument[] => {
         return docs.filter(doc => {
           if (doc.id === docId) return false;
           if (doc.children.length) {
@@ -185,99 +268,7 @@ const NotesEditor: React.FC<{
     navigator.clipboard.writeText(`app://document/${docId}`);
   };
 
-  // Create and store debounced function instance
-const debouncedChangeRef = useRef<ReturnType<typeof debounce>>();
-
-// Initialize debounced function
-useEffect(() => {
-  debouncedChangeRef.current = debounce((content: string) => {
-    if (mounted.current) {
-      onChange(content);
-    }
-  }, 500);
-
-  return () => {
-    debouncedChangeRef.current?.cancel();
-  };
-}, [onChange]);
-
-// Create stable callback that uses the debounced function
-const debouncedOnChange = useCallback((content: string) => {
-  debouncedChangeRef.current?.(content);
-}, []);
-
-// Handle input changes with proper cursor position management
-const handleInputChange = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-  if (readOnly || !mounted.current || !activeDocument) return;
-
-  const contentElement = e.currentTarget;
-  const content = contentElement.innerHTML;
-
-  // Store selection state before updates
-  const selection = window.getSelection();
-  const range = selection?.getRangeAt(0);
-  const storedContainer = range?.startContainer;
-  const storedOffset = range?.startOffset || 0;
-
-  // Update document state
-  const updatedDoc: Document = {
-    ...activeDocument,
-    blocks: [{ ...activeDocument.blocks[0], content }],
-    updatedAt: new Date()
-  };
-
-  setDocuments(prev => 
-    prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
-  );
-  setActiveDocument(updatedDoc);
-  
-  // Trigger debounced save
-  if (mounted.current) {
-    debouncedOnChange(content);
-  }
-
-  // Restore selection in next frame
-  if (selection && storedContainer && contentElement.isConnected) {
-    requestAnimationFrame(() => {
-      try {
-        const newRange = document.createRange();
-        
-        if (contentElement.contains(storedContainer)) {
-          newRange.setStart(storedContainer, storedOffset);
-          newRange.setEnd(storedContainer, storedOffset);
-        } else {
-          const fallbackNode = contentElement.firstChild || contentElement;
-          const maxOffset = Math.min(storedOffset, fallbackNode.textContent?.length || 0);
-          newRange.setStart(fallbackNode, maxOffset);
-          newRange.setEnd(fallbackNode, maxOffset);
-        }
-        
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      } catch (err) {
-        console.warn('Failed to restore cursor position:', err);
-      }
-    });
-  }
-}, [readOnly, activeDocument, setDocuments, setActiveDocument, debouncedOnChange]);
-
-const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Handle special keys
-    if (e.key === '/' && !showCommandMenu) {
-      e.preventDefault();
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        setCommandMenuPosition({
-          x: rect.left,
-          y: rect.bottom
-        });
-        setShowCommandMenu(true);
-      }
-    }
-  };
-
+  // Regular functions after all hooks
   const handleContextMenu = (e: React.MouseEvent, docId: string, type: 'document' | 'editor') => {
     e.preventDefault();
     setContextMenu({
@@ -288,66 +279,20 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
     });
   };
 
-  const DocumentTree: React.FC<{
-    docs: Document[];
-    level?: number;
-  }> = ({ docs, level = 0 }) => {
-    return (
-      <div className="space-y-0.5">
-        {docs.map(doc => (
-          <div key={doc.id} style={{ paddingLeft: level * 12 + 'px' }}>
-            <div
-              className={`group flex items-center px-2 py-1 rounded-sm cursor-pointer hover:bg-gray-700 transition-colors duration-150 ${
-                activeDocument?.id === doc.id ? 'bg-gray-700' : ''
-              }`}
-              onClick={() => setActiveDocument(doc)}
-              onContextMenu={(e) => handleContextMenu(e, doc.id, 'document')}
-            >
-              <div className="flex items-center flex-1 min-w-0">
-                {doc.children.length > 0 ? (
-                  <FaChevronDown className="w-3 h-3 mr-1 text-gray-500 flex-shrink-0" />
-                ) : (
-                  <FaChevronRight className="w-3 h-3 mr-1 text-gray-500 flex-shrink-0" />
-                )}
-                {doc.emoji && <span className="mr-2">{doc.emoji}</span>}
-                {doc.icon && <FaFileAlt className="w-3 h-3 mr-2 text-gray-400" />}
-                <span className="text-sm truncate text-gray-300">{doc.title || 'Untitled'}</span>
-                {favorites.includes(doc.id) && (
-                  <FaStar className="w-3 h-3 ml-2 text-yellow-500" />
-                )}
-              </div>
-              <button 
-                className="opacity-0 group-hover:opacity-100 p-1 hover:bg-[#3D3D3D] rounded transition-all duration-150"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextMenu(e, doc.id, 'document');
-                }}
-              >
-                <FaEllipsisV className="w-3 h-3 text-gray-400" />
-              </button>
-            </div>
-            {doc.children.length > 0 && (
-              <DocumentTree docs={doc.children} level={level + 1} />
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
-    <div className="h-full flex bg-transparent text-inherit">
-      {/* Sidebar */}
-      <div className="w-64 border-r border-gray-700/50 bg-gray-800/30">
-        <div className="p-4 border-b border-gray-700">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium text-gray-400/80 text-xs uppercase tracking-wide">Notes</h3>
-            <button
-              onClick={() => createNewDocument()}
-              className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
-            >
-              <FaPlus className="w-3.5 h-3.5 text-gray-400" />
-            </button>
+    <>
+      <div className="h-full flex bg-transparent text-inherit">
+        {/* Sidebar */}
+        <div className="w-64 border-r border-gray-700/50 bg-gray-800/30">
+          <div className="p-4 border-b border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-medium text-gray-400/80 text-xs uppercase tracking-wide">Notes</h3>
+              <button
+                  onClick={() => createNewDocument()}
+                  className="p-1.5 hover:bg-gray-700 rounded-md transition-colors"
+                >
+                  <FaPlus className="w-3.5 h-3.5 text-gray-400" />
+                </button>
           </div>
           <div className="relative">
             <input
@@ -365,7 +310,12 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
           <div className="py-2 border-b border-[#2D2D2D]">
             <h4 className="px-4 text-xs font-medium text-gray-500 mb-1">FAVORITES</h4>
             <DocumentTree 
-              docs={documents.filter(doc => favorites.includes(doc.id))} 
+              docs={documents.filter(doc => favorites.includes(doc.id))}
+              onDocumentClick={setActiveDocument}
+              onContextMenu={handleContextMenu}
+              activeDocumentId={activeDocument?.id}
+              favorites={favorites}
+              level={0}
             />
           </div>
         )}
@@ -391,7 +341,14 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
 
         {/* Main Document Tree */}
         <div className="overflow-y-auto" style={{ height: 'calc(100vh - 89px)' }}>
-          <DocumentTree docs={documents.filter(doc => !doc.parent)} />
+          <DocumentTree 
+            docs={documents.filter(doc => !doc.parent)}
+            onDocumentClick={setActiveDocument}
+            onContextMenu={handleContextMenu}
+            activeDocumentId={activeDocument?.id}
+            favorites={favorites}
+            level={0}
+          />
         </div>
       </div>
 
@@ -426,8 +383,8 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
               <div className="flex items-center gap-4 text-sm text-gray-400">
                 <span className="flex items-center gap-1">
                   <FaClock className="w-3 h-3" />
-                  {new Date(activeDocument.updatedAt).toISOString().split('T')[0]} •{' '}
-                  {new Date(activeDocument.updatedAt).toLocaleTimeString('en-US')}
+                  {new Date(activeDocument.updatedAt).toLocaleDateString()} •{' '}
+                  {new Date(activeDocument.updatedAt).toLocaleTimeString()}
                 </span>
                 <button
                   onClick={() => toggleFavorite(activeDocument.id)}
@@ -444,74 +401,22 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
               <div className="max-w-3xl mx-auto w-full">
                 <div
                   ref={editorRef}
-                  className="prose prose-invert max-w-none focus:outline-none bg-transparent border-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none rounded-lg"
+                  className="prose prose-invert max-w-none focus:outline-none bg-transparent empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none rounded-lg"
                   style={{
-                  minHeight: '100%',
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                  color: 'inherit',
-                  padding: '0.5rem'
-                }}
-                contentEditable={!readOnly}
+                    minHeight: '100%',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: 'inherit',
+                    padding: '0.5rem'
+                  }}
+                  contentEditable={!readOnly}
                 onKeyDown={handleKeyDown}
-                onContextMenu={(e) => handleContextMenu(e, activeDocument.id, 'editor')}
-                onInput={handleInputChange}
-                  if (readOnly || !mounted.current) return;
-
-                  const contentElement = e.currentTarget;
-                  const content = contentElement.innerHTML;
-
-                  // Store selection state before updates
-                  const selection = window.getSelection();
-                  const range = selection?.getRangeAt(0);
-                  const storedContainer = range?.startContainer;
-                  const storedOffset = range?.startOffset || 0;
-
-                  // Update document state
-                  const updatedDoc = {
-                    ...activeDocument,
-                    blocks: [{ ...activeDocument.blocks[0], content }],
-                    updatedAt: new Date()
-                  };
-
-                  setDocuments(prev => 
-                    prev.map(doc => doc.id === activeDocument.id ? updatedDoc : doc)
-                  );
-                  setActiveDocument(updatedDoc);
-                  
-                  // Trigger debounced save
-                  if (mounted.current) {
-                    debouncedOnChange(content);
-                  }
-
-                  // Restore selection in next frame
-                  if (selection && storedContainer && contentElement.isConnected) {
-                    requestAnimationFrame(() => {
-                      try {
-                        const newRange = document.createRange();
-                        
-                        if (contentElement.contains(storedContainer)) {
-                          newRange.setStart(storedContainer, storedOffset);
-                          newRange.setEnd(storedContainer, storedOffset);
-                        } else {
-                          const fallbackNode = contentElement.firstChild || contentElement;
-                          const maxOffset = Math.min(storedOffset, fallbackNode.textContent?.length || 0);
-                          newRange.setStart(fallbackNode, maxOffset);
-                          newRange.setEnd(fallbackNode, maxOffset);
-                        }
-                        
-                        selection.removeAllRanges();
-                        selection.addRange(newRange);
-                      } catch (err) {
-                        console.warn('Failed to restore cursor position:', err);
-                      }
-                    });
-                  }
-                }, [readOnly, activeDocument, setDocuments, setActiveDocument, debouncedOnChange])}
-                data-placeholder={placeholder || "Type '/' for commands"}
-                suppressContentEditableWarning={true}
-                dangerouslySetInnerHTML={{ __html: activeDocument.blocks[0].content }}
-              />
+                  onContextMenu={(e) => handleContextMenu(e, activeDocument.id, 'editor')}
+                  onInput={handleContentInput}
+                  data-placeholder={placeholder || "Type '/' for commands"}
+                  suppressContentEditableWarning={true}
+                  dangerouslySetInnerHTML={{ __html: activeDocument.blocks[0].content }}
+                />
             </div>
           </div>
           </>
@@ -645,7 +550,8 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

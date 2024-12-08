@@ -22,3 +22,30 @@ export interface Project {
     canViewTaskNotes?: boolean;
   };
 }
+
+export interface Block {
+  id: string;
+  type: 'text' | 'heading1' | 'heading2' | 'heading3' | 'bulletList' | 'numberList' | 'todo' | 'code' | 'quote' | 'divider' | 'callout' | 'toggle';
+  content: string;
+  checked?: boolean;
+  properties?: {
+    color?: string;
+    icon?: string;
+    collapsed?: boolean;
+  };
+}
+
+export interface Document {
+  id: string;
+  title: string;
+  icon?: string;
+  cover?: string;
+  emoji?: string;
+  favorite?: boolean;
+  blocks: Block[];
+  children: Document[];
+  createdAt: Date;
+  updatedAt: Date;
+  lastOpenedAt?: Date;
+  parent?: string;
+}

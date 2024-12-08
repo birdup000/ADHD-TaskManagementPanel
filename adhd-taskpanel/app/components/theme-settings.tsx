@@ -6,8 +6,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 
 export function ThemeSettings() {
-  const { theme, setTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
+  const { theme, setTheme } = useTheme()
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {

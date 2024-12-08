@@ -1,11 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable strict mode to catch hook-related issues
+  // Core React configuration
   reactStrictMode: true,
   poweredByHeader: false,
+  
+  // Optimization settings
   optimizeFonts: true,
+  swcMinify: true,
+  
+  // Experimental features for React 18 and beyond
   experimental: {
+    // Runtime optimizations
     optimizeCss: true,
     optimizeImages: true,
+    scrollRestoration: true,
+    
+    // React optimizations
+    strictModuleResolution: true,
+    
+    // Additional React 18 features
+    enableUndici: true,
+    serverActions: true,
   },
   async headers() {
     return [
