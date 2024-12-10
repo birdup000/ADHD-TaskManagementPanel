@@ -1,6 +1,0 @@
-// Copy the entire contents up to line 747
-// Remove extra </> at line 748
-// Fix button className duplication at line 764
-// Add proper type safety for selectedProject in ProjectNotesEditor
-
-// Create new file with fixes, then use it to replace the old one
