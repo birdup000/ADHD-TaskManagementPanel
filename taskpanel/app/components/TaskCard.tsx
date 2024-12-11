@@ -11,7 +11,7 @@ interface TaskCardProps {
   onUpdateTask?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, onUpdateTask }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task = { id: '', title: '', description: '', priority: 'low', status: 'todo', dueDate: undefined, tags: [], assignees: [], createdAt: new Date(), updatedAt: new Date() }, onClick, onDelete, onUpdateTask }) => {
   const { title, description, priority, status, dueDate, tags = [], assignees = [] } = task;
   const isOverdue = dueDate && new Date(dueDate) < new Date() && status !== 'done';
 

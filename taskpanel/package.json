@@ -20,11 +20,12 @@
   },
   "devDependencies": {
     "@types/is-hotkey": "^0.1.10",
-    "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/node": "20.17.10",
+    "@types/react": "19.0.1",
     "@types/react-dom": "^19",
     "postcss": "^8",
+    "slate-dom": "0.111.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "5.7.2"
   }
 }
