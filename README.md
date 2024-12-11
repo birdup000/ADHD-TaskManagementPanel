@@ -1,16 +1,54 @@
 # ADHD Task Management Panel
 
-This is a panel to help with focusing :D
+The ADHD Task Management Panel is a modern, intuitive task management application designed to help individuals with ADHD focus and manage their tasks effectively. The application features a drag-and-drop Kanban board, advanced search and filtering, keyboard shortcuts, and multiple views to enhance productivity.
 
 ## Features
-- Task management
-- Motivation tools
-- Focus time management
-- Hyperfocus assistance
+- Drag-and-drop task management with Kanban board
+- Advanced search and filtering functionality
+- Keyboard shortcuts for improved productivity
+- Mobile responsive design
+- Multiple views (Kanban, List, Calendar)
+- Task prioritization and organization
+- Rich text editing for task descriptions
+- Tag and assignee management
+- Visual feedback for interactions
+- Customizable themes
 
-## Technologies Used
-- TypeScript
-- JavaScript
+## Installation Instructions
+To get started with the ADHD Task Management Panel, follow these steps:
+1. Clone the repository: `git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git`
+2. Navigate to the project directory: `cd ADHD-TaskManagementPanel`
+3. Install dependencies: `npm install`
+4. Start the development server: `npm start`
+
+## Usage Examples
+- Use the search bar to quickly find tasks.
+- Drag tasks between columns to update their status.
+- Click on a task to view and edit details.
+- Use keyboard shortcuts for faster navigation.
+- Sort and filter tasks by various criteria.
+- Add tags and assignees for better organization.
+
+## Contribution Guidelines
+We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING.md) to get started.
+
+## Contact
+For any questions or support, please contact us at [your-email@example.com].
+
+## About
+A panel to help with focusing :D [adhdpanel.vercel.app](https://adhdpanel.vercel.app)
+
+## Topics
+- Task
+- School
+- Motivation
+- Tasks
+- Work
+- Focus
+- Time-management
+- Hyperfocus
+- ADHD
+- Focusing
 
 ## License
 MIT License
@@ -22,8 +60,6 @@ To get started with the ADHD Task Management Panel, follow these steps:
 3. Install dependencies: `npm install`
 4. Start the development server: `npm start`
 
-## Contributing
-We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING.md) to get started.
-
-## Contact
-For any questions or support, please contact us at [your-email@example.com].
+## Technologies Used
+- TypeScript
+- JavaScript
