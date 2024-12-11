@@ -9,9 +9,10 @@ interface DraggableTaskProps {
   index: number;
   onUpdateTask: (task: Task) => void;
   onClick: (task: Task) => void;
+  onDelete: () => void;
 }
 
-export const DraggableTask = ({ task, index, onUpdateTask, onClick }: DraggableTaskProps) => {
+export const DraggableTask = ({ task, index, onUpdateTask, onClick, onDelete }: DraggableTaskProps) => {
   return (
     <Draggable draggableId={task.id} index={index}>
       {(provided) => (
@@ -20,7 +21,12 @@ export const DraggableTask = ({ task, index, onUpdateTask, onClick }: DraggableT
           {...provided.draggableProps}
           {...provided.dragHandleProps}
         >
-          <TaskCard {...task} onClick={() => onClick(task)} />
+          <TaskCard 
+            task={task}
+            onClick={() => onClick(task)}
+            onUpdateTask={onUpdateTask}
+            onDelete={onDelete}
+          />
         </div>
       )}
     </Draggable>

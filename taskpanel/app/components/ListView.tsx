@@ -43,8 +43,11 @@ const ListView: React.FC<ListViewProps> = ({ tasks, onTaskClick }) => {
         </div>
         <div className="space-y-2">
           {tasksByStatus.todo.map(task => (
-            <div key={task.id} onClick={() => onTaskClick(task)}>
-              <TaskCard {...task} />
+            <div key={task.id}>
+              <TaskCard 
+                task={task}
+                onClick={() => onTaskClick(task)}
+              />
             </div>
           ))}
         </div>
@@ -57,8 +60,11 @@ const ListView: React.FC<ListViewProps> = ({ tasks, onTaskClick }) => {
         </div>
         <div className="space-y-2">
           {tasksByStatus['in-progress'].map(task => (
-            <div key={task.id} onClick={() => onTaskClick(task)}>
-              <TaskCard {...task} />
+            <div key={task.id}>
+              <TaskCard 
+                task={task}
+                onClick={() => onTaskClick(task)}
+              />
             </div>
           ))}
         </div>
@@ -71,8 +77,11 @@ const ListView: React.FC<ListViewProps> = ({ tasks, onTaskClick }) => {
         </div>
         <div className="space-y-2">
           {tasksByStatus.done.map(task => (
-            <div key={task.id} onClick={() => onTaskClick(task)}>
-              <TaskCard {...task} />
+            <div key={task.id}>
+              <TaskCard 
+                task={task}
+                onClick={() => onTaskClick(task)}
+              />
             </div>
           ))}
         </div>

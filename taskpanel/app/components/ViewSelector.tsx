@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type ViewType = 'kanban' | 'list' | 'calendar';
+type ViewType = 'board' | 'calendar';
 
 interface ViewSelectorProps {
   currentView: ViewType;
@@ -13,24 +13,14 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ currentView, onViewChange }
   return (
     <div className="flex bg-[#2A2A2A] rounded-lg p-1">
       <button
-        onClick={() => onViewChange('kanban')}
+        onClick={() => onViewChange('board')}
         className={`px-3 py-1.5 rounded text-sm transition-colors ${
-          currentView === 'kanban'
+          currentView === 'board'
             ? 'bg-indigo-600 text-white'
             : 'text-gray-400 hover:text-white'
         }`}
       >
-        📊 Kanban
-      </button>
-      <button
-        onClick={() => onViewChange('list')}
-        className={`px-3 py-1.5 rounded text-sm transition-colors ${
-          currentView === 'list'
-            ? 'bg-indigo-600 text-white'
-            : 'text-gray-400 hover:text-white'
-        }`}
-      >
-        📝 List
+        📊 Board
       </button>
       <button
         onClick={() => onViewChange('calendar')}

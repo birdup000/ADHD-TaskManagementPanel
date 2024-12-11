@@ -10,6 +10,7 @@ interface TaskDetailsProps {
   task: Task;
   onClose: () => void;
   onUpdateTask: (task: Task) => void;
+  onDeleteTask: (task: Task) => void;
   comments: Comment[];
   onAddComment: (taskId: string, comment: Omit<Comment, 'id' | 'createdAt'>) => void;
 }

@@ -4,9 +4,11 @@ interface ShortcutHandlers {
   onNewTask: () => void;
   onSearch: () => void;
   onToggleView: () => void;
+  onDelete?: () => void;
+  onDeleteTask?: () => void;
 }
 
-export const useKeyboardShortcuts = ({ onNewTask, onSearch, onToggleView }: ShortcutHandlers) => {
+export const useKeyboardShortcuts = ({ onNewTask, onSearch, onToggleView, onDelete, onDeleteTask }: ShortcutHandlers) => {
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       // Only trigger if not in an input/textarea
@@ -33,5 +35,5 @@ export const useKeyboardShortcuts = ({ onNewTask, onSearch, onToggleView }: Shor
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [onNewTask, onSearch, onToggleView]);
+  }, [onNewTask, onSearch, onToggleView, onDelete, onDeleteTask]);
 };

@@ -6,9 +6,10 @@ import { Task } from '../types/task';
 interface CalendarViewProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  onDeleteTask: (task: Task) => void;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onTaskClick }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onTaskClick, onDeleteTask }) => {
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
 
