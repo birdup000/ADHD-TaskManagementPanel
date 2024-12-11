@@ -43,7 +43,7 @@ A panel to help with focusing 😄
 - Hyperfocus
 - ADHD
 - Focusing
-- 
+
 ## Getting Started
 To get started with the ADHD Task Management Panel, follow these steps:
 1. Clone the repository: `git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git`
