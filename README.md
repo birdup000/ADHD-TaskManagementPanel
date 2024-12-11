@@ -17,7 +17,7 @@ The ADHD Task Management Panel is a modern, intuitive task management applicatio
 ## Installation Instructions
 To get started with the ADHD Task Management Panel, follow these steps:
 1. Clone the repository: `git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git`
-2. Navigate to the project directory: `cd ADHD-TaskManagementPanel`
+2. Navigate to the project directory: `cd ADHD-TaskManagementPanel/taskpanel`
 3. Install dependencies: `npm install`
 4. Start the development server: `npm start`
 
@@ -43,13 +43,6 @@ A panel to help with focusing 😄
 - Hyperfocus
 - ADHD
 - Focusing
-
-## Getting Started
-To get started with the ADHD Task Management Panel, follow these steps:
-1. Clone the repository: `git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git`
-2. Navigate to the project directory: `cd ADHD-TaskManagementPanel/taskpanel`
-3. Install dependencies: `npm install`
-4. Start the development server: `npm start`
 
 ## Technologies Used
 - TypeScript
