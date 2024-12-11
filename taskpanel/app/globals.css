@@ -2,6 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .task-columns > * {
+    margin-bottom: 1.5rem;
+  }
+  
+  .search-controls {
+    flex-direction: column;
+  }
+  
+  .search-controls > * {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Drag and drop styles */
+.task-dragging {
+  @apply opacity-50 scale-105 rotate-1;
+}
+
+.drop-target {
+  @apply border-2 border-dashed border-indigo-500/50;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
