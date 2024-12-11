@@ -3,12 +3,17 @@
 import React from 'react';
 
 interface IntegrationButtonProps {
-  type: 'google' | 'slack';
+  type: 'google' | 'slack' | 'notion';
   onClick: () => void;
 }
 
 const IntegrationButton: React.FC<IntegrationButtonProps> = ({ type, onClick }) => {
   const integrations = {
+    notion: {
+      icon: '📝',
+      text: 'Connect Notion',
+      description: 'Sync notes with Notion'
+    },
     google: {
       icon: '📅',
       text: 'Connect Google Calendar',

@@ -23,8 +23,9 @@ import { Task } from '../types/task';
 import { Comment } from './CommentSection';
 import { colors } from '../../tailwind.config';
 import TaskStats from './TaskStats';
+import NotesEditor from './NotesEditor';
 
-type ViewType = 'board' | 'calendar';
+type ViewType = 'board' | 'calendar' | 'notes' | 'project';
 type ThemeType = typeof colors.dark;
 
 const TaskPanel: React.FC = () => {
@@ -47,6 +48,7 @@ const TaskPanel: React.FC = () => {
     });
   };
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [currentTab, setCurrentTab] = React.useState<'tasks' | 'notes'>('tasks');
   const [showIntegrations, setShowIntegrations] = React.useState(false);
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
   const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks } = useTasks();
@@ -338,7 +340,8 @@ const TaskPanel: React.FC = () => {
             />
           </header>
           
-          <DragDropContext onDragEnd={onDragEnd}>
+          {currentTab === 'tasks' ? (
+            <DragDropContext onDragEnd={onDragEnd}>
             <main className={currentView === 'calendar' ? '' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
               {/* Todo Column */}
               <div className="bg-[#2A2A2A] rounded-lg p-4">
@@ -500,6 +503,11 @@ const TaskPanel: React.FC = () => {
               )}
             </main>
           </DragDropContext>
+          ) : (
+            <main className="bg-[#212121] rounded-lg overflow-hidden h-[calc(100vh-12rem)]">
+              <NotesEditor />
+            </main>
+          )}
 
           {/* Delete Confirmation Modal */}
           {showConfirmDelete && (

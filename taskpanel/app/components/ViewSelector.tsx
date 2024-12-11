@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type ViewType = 'board' | 'calendar';
+type ViewType = 'board' | 'calendar' | 'notes';
 
 interface ViewSelectorProps {
   currentView: ViewType;
@@ -31,6 +31,16 @@ const ViewSelector: React.FC<ViewSelectorProps> = ({ currentView, onViewChange }
         }`}
       >
         📅 Calendar
+      </button>
+      <button
+        onClick={() => onViewChange('notes')}
+        className={`px-3 py-1.5 rounded text-sm transition-colors ${
+          currentView === 'notes'
+            ? 'bg-indigo-600 text-white'
+            : 'text-gray-400 hover:text-white'
+        }`}
+      >
+        📝 Notes
       </button>
     </div>
   );
