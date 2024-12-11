@@ -1,0 +1,31 @@
+{
+  "name": "taskpanel",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^17.0.0",
+    "@types/slate": "^0.47.16",
+    "@types/slate-react": "^0.50.0",
+    "next": "15.0.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "slate": "^0.112.0",
+    "slate-react": "^0.112.0"
+  },
+  "devDependencies": {
+    "@types/is-hotkey": "^0.1.10",
+    "@types/node": "20.17.10",
+    "@types/react": "19.0.1",
+    "@types/react-dom": "^19",
+    "postcss": "^8",
+    "slate-dom": "0.111.0",
+    "tailwindcss": "^3.4.1",
+    "typescript": "5.7.2"
+  }
+}
