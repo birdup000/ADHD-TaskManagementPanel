@@ -1,9 +1,16 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { Task } from '../types/task';
 import { loadTasksFromLocalStorage, saveTasksToLocalStorage } from '../utils/storage';
 
 export const useTasks = () => {
-  const [tasks, setTasks] = useState<Task[]>(() => loadTasksFromLocalStorage());
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  // Load tasks from localStorage only on client-side after initial render
+  useEffect(() => {
+    setTasks(loadTasksFromLocalStorage());
+  }, []);
 
   useEffect(() => {
     saveTasksToLocalStorage(tasks);
