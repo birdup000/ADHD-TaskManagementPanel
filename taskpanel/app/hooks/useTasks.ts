@@ -32,11 +32,16 @@ export const useTasks = () => {
     setTasks(reorderedTasks);
   };
 
+  const importTasks = (importedTasks: Task[]) => {
+    setTasks(prev => [...prev, ...importedTasks]);
+  };
+
   return {
     tasks,
     addTask,
     updateTask,
     deleteTask,
-    reorderTasks
+    reorderTasks,
+    importTasks
   };
 };

@@ -49,7 +49,7 @@ const TaskPanel: React.FC = () => {
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [showIntegrations, setShowIntegrations] = React.useState(false);
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
-  const { tasks, addTask, updateTask, deleteTask, reorderTasks } = useTasks();
+  const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks } = useTasks();
   const {
     searchTerm,
     setSearchTerm,
@@ -241,31 +241,72 @@ const TaskPanel: React.FC = () => {
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const csv = tasks.map(t => {
-                      return [
-                        t.title,
-                        t.description,
-                        t.status,
-                        t.priority,
-                        t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '',
-                        t.tags?.join(', ') || '',
-                        t.assignees?.join(', ') || ''
-                      ].join(',');
-                    }).join('\n');
-                    const blob = new Blob([csv], { type: 'text/csv' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'tasks.csv';
-                    a.click();
-                  }}
-                  className="px-3 py-1.5 rounded text-sm bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 transition-colors"
-                  title="Export tasks as CSV"
-                >
-                  Export
-                </button>
+                <input
+                    type="file"
+                    id="importFile"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const csv = event.target?.result as string;
+                          const lines = csv.split('\n');
+                          const importedTasks = lines.map(line => {
+                            const [title, description, status, priority, dueDate, tags, assignees] = line.split(',');
+                            return {
+                              id: crypto.randomUUID(),
+                              title,
+                              description,
+                              status: status as Task['status'],
+                              priority: priority as Task['priority'],
+                              dueDate: dueDate ? new Date(dueDate) : undefined,
+                              tags: tags ? tags.split(', ').filter(t => t) : undefined,
+                              assignees: assignees ? assignees.split(', ').filter(a => a) : undefined,
+                              createdAt: new Date(),
+                              updatedAt: new Date()
+                            };
+                          });
+                          importTasks(importedTasks);
+                          e.target.value = ''; // Reset file input
+                        };
+                        reader.readAsText(file);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => document.getElementById('importFile')?.click()}
+                    className="px-3 py-1.5 rounded text-sm bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 transition-colors"
+                    title="Import tasks from CSV"
+                  >
+                    Import
+                  </button>
+                  <button
+                    onClick={() => {
+                      const csv = tasks.map(t => {
+                        return [
+                          t.title,
+                          t.description,
+                          t.status,
+                          t.priority,
+                          t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '',
+                          t.tags?.join(', ') || '',
+                          t.assignees?.join(', ') || ''
+                        ].join(',');
+                      }).join('\n');
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'tasks.csv';
+                      a.click();
+                    }}
+                    className="px-3 py-1.5 rounded text-sm bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 transition-colors"
+                    title="Export tasks as CSV"
+                  >
+                    Export
+                  </button>
                 <button
                   onClick={() => {
                     // Save current tasks as template
