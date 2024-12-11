@@ -29,14 +29,8 @@ To get started with the ADHD Task Management Panel, follow these steps:
 - Sort and filter tasks by various criteria.
 - Add tags and assignees for better organization.
 
-## Contribution Guidelines
-We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING.md) to get started.
-
-## Contact
-For any questions or support, please contact us at [your-email@example.com].
-
 ## About
-A panel to help with focusing :D [adhdpanel.vercel.app](https://adhdpanel.vercel.app)
+A panel to help with focusing 😄
 
 ## Topics
 - Task
@@ -56,7 +50,7 @@ MIT License
 ## Getting Started
 To get started with the ADHD Task Management Panel, follow these steps:
 1. Clone the repository: `git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git`
-2. Navigate to the project directory: `cd ADHD-TaskManagementPanel`
+2. Navigate to the project directory: `cd ADHD-TaskManagementPanel/taskpanel`
 3. Install dependencies: `npm install`
 4. Start the development server: `npm start`
 
