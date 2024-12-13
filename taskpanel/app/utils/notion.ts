@@ -1,10 +1,11 @@
-export const deleteNoteFromNotion = async (noteId: string) => {
+export const deleteNoteFromNotion = async (noteId: string, { apiKey, clientSecret, refreshToken }: { apiKey: string, clientSecret: string, refreshToken: string }) => {
   // TODO: Replace with actual Notion API implementation
-  const NOTION_API_KEY = process.env.NEXT_PUBLIC_NOTION_API_KEY;
+  if (!apiKey || !clientSecret || !refreshToken) {
+    throw new Error('Notion API key, client secret, or refresh token not configured');
+  }
   const NOTION_DATABASE_ID = process.env.NEXT_PUBLIC_NOTION_DATABASE_ID;
-
-  if (!NOTION_API_KEY || !NOTION_DATABASE_ID) {
-    throw new Error('Notion API key or database ID not configured');
+  if (!NOTION_DATABASE_ID) {
+    throw new Error('Notion database ID not configured');
   }
 
   try {
@@ -12,7 +13,7 @@ export const deleteNoteFromNotion = async (noteId: string) => {
     const searchResponse = await fetch(`https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${NOTION_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Notion-Version': '2022-06-28',
         'Content-Type': 'application/json',
       },
@@ -38,7 +39,7 @@ export const deleteNoteFromNotion = async (noteId: string) => {
       const deleteResponse = await fetch(`https://api.notion.com/v1/pages/${notionPageId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${NOTION_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Notion-Version': '2022-06-28',
         },
       });
@@ -86,18 +87,31 @@ export const findNotionPageId = async (noteId: string) => {
   return searchData.results[0]?.id;
 };
 
-export const syncNotesFromNotion = async () => {
-  const NOTION_API_KEY = process.env.NEXT_PUBLIC_NOTION_API_KEY;
-  const NOTION_DATABASE_ID = process.env.NEXT_PUBLIC_NOTION_DATABASE_ID;
+interface NotionPage {
+  properties: {
+    note_id: { rich_text: [{ plain_text: string }] };
+    title: { title: [{ plain_text: string }] };
+    content: { rich_text: [{ plain_text: string }] };
+    tags: { multi_select: [{ name: string }] };
+  };
+  created_time: string;
+  last_edited_time: string;
+}
 
-  if (!NOTION_API_KEY || !NOTION_DATABASE_ID) {
-    throw new Error('Notion API key or database ID not configured');
+export const syncNotesFromNotion = async ({ apiKey, clientSecret, refreshToken }: { apiKey: string, clientSecret: string, refreshToken: string }) => {
+  if (!apiKey || !clientSecret || !refreshToken) {
+    throw new Error('Notion API key, client secret, or refresh token not configured');
   }
+  const NOTION_DATABASE_ID = process.env.NEXT_PUBLIC_NOTION_DATABASE_ID;
+    if (!NOTION_DATABASE_ID) {
+    throw new Error('Notion database ID not configured');
+  }
+
 
   const response = await fetch(`https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${NOTION_API_KEY}`,
+      'Authorization': `Bearer ${apiKey}`,
       'Notion-Version': '2022-06-28',
       'Content-Type': 'application/json',
     }
@@ -108,7 +122,7 @@ export const syncNotesFromNotion = async () => {
   }
 
   const data = await response.json();
-  return data.results.map(page => ({
+  return data.results.map((page: NotionPage) => ({
     id: page.properties.note_id.rich_text[0]?.plain_text || crypto.randomUUID(),
     title: page.properties.title.title[0]?.plain_text || 'Untitled Note',
     content: page.properties.content.rich_text.map(text => text.plain_text).join('\n') || '',
@@ -123,13 +137,14 @@ export const syncNoteWithNotion = async (note: {
   title: string;
   content: string;
   tags: string[];
-}) => {
+}, { apiKey, clientSecret, refreshToken }: { apiKey: string, clientSecret: string, refreshToken: string }) => {
   // TODO: Replace with actual Notion API implementation
-  const NOTION_API_KEY = process.env.NEXT_PUBLIC_NOTION_API_KEY;
+  if (!apiKey || !clientSecret || !refreshToken) {
+    throw new Error('Notion API key, client secret, or refresh token not configured');
+  }
   const NOTION_DATABASE_ID = process.env.NEXT_PUBLIC_NOTION_DATABASE_ID;
-
-  if (!NOTION_API_KEY || !NOTION_DATABASE_ID) {
-    throw new Error('Notion API key or database ID not configured');
+    if (!NOTION_DATABASE_ID) {
+    throw new Error('Notion database ID not configured');
   }
 
   try {
@@ -143,7 +158,7 @@ export const syncNoteWithNotion = async (note: {
     const response = await fetch(endpoint, {
       method: existingPageId ? 'PATCH' : 'POST',
       headers: {
-        'Authorization': `Bearer ${NOTION_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Notion-Version': '2022-06-28',
         'Content-Type': 'application/json',
       },

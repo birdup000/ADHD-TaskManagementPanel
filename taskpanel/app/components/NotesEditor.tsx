@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import IntegrationButton from './IntegrationButton';
 import RichTextEditor from './RichTextEditor';
 import SubNotesList from './SubNotesList';
@@ -31,21 +31,49 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
   const [newTagInput, setNewTagInput] = useState('');
   const [notionConnected, setNotionConnected] = useState(false);
   const [isTaskSelectOpen, setIsTaskSelectOpen] = useState(false);
+  const [notionApiKey, setNotionApiKey] = useState('');
+  const [notionClientSecret, setNotionClientSecret] = useState('');
+  const [notionRefreshToken, setNotionRefreshToken] = useState('');
+  const [notionError, setNotionError] = useState<string | null>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        setIsSidebarExpanded(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
 
   const connectToNotion = async () => {
-    // TODO: Implement actual Notion OAuth flow
+    if (!notionApiKey || !notionClientSecret || !notionRefreshToken) {
+      setNotionError('Please provide Notion API key, client secret, and refresh token.');
+      return;
+    }
+    setNotionError(null);
     try {
       const { syncNotesFromNotion } = await import('../utils/notion');
-      const notionNotes = await syncNotesFromNotion();
+      const notionNotes = await syncNotesFromNotion({
+        apiKey: notionApiKey,
+        clientSecret: notionClientSecret,
+        refreshToken: notionRefreshToken,
+      });
       
       // Merge Notion notes with existing notes, updating existing ones and adding new ones
-      const mergedNotes = notes.map(note => {
-        const notionNote = notionNotes.find(n => n.id === note.id);
-        return notionNote || note;
+      const mergedNotes = notes.map((n: Note) => {
+        const notionNote = notionNotes.find((note: Note) => note.id === n.id);
+        return notionNote || n;
       });
       
       // Add new notes from Notion that don't exist locally
-      notionNotes.forEach(notionNote => {
+      notionNotes.forEach((notionNote: Note) => {
         if (!mergedNotes.some(note => note.id === notionNote.id)) {
           mergedNotes.push(notionNote);
         }
@@ -53,9 +81,9 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
       
       setNotes(mergedNotes);
       setNotionConnected(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch notes from Notion:', error);
-      alert('Failed to connect to Notion. Please try again.');
+      setNotionError(error.message || 'Failed to connect to Notion. Please try again.');
     }
   };
 
@@ -66,14 +94,20 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
       const { syncNoteWithNotion } = await import('../utils/notion');
       // Ensure there's at least one line break to handle empty notes
       const formattedContent = note.content || '\n';
-      await syncNoteWithNotion({
-        ...note,
-        content: formattedContent
-      });
-    } catch (error) {
+      await syncNoteWithNotion(
+        {
+          ...note,
+          content: formattedContent,
+        },
+        {
+          apiKey: notionApiKey,
+          clientSecret: notionClientSecret,
+          refreshToken: notionRefreshToken,
+        }
+      );
+    } catch (error: any) {
       console.error('Failed to sync with Notion:', error);
-      // Show error to user
-      alert('Failed to sync note with Notion. Please try again.');
+      setNotionError(error.message || 'Failed to sync note with Notion. Please try again.');
     }
   };
 
@@ -112,10 +146,14 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
     if (notionConnected) {
       try {
         const { deleteNoteFromNotion } = await import('../utils/notion');
-        await deleteNoteFromNotion(noteId);
-      } catch (error) {
+        await deleteNoteFromNotion(noteId, {
+          apiKey: notionApiKey,
+          clientSecret: notionClientSecret,
+          refreshToken: notionRefreshToken,
+        });
+      } catch (error: any) {
         console.error('Failed to delete note from Notion:', error);
-        alert('Failed to delete note from Notion. Please try again.');
+        setNotionError(error.message || 'Failed to delete note from Notion. Please try again.');
       }
     }
   };
@@ -144,7 +182,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
   return (
     <div className="flex h-full">
       {/* Sidebar */}
-      <div className="w-64 bg-[#2A2A2A] border-r border-gray-700 p-4">
+      <div ref={sidebarRef} className={`w-64 bg-[#2A2A2A] border-r border-gray-700 p-4 transition-all duration-300 ${isSidebarExpanded ? 'block' : 'hidden'}`}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Notes</h2>
           <div className="flex gap-2">
@@ -168,6 +206,29 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
         </div>
         {!notionConnected && (
           <div className="mb-4">
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Notion Integration</h3>
+            <input
+              type="text"
+              placeholder="Notion API Key"
+              value={notionApiKey}
+              onChange={(e) => setNotionApiKey(e.target.value)}
+              className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <input
+              type="text"
+              placeholder="Notion Client Secret"
+              value={notionClientSecret}
+              onChange={(e) => setNotionClientSecret(e.target.value)}
+              className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+             <input
+              type="text"
+              placeholder="Notion Refresh Token"
+              value={notionRefreshToken}
+              onChange={(e) => setNotionRefreshToken(e.target.value)}
+              className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {notionError && <p className="text-red-500 text-sm mb-2">{notionError}</p>}
             <IntegrationButton
               type="notion"
               onClick={connectToNotion}
@@ -211,6 +272,12 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
           ))}
         </div>
       </div>
+      <button
+        onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+        className={`absolute left-0 top-0 p-2 rounded-r-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors ${isSidebarExpanded ? 'translate-x-64' : 'translate-x-0'}`}
+      >
+        {isSidebarExpanded ? '<' : '>'}
+      </button>
 
       {/* Main Content */}
       {selectedNote ? (
