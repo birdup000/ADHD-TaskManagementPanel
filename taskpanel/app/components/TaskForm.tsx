@@ -29,6 +29,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
       dueDate: dueDate ? new Date(dueDate) : undefined,
       assignees,
       tags,
+      listId: 'default',
     });
   };
 

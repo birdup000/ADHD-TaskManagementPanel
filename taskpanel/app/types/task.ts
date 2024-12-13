@@ -21,4 +21,10 @@ export interface Task {
   completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  listId: string;
+}
+
+export interface TaskList {
+  id: string;
+  name: string;
 }

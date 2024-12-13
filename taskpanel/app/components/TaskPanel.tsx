@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
-import { TaskList } from './TaskList';
+import { TaskList as TaskListComponent } from './TaskList';
 import { ThemeProvider } from '../hooks/useTheme';
 import { useTasks } from '../hooks/useTasks';
 import { useSearch } from '../hooks/useSearch';
@@ -18,12 +18,12 @@ import TaskDetails from './TaskDetails';
 import LoginForm from './LoginForm';
 import AIAssistant from './AIAssistant';
 import ShortcutsDialog from './ShortcutsDialog';
-import { Task } from '../types/task';
+import { Task, TaskList } from '../types/task';
 import { Comment } from './CommentSection';
 import { colors } from '../../tailwind.config';
 import TaskStats from './TaskStats';
 import NotesEditor from './NotesEditor';
-import { ViewType } from '../types/view';
+import { ViewType, LayoutType } from '../types/view';
 
 type ThemeType = typeof colors.dark;
 
@@ -50,7 +50,7 @@ const TaskPanel: React.FC = () => {
   const [currentTab, setCurrentTab] = React.useState<'tasks' | 'notes'>('tasks');
   const [showIntegrations, setShowIntegrations] = React.useState(false);
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
-  const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks } = useTasks();
+  const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks, lists, addList, updateList } = useTasks();
   const {
     searchTerm,
     setSearchTerm,
@@ -66,6 +66,11 @@ const TaskPanel: React.FC = () => {
   const [theme, setTheme] = React.useState<ThemeType>(colors.dark);
   const [showConfirmDelete, setShowConfirmDelete] = React.useState(false);
   const [taskToDelete, setTaskToDelete] = React.useState<Task | null>(null);
+  const [currentList, setCurrentList] = React.useState<string>('default');
+  const [currentLayout, setCurrentLayout] = React.useState<LayoutType>('default');
+  const [isRenamingList, setIsRenamingList] = React.useState(false);
+  const [renamingListId, setRenamingListId] = React.useState<string | null>(null);
+  const [renamingListName, setRenamingListName] = React.useState('');
 
   useKeyboardShortcuts({
     onNewTask: () => setIsEditorOpen(true),
@@ -137,6 +142,10 @@ const TaskPanel: React.FC = () => {
       updateTask(updatedTask);
     }
   };
+
+  const filteredTasks = () => {
+    return filteredAndSortedTasks().filter(task => task.listId === currentList);
+  }
 
   return (
     <ThemeProvider value={{ theme, setTheme }}>
@@ -234,7 +243,7 @@ const TaskPanel: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
-                    const selectedTasks = filteredAndSortedTasks().filter(t => t.status === 'todo');
+                    const selectedTasks = filteredTasks().filter(t => t.status === 'todo');
                     selectedTasks.forEach(task => {
                       updateTask({ ...task, status: 'in-progress' });
                     });
@@ -247,7 +256,7 @@ const TaskPanel: React.FC = () => {
                 <button
                   onClick={() => {
                     // Create recurring tasks
-                    const template = filteredAndSortedTasks()
+                    const template = filteredTasks()
                       .filter(t => t.recurring)
                       .map(t => ({
                         ...t,
@@ -290,10 +299,11 @@ const TaskPanel: React.FC = () => {
                               tags: tags ? tags.split(', ').filter(t => t) : undefined,
                               assignees: assignees ? assignees.split(', ').filter(a => a) : undefined,
                               createdAt: new Date(),
-                              updatedAt: new Date()
+                              updatedAt: new Date(),
+                              listId: currentList,
                             };
                           });
-                          importTasks(importedTasks);
+                          importTasks(importedTasks, currentList);
                           e.target.value = ''; // Reset file input
                         };
                         reader.readAsText(file);
@@ -353,79 +363,125 @@ const TaskPanel: React.FC = () => {
                 </button>
               </div>
             </div>
-            <SearchBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              filterPriority={filterPriority}
-              onFilterChange={setFilterPriority}
-            />
+            <div className="flex items-center justify-between mb-4">
+              <SearchBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                filterPriority={filterPriority}
+                onFilterChange={setFilterPriority}
+              />
+              <div className="flex items-center gap-2">
+                <select
+                  value={currentList}
+                  onChange={(e) => setCurrentList(e.target.value)}
+                  className="px-3 py-1.5 rounded text-sm bg-[#2A2A2A] text-white hover:bg-[#333333] transition-colors"
+                >
+                  {lists.map(list => (
+                    <option key={list.id} value={list.id}>{list.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => {
+                    const newListId = crypto.randomUUID();
+                    // Add new list to state
+                    addList({ id: newListId, name: 'New List' });
+                    setCurrentList(newListId);
+                  }}
+                  className="px-3 py-1.5 rounded text-sm bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 transition-colors"
+                  title="Add new list"
+                >
+                  Add List
+                </button>
+                <select
+                  value={currentLayout}
+                  onChange={(e) => setCurrentLayout(e.target.value as LayoutType)}
+                  className="px-3 py-1.5 rounded text-sm bg-[#2A2A2A] text-white hover:bg-[#333333] transition-colors"
+                >
+                  <option value="default">Default</option>
+                  <option value="developer">Developer</option>
+                </select>
+              </div>
+            </div>
           </header>
           
           {currentTab === 'tasks' ? (
             <DragDropContext onDragEnd={onDragEnd}>
-              <main className={currentView === 'calendar' ? '' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
-                {/* Task Columns */}
-                <div className="bg-[#2A2A2A] rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">To Do</h2>
-                    <span className="text-sm text-gray-400">
-                      {filteredAndSortedTasks().filter(t => t.status === 'todo').length} tasks
-                    </span>
+              <main className={currentLayout === 'developer' ? 'flex' : (currentView === 'calendar' ? '' : 'grid grid-cols-1 md:grid-cols-3 gap-6')}>
+                {currentLayout === 'developer' ? (
+                  <div className="bg-[#2A2A2A] rounded-lg p-4">
+                    <h2 className="text-xl font-semibold mb-4">Developer Layout</h2>
+                    <p className="text-gray-400">
+                      This is a placeholder for the developer layout.
+                      <br />
+                      Repository information and feature requests will be displayed here.
+                    </p>
                   </div>
-                  <TaskList
-                    droppableId="todo"
-                    tasks={filteredAndSortedTasks().filter(task => task.status === 'todo')}
-                    onUpdateTask={updateTask}
-                    onTaskClick={(task: Task) => setSelectedTask(task)}
-                    onDeleteTask={(task: Task) => deleteTask(task.id)}
-                    onReorderTasks={reorderTasks}
-                  />
-                </div>
-
-                <div className="bg-[#2A2A2A] rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">In Progress</h2>
-                    <span className="text-sm text-gray-400">
-                      {filteredAndSortedTasks().filter(t => t.status === 'in-progress').length} tasks
-                    </span>
-                  </div>
-                  <TaskList
-                    droppableId="in-progress"
-                    tasks={filteredAndSortedTasks().filter(task => task.status === 'in-progress')}
-                    onUpdateTask={updateTask}
-                    onTaskClick={(task: Task) => setSelectedTask(task)}
-                    onDeleteTask={(task: Task) => deleteTask(task.id)}
-                    onReorderTasks={reorderTasks}
-                  />
-                </div>
-
-                <div className="bg-[#2A2A2A] rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-semibold">Done</h2>
-                      <span className="text-sm text-gray-400">
-                        {filteredAndSortedTasks().filter(t => t.status === 'done').length} tasks
-                      </span>
+                ) : (
+                  <>
+                    {/* Task Columns */}
+                    <div className="bg-[#2A2A2A] rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold">To Do</h2>
+                        <span className="text-sm text-gray-400">
+                          {filteredTasks().filter(t => t.status === 'todo').length} tasks
+                        </span>
+                      </div>
+                      <TaskListComponent
+                        droppableId="todo"
+                        tasks={filteredTasks().filter(task => task.status === 'todo')}
+                        onUpdateTask={updateTask}
+                        onTaskClick={(task: Task) => setSelectedTask(task)}
+                        onDeleteTask={(task: Task) => deleteTask(task.id)}
+                        onReorderTasks={reorderTasks}
+                      />
                     </div>
-                    <button
-                      onClick={handleArchiveDone}
-                      className="text-sm text-gray-400 hover:text-white"
-                      title="Archive completed tasks"
-                    >
-                      Archive
-                    </button>
-                  </div>
-                  <TaskList
-                    droppableId="done"
-                    tasks={filteredAndSortedTasks().filter(task => task.status === 'done')}
-                    onUpdateTask={updateTask}
-                    onTaskClick={(task: Task) => setSelectedTask(task)}
-                    onDeleteTask={(task: Task) => deleteTask(task.id)}
-                    onReorderTasks={reorderTasks}
-                  />
-                </div>
+
+                    <div className="bg-[#2A2A2A] rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold">In Progress</h2>
+                        <span className="text-sm text-gray-400">
+                          {filteredTasks().filter(t => t.status === 'in-progress').length} tasks
+                        </span>
+                      </div>
+                      <TaskListComponent
+                        droppableId="in-progress"
+                        tasks={filteredTasks().filter(task => task.status === 'in-progress')}
+                        onUpdateTask={updateTask}
+                        onTaskClick={(task: Task) => setSelectedTask(task)}
+                        onDeleteTask={(task: Task) => deleteTask(task.id)}
+                        onReorderTasks={reorderTasks}
+                      />
+                    </div>
+
+                    <div className="bg-[#2A2A2A] rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-xl font-semibold">Done</h2>
+                          <span className="text-sm text-gray-400">
+                            {filteredTasks().filter(t => t.status === 'done').length} tasks
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleArchiveDone}
+                          className="text-sm text-gray-400 hover:text-white"
+                          title="Archive completed tasks"
+                        >
+                          Archive
+                        </button>
+                      </div>
+                      <TaskListComponent
+                        droppableId="done"
+                        tasks={filteredTasks().filter(task => task.status === 'done')}
+                        onUpdateTask={updateTask}
+                        onTaskClick={(task: Task) => setSelectedTask(task)}
+                        onDeleteTask={(task: Task) => deleteTask(task.id)}
+                        onReorderTasks={reorderTasks}
+                      />
+                    </div>
+                  </>
+                )}
                 
                 {isEditorOpen && (
                   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

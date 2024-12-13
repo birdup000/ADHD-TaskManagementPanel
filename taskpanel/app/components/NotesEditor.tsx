@@ -204,37 +204,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
             )}
           </div>
         </div>
-        {!notionConnected && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-400 mb-2">Notion Integration</h3>
-            <input
-              type="text"
-              placeholder="Notion API Key"
-              value={notionApiKey}
-              onChange={(e) => setNotionApiKey(e.target.value)}
-              className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <input
-              type="text"
-              placeholder="Notion Client Secret"
-              value={notionClientSecret}
-              onChange={(e) => setNotionClientSecret(e.target.value)}
-              className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-             <input
-              type="text"
-              placeholder="Notion Refresh Token"
-              value={notionRefreshToken}
-              onChange={(e) => setNotionRefreshToken(e.target.value)}
-              className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {notionError && <p className="text-red-500 text-sm mb-2">{notionError}</p>}
-            <IntegrationButton
-              type="notion"
-              onClick={connectToNotion}
-            />
-          </div>
-        )}
+        
         <div className="space-y-2">
           {notes.filter(note => !note.parentId).map(note => (
             <div key={note.id}>
@@ -274,7 +244,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
       </div>
       <button
         onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-        className={`absolute left-0 top-0 p-2 rounded-r-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors ${isSidebarExpanded ? 'translate-x-64' : 'translate-x-0'}`}
+        className={`absolute left-4 top-4 p-2 rounded-r-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors ${isSidebarExpanded ? 'translate-x-64' : 'translate-x-0'}`}
       >
         {isSidebarExpanded ? '<' : '>'}
       </button>
@@ -286,22 +256,57 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
             <input
               type="text"
               value={selectedNote.title}
-              onChange={(e) =>
-                updateNote({
+              onChange={(e) => {
+                const updatedNote = {
                   ...selectedNote,
                   title: e.target.value,
                   updatedAt: new Date(),
-                })
-              }
+                };
+                updateNote(updatedNote);
+                setSelectedNote(updatedNote);
+              }}
               className="flex-1 px-3 py-2 bg-[#333333] rounded-lg text-white text-xl font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <button
-              onClick={() => createNote(selectedNote.id)}
-              title="Create subnote"
-              className="p-2 rounded-lg bg-indigo-600/50 hover:bg-indigo-700 transition-colors"
-            >
-              Add subnote
-            </button>
+            <div className="flex items-center gap-4">
+              {!notionConnected && (
+                <div className="flex-shrink-0">
+                  <h3 className="text-sm font-medium text-gray-400 mb-2">Notion Integration</h3>
+                  <input
+                    type="text"
+                    placeholder="Notion API Key"
+                    value={notionApiKey}
+                    onChange={(e) => setNotionApiKey(e.target.value)}
+                    className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Notion Client Secret"
+                    value={notionClientSecret}
+                    onChange={(e) => setNotionClientSecret(e.target.value)}
+                    className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Notion Refresh Token"
+                    value={notionRefreshToken}
+                    onChange={(e) => setNotionRefreshToken(e.target.value)}
+                    className="mb-2 px-3 py-1.5 bg-[#333333] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {notionError && <p className="text-red-500 text-sm mb-2">{notionError}</p>}
+                  <IntegrationButton
+                    type="notion"
+                    onClick={connectToNotion}
+                  />
+                </div>
+              )}
+              <button
+                onClick={() => createNote(selectedNote.id)}
+                title="Create subnote"
+                className="p-2 rounded-lg bg-indigo-600/50 hover:bg-indigo-700 transition-colors"
+              >
+                Add subnote
+              </button>
+            </div>
           </div>
           
           {/* Tags and Task Links */}

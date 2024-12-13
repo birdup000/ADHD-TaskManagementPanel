@@ -1,20 +1,28 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Task } from '../types/task';
-import { loadTasksFromLocalStorage, saveTasksToLocalStorage } from '../utils/storage';
+import { Task, TaskList } from '../types/task';
+import { loadTasksFromLocalStorage, saveTasksToLocalStorage, loadListsFromLocalStorage, saveListsToLocalStorage } from '../utils/storage';
+
+const TASKS_STORAGE_KEY = 'tasks';
+const LISTS_STORAGE_KEY = 'lists';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [lists, setLists] = useState<TaskList[]>([]);
 
-  // Load tasks from localStorage only on client-side after initial render
+  // Load tasks and lists from localStorage only on client-side after initial render
   useEffect(() => {
-    setTasks(loadTasksFromLocalStorage());
+    const storedTasks = loadTasksFromLocalStorage() || [];
+    const storedLists = loadListsFromLocalStorage() || [{ id: 'default', name: 'Default' }];
+    setTasks(storedTasks);
+    setLists(storedLists);
   }, []);
 
   useEffect(() => {
     saveTasksToLocalStorage(tasks);
-  }, [tasks]);
+    saveListsToLocalStorage(lists);
+  }, [tasks, lists]);
 
   const addTask = (task: Task) => {
     setTasks(prev => [...prev, task]);
@@ -32,16 +40,38 @@ export const useTasks = () => {
     setTasks(reorderedTasks);
   };
 
-  const importTasks = (importedTasks: Task[]) => {
-    setTasks(prev => [...prev, ...importedTasks]);
+  const importTasks = (importedTasks: Task[], listId: string) => {
+      const tasksWithListId = importedTasks.map(task => ({
+        ...task,
+        listId: listId,
+      }));
+      setTasks(prev => [...prev, ...tasksWithListId]);
+    };
+
+  const addList = (list: TaskList) => {
+    setLists(prev => [...prev, list]);
+  };
+
+  const updateList = (updatedList: TaskList) => {
+    setLists(prev => prev.map(l => l.id === updatedList.id ? updatedList : l));
+  };
+
+  const deleteList = (listId: string) => {
+    setLists(prev => prev.filter(l => l.id !== listId));
+    // Remove tasks associated with the deleted list
+    setTasks(prev => prev.filter(t => t.listId !== listId));
   };
 
   return {
     tasks,
+    lists,
     addTask,
     updateTask,
     deleteTask,
     reorderTasks,
-    importTasks
+    importTasks,
+    addList,
+    updateList,
+    deleteList,
   };
 };
