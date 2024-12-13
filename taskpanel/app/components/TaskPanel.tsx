@@ -11,7 +11,6 @@ import TaskCard from './TaskCard';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import ThemeSelector from './ThemeSelector';
 import TaskForm from './TaskForm';
-import ViewSelector from './ViewSelector';
 import CalendarView from './CalendarView';
 import ListView from './ListView';
 import IntegrationButton from './IntegrationButton';
@@ -24,8 +23,8 @@ import { Comment } from './CommentSection';
 import { colors } from '../../tailwind.config';
 import TaskStats from './TaskStats';
 import NotesEditor from './NotesEditor';
+import { ViewType } from '../types/view';
 
-type ViewType = 'board' | 'calendar' | 'notes' | 'project';
 type ThemeType = typeof colors.dark;
 
 const TaskPanel: React.FC = () => {
@@ -147,17 +146,41 @@ const TaskPanel: React.FC = () => {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <h1 className="text-2xl font-bold">Midnight Eclipse</h1>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentTab('tasks')}
+                    className={`px-4 py-2 rounded-md ${currentTab === 'tasks' ? 'bg-indigo-600' : 'bg-[#2A2A2A] hover:bg-[#333333]'} transition-colors`}
+                  >
+                    Tasks
+                  </button>
+                  <button
+                    onClick={() => setCurrentTab('notes')}
+                    className={`px-4 py-2 rounded-md ${currentTab === 'notes' ? 'bg-indigo-600' : 'bg-[#2A2A2A] hover:bg-[#333333]'} transition-colors`}
+                  >
+                    Notes
+                  </button>
+                </div>
                 <div className="text-sm text-gray-400">
                   Press "?" for keyboard shortcuts
                 </div>
               </div>
-              <div className="relative group">
-                <ViewSelector currentView={currentView} onViewChange={setCurrentView} />
-                <span className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">
-                  Press Ctrl+V to toggle view
-                </span>
-              </div>
               <div className="flex items-center space-x-4">
+                {currentTab === 'tasks' && (
+                  <div className="flex bg-[#2A2A2A] rounded-lg p-1">
+                    <button
+                      onClick={() => setCurrentView('board')}
+                      className={`px-4 py-2 rounded-md ${currentView === 'board' ? 'bg-indigo-600' : 'hover:bg-[#333333]'} transition-colors`}
+                    >
+                      Board
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('calendar')}
+                      className={`px-4 py-2 rounded-md ${currentView === 'calendar' ? 'bg-indigo-600' : 'hover:bg-[#333333]'} transition-colors`}
+                    >
+                      Calendar
+                    </button>
+                  </div>
+                )}
                 <ThemeSelector currentTheme={theme} onThemeChange={setTheme} />
                 <div className="flex items-center space-x-2">
                   <div className="relative group">
