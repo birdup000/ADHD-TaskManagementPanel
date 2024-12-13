@@ -1,8 +1,8 @@
 "use client";
 
-import { Droppable, DroppableStateSnapshot } from '@hello-pangea/dnd';
+import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { Task } from '../types/task';
-import { DraggableTask } from './DraggableTask';
+import TaskCard from './TaskCard';
 
 interface TaskListProps {
   tasks: Task[];
@@ -30,14 +30,22 @@ export const TaskList = ({ tasks, onUpdateTask, onReorderTasks, onTaskClick, onD
             </div>
           ) : (
             tasks.map((task, index) => (
-              <DraggableTask
-                key={task.id}
-                task={task}
-                index={index}
-                onClick={() => onTaskClick(task)}
-                onDelete={() => onDeleteTask(task)}
-                onUpdateTask={onUpdateTask}
-              />
+              <Draggable key={task.id} draggableId={task.id} index={index}>
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                  >
+                    <TaskCard
+                      task={task}
+                      onClick={() => onTaskClick(task)}
+                      onDelete={() => onDeleteTask(task)}
+                      onUpdateTask={onUpdateTask}
+                    />
+                  </div>
+                )}
+              </Draggable>
             ))
           )}
           {provided.placeholder}

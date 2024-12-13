@@ -365,167 +365,164 @@ const TaskPanel: React.FC = () => {
           
           {currentTab === 'tasks' ? (
             <DragDropContext onDragEnd={onDragEnd}>
-            <main className={currentView === 'calendar' ? '' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
-              {/* Todo Column */}
-              <div className="bg-[#2A2A2A] rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">To Do</h2>
-                  <span className="text-sm text-gray-400">
-                    {filteredAndSortedTasks().filter(t => t.status === 'todo').length} tasks
-                  </span>
-                </div>
-                <TaskList
-                  droppableId="todo"
-                  tasks={filteredAndSortedTasks().filter(task => task.status === 'todo')}
-                  onUpdateTask={updateTask}
-                  onTaskClick={(task: Task) => setSelectedTask(task)}
-                  onDeleteTask={(task: Task) => deleteTask(task.id)}
-                  onReorderTasks={reorderTasks}
-                />
-              </div>
-
-              {/* In Progress Column */}
-              <div className="bg-[#2A2A2A] rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">In Progress</h2>
-                  <span className="text-sm text-gray-400">
-                    {filteredAndSortedTasks().filter(t => t.status === 'in-progress').length} tasks
-                  </span>
-                </div>
-                
-                <TaskList
-                  droppableId="in-progress"
-                  tasks={filteredAndSortedTasks().filter(task => task.status === 'in-progress')}
-                  onUpdateTask={updateTask}
-                  onTaskClick={(task: Task) => setSelectedTask(task)}
-                  onDeleteTask={(task: Task) => deleteTask(task.id)}
-                  onReorderTasks={reorderTasks}
-                />
-              </div>
-              
-              {isEditorOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-[#212121] p-6 rounded-lg w-full max-w-2xl mx-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-semibold">Create New Task</h2>
-                      <button 
-                        onClick={() => setIsEditorOpen(false)}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <TaskForm 
-                      onSubmit={(task) => {
-                        addTask(task);
-                        setIsEditorOpen(false);
-                      }}
-                      onCancel={() => setIsEditorOpen(false)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Done Column */}
-              <div className="bg-[#2A2A2A] rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-semibold">Done</h2>
+              <main className={currentView === 'calendar' ? '' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
+                {/* Task Columns */}
+                <div className="bg-[#2A2A2A] rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">To Do</h2>
                     <span className="text-sm text-gray-400">
-                      {filteredAndSortedTasks().filter(t => t.status === 'done').length} tasks
+                      {filteredAndSortedTasks().filter(t => t.status === 'todo').length} tasks
                     </span>
                   </div>
-                  <button
-                    onClick={handleArchiveDone}
-                    className="text-sm text-gray-400 hover:text-white"
-                    title="Archive completed tasks"
-                  >
-                    Archive
-                  </button>
+                  <TaskList
+                    droppableId="todo"
+                    tasks={filteredAndSortedTasks().filter(task => task.status === 'todo')}
+                    onUpdateTask={updateTask}
+                    onTaskClick={(task: Task) => setSelectedTask(task)}
+                    onDeleteTask={(task: Task) => deleteTask(task.id)}
+                    onReorderTasks={reorderTasks}
+                  />
                 </div>
-                <TaskList
-                  droppableId="done"
-                  tasks={filteredAndSortedTasks().filter(task => task.status === 'done')}
-                  onUpdateTask={updateTask}
-                  onTaskClick={(task: Task) => setSelectedTask(task)}
-                  onDeleteTask={(task: Task) => deleteTask(task.id)}
-                  onReorderTasks={reorderTasks}
-                />
-              </div>
 
-              {/* Task Details Modal */}
-              {selectedTask && (
-                <TaskDetails
-                  task={selectedTask}
-                  onClose={() => setSelectedTask(null)}
-                  onUpdateTask={(updatedTask: Task) => {
-                    updateTask(updatedTask);
-                    setSelectedTask(updatedTask);
-                  }}
-                  onDeleteTask={(task: Task) => {
-                    deleteTask(task.id);
-                    setSelectedTask(null);
-                  }}
-                  comments={comments[selectedTask.id] || []}
-                  onAddComment={(taskId: string, comment: Omit<Comment, 'id' | 'createdAt'>) => {
-                    const newComment = {
-                      ...comment,
-                      id: Date.now().toString(),
-                      createdAt: new Date(),
-                    };
-                    setComments({
-                      ...comments,
-                      [taskId]: [...(comments[taskId] || []), newComment],
-                    });
-                  }}
-                />
-              )}
+                <div className="bg-[#2A2A2A] rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">In Progress</h2>
+                    <span className="text-sm text-gray-400">
+                      {filteredAndSortedTasks().filter(t => t.status === 'in-progress').length} tasks
+                    </span>
+                  </div>
+                  <TaskList
+                    droppableId="in-progress"
+                    tasks={filteredAndSortedTasks().filter(task => task.status === 'in-progress')}
+                    onUpdateTask={updateTask}
+                    onTaskClick={(task: Task) => setSelectedTask(task)}
+                    onDeleteTask={(task: Task) => deleteTask(task.id)}
+                    onReorderTasks={reorderTasks}
+                  />
+                </div>
 
-              {currentView === 'calendar' && (
-                <CalendarView
-                  tasks={tasks}
-                  onTaskClick={(task: Task) => setSelectedTask(task)}
-                  onDeleteTask={(task: Task) => {
-                    deleteTask(task.id);
-                    setSelectedTask(null);
-                  }}
-                />
-              )}
-
-              {/* Integrations Modal */}
-              {showIntegrations && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-[#212121] p-6 rounded-lg w-full max-w-md mx-4">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-semibold">Integrations</h2>
-                      <button
-                        onClick={() => setShowIntegrations(false)}
-                        className="text-gray-400 hover:text-white"
-                      >
-                        ✕
-                      </button>
+                <div className="bg-[#2A2A2A] rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-semibold">Done</h2>
+                      <span className="text-sm text-gray-400">
+                        {filteredAndSortedTasks().filter(t => t.status === 'done').length} tasks
+                      </span>
                     </div>
-                    <div className="space-y-4">
-                      <IntegrationButton
-                        type="google"
-                        onClick={() => {
-                          console.log('Connecting to Google Calendar...');
-                          // Implement Google Calendar OAuth flow
+                    <button
+                      onClick={handleArchiveDone}
+                      className="text-sm text-gray-400 hover:text-white"
+                      title="Archive completed tasks"
+                    >
+                      Archive
+                    </button>
+                  </div>
+                  <TaskList
+                    droppableId="done"
+                    tasks={filteredAndSortedTasks().filter(task => task.status === 'done')}
+                    onUpdateTask={updateTask}
+                    onTaskClick={(task: Task) => setSelectedTask(task)}
+                    onDeleteTask={(task: Task) => deleteTask(task.id)}
+                    onReorderTasks={reorderTasks}
+                  />
+                </div>
+                
+                {isEditorOpen && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-[#212121] p-6 rounded-lg w-full max-w-2xl mx-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold">Create New Task</h2>
+                        <button 
+                          onClick={() => setIsEditorOpen(false)}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <TaskForm 
+                        onSubmit={(task) => {
+                          addTask(task);
+                          setIsEditorOpen(false);
                         }}
-                      />
-                      <IntegrationButton
-                        type="slack"
-                        onClick={() => {
-                          console.log('Connecting to Slack...');
-                          // Implement Slack OAuth flow
-                        }}
+                        onCancel={() => setIsEditorOpen(false)}
                       />
                     </div>
                   </div>
-                </div>
-              )}
-            </main>
-          </DragDropContext>
+                )}
+
+                {/* Task Details Modal */}
+                {selectedTask && (
+                  <TaskDetails
+                    task={selectedTask}
+                    onClose={() => setSelectedTask(null)}
+                    onUpdateTask={(updatedTask: Task) => {
+                      updateTask(updatedTask);
+                      setSelectedTask(updatedTask);
+                    }}
+                    onDeleteTask={(task: Task) => {
+                      deleteTask(task.id);
+                      setSelectedTask(null);
+                    }}
+                    comments={comments[selectedTask.id] || []}
+                    onAddComment={(taskId: string, comment: Omit<Comment, 'id' | 'createdAt'>) => {
+                      const newComment = {
+                        ...comment,
+                        id: Date.now().toString(),
+                        createdAt: new Date(),
+                      };
+                      setComments({
+                        ...comments,
+                        [taskId]: [...(comments[taskId] || []), newComment],
+                      });
+                    }}
+                  />
+                )}
+
+                {currentView === 'calendar' && (
+                  <CalendarView
+                    tasks={tasks}
+                    onTaskClick={(task: Task) => setSelectedTask(task)}
+                    onDeleteTask={(task: Task) => {
+                      deleteTask(task.id);
+                      setSelectedTask(null);
+                    }}
+                  />
+                )}
+
+                {/* Integrations Modal */}
+                {showIntegrations && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-[#212121] p-6 rounded-lg w-full max-w-md mx-4">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-semibold">Integrations</h2>
+                        <button
+                          onClick={() => setShowIntegrations(false)}
+                          className="text-gray-400 hover:text-white"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        <IntegrationButton
+                          type="google"
+                          onClick={() => {
+                            console.log('Connecting to Google Calendar...');
+                            // Implement Google Calendar OAuth flow
+                          }}
+                        />
+                        <IntegrationButton
+                          type="slack"
+                          onClick={() => {
+                            console.log('Connecting to Slack...');
+                            // Implement Slack OAuth flow
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </main>
+            </DragDropContext>
           ) : (
             <main className="bg-[#212121] rounded-lg overflow-hidden h-[calc(100vh-12rem)]">
               <NotesEditor />
