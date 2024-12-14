@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [token, setToken] = useLocalStorage('authToken', null);
+  const [noAuth, setNoAuth] = useLocalStorage('noAuth', null);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen font-[family-name:var(--font-geist-sans)]">
-      {token ? <TaskPanel /> : <LoginForm />}
+      {token || noAuth ? <TaskPanel /> : <LoginForm />}
     </main>
   );
 }

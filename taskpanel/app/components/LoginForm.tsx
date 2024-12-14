@@ -8,41 +8,52 @@ const LoginForm: React.FC = () => {
   const [otp, setOtp] = useState('');
   const [message, setMessage] = useState('');
   const [backendUrl, setBackendUrl] = useState('http://localhost:12437'); // Default backend URL
+  const [useWithoutAuth, setUseWithoutAuth] = useState(false);
   const router = useRouter();
 
   const handleLogin = async () => {
-    try {
-      const response = await fetch(`${backendUrl}/v1/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, token: otp }),
-      });
+    if (useWithoutAuth) {
+      localStorage.setItem('noAuth', 'true');
+      router.refresh();
+      window.location.reload();
+    } else {
+        try {
+            const response = await fetch(`${backendUrl}/v1/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, token: otp }),
+            });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.detail.startsWith('http')) {
-          const url = new URL(data.detail);
-          const token = url.searchParams.get('token');
-          if (token) {
-            localStorage.setItem('authToken', token);
-            router.refresh();
-            window.location.reload();
-          } else {
-             setMessage('Login failed: Token not found in the magic link.');
-          }
-        } else {
-          setMessage(data.detail);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.detail.startsWith('http')) {
+                    const url = new URL(data.detail);
+                    const token = url.searchParams.get('token');
+                    if (token) {
+                        localStorage.setItem('authToken', token);
+                        router.refresh();
+                        window.location.reload();
+                    } else {
+                        setMessage('Login failed: Token not found in the magic link.');
+                    }
+                } else {
+                    setMessage(data.detail);
+                }
+            } else {
+                const errorData = await response.json();
+                setMessage(errorData.detail || 'Login failed');
+            }
+        } catch (error) {
+            setMessage('An error occurred during login.');
         }
-      } else {
-        const errorData = await response.json();
-        setMessage(errorData.detail || 'Login failed');
-      }
-    } catch (error) {
-      setMessage('An error occurred during login.');
     }
   };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setUseWithoutAuth(e.target.checked);
+    };
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
@@ -85,6 +96,18 @@ const LoginForm: React.FC = () => {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
               />
+            </div>
+            <div className="flex items-center">
+                <input
+                    type="checkbox"
+                    id="useWithoutAuth"
+                    className="mr-2"
+                    checked={useWithoutAuth}
+                    onChange={handleCheckboxChange}
+                />
+                <label htmlFor="useWithoutAuth" className="text-sm text-gray-200">
+                    Use without authentication
+                </label>
             </div>
             <button
               type="button"

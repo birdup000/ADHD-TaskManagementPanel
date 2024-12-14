@@ -174,8 +174,13 @@ const TaskPanel: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('noAuth');
     router.push('/');
   };
+
+  const email = localStorage.getItem('email');
+  const authToken = localStorage.getItem('authToken');
+  const noAuth = localStorage.getItem('noAuth');
 
   return (
     <ThemeProvider value={{ theme, setTheme }}>
@@ -310,9 +315,11 @@ const TaskPanel: React.FC = () => {
                     </span>
                   </button>
                 </div>
-                {localStorage.getItem('authToken') && (
+                {(authToken || noAuth) && (
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-400">Logged in</span>
+                    <span className="text-sm text-gray-400">
+                      {email ? `Logged in as ${email}` : 'Logged in'}
+                    </span>
                     <button
                       onClick={handleLogout}
                       className="px-3 py-1.5 rounded text-sm bg-red-600/20 text-red-300 hover:bg-red-600/30 transition-colors"
