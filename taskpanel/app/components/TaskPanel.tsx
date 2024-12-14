@@ -631,6 +631,7 @@ const TaskPanel: React.FC = () => {
                         onTaskClick={(task: Task) => setSelectedTask(task)}
                         onDeleteTask={(task: Task) => deleteTask(task.id)}
                         onReorderTasks={reorderTasks}
+                        listId={currentList}
                       />
                     </div>
 
@@ -648,6 +649,7 @@ const TaskPanel: React.FC = () => {
                         onTaskClick={(task: Task) => setSelectedTask(task)}
                         onDeleteTask={(task: Task) => deleteTask(task.id)}
                         onReorderTasks={reorderTasks}
+                        listId={currentList}
                       />
                     </div>
 
@@ -674,6 +676,7 @@ const TaskPanel: React.FC = () => {
                         onTaskClick={(task: Task) => setSelectedTask(task)}
                         onDeleteTask={(task: Task) => deleteTask(task.id)}
                         onReorderTasks={reorderTasks}
+                        listId={currentList}
                       />
                     </div>
                   </>

@@ -14,8 +14,25 @@ export const useTasks = () => {
   // Load tasks and lists from localStorage only on client-side after initial render
   useEffect(() => {
     const storedTasks = loadTasksFromLocalStorage() || [];
-    const storedLists = loadListsFromLocalStorage() || [{ id: 'default', name: 'Default' }];
-    setTasks(storedTasks);
+    const storedLists = loadListsFromLocalStorage() || [{ id: 'default', name: 'General Task List' }];
+    
+    if (storedTasks.length === 0 && storedLists.length > 0) {
+      const defaultListId = storedLists[0].id;
+      const defaultTask: Task = {
+        id: 'default-task',
+        title: 'Example Task',
+        listId: defaultListId,
+        description: 'This is an example task.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        completedAt: undefined,
+        priority: 'medium',
+        status: 'todo',
+      };
+      setTasks([defaultTask]);
+    } else {
+      setTasks(storedTasks);
+    }
     setLists(storedLists);
   }, []);
 
