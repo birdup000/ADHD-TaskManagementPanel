@@ -27,7 +27,8 @@ const LoginForm: React.FC = () => {
           const token = url.searchParams.get('token');
           if (token) {
             localStorage.setItem('authToken', token);
-            router.push('/');
+            router.refresh();
+            window.location.reload();
           } else {
              setMessage('Login failed: Token not found in the magic link.');
           }
