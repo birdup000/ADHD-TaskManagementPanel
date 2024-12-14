@@ -1,3 +1,7 @@
+⚠️ **WARNING: Under Heavy Development!** ⚠️
+
+The AGiXT integrations for this project are currently undergoing heavy development. Expect frequent changes, potential instability, and features that may not be fully functional. Your patience and feedback are appreciated!
+
 # ADHD Task Management Panel
 
 The ADHD Task Management Panel is a modern, intuitive task management application designed to help individuals with ADHD focus and manage their tasks effectively. The application features a drag-and-drop Kanban board, advanced search and filtering, keyboard shortcuts, and multiple views to enhance productivity.
@@ -16,10 +20,10 @@ The ADHD Task Management Panel is a modern, intuitive task management applicatio
 
 ## Installation Instructions
 To get started with the ADHD Task Management Panel, follow these steps:
-1. Clone the repository: `git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git`
-2. Navigate to the project directory: `cd ADHD-TaskManagementPanel/taskpanel`
-3. Install dependencies: `npm install`
-4. Start the development server: `npm start`
+1. Clone the repository: ```bash git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git```
+2. Navigate to the project directory: ```bash cd ADHD-TaskManagementPanel/taskpanel```
+3. Install dependencies: ```bash npm install - - peer-legacy-deps```
+4. Start the development server: ```bash npm next dev```
 
 ## Usage Examples
 - Use the search bar to quickly find tasks.
