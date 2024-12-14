@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
 
 function useLocalStorage(key: string, initialValue: string | null): [string | null, (value: string | null) => void] {
-  const [storedValue, setStoredValue] = useState<string | null>(() => {
+  // Always initialize with initialValue to avoid hydration mismatch
+  const [storedValue, setStoredValue] = useState<string | null>(initialValue);
+
+  // After hydration, sync with localStorage
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const item = window.localStorage.getItem(key);
-        return item ? item : initialValue;
+        if (item !== storedValue) {
+          setStoredValue(item ? item : initialValue);
+        }
       } catch (error) {
         console.error(error);
-        return initialValue;
       }
     }
-    return initialValue;
-  });
+  }, []);
 
   const setValue = (value: string | null) => {
     try {
