@@ -25,6 +25,7 @@ import TaskStats from './TaskStats';
 import NotesEditor from './NotesEditor';
 import { ViewType, LayoutType } from '../types/view';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
 type ThemeType = typeof colors.dark;
 
@@ -78,6 +79,7 @@ const TaskPanel: React.FC = () => {
   const projectActionsRef = React.useRef<HTMLDivElement>(null);
   const [showListActions, setShowListActions] = React.useState(false);
   const listActionsRef = React.useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useKeyboardShortcuts({
     onNewTask: () => setIsEditorOpen(true),
@@ -169,6 +171,11 @@ const TaskPanel: React.FC = () => {
   const filteredTasks = () => {
     return filteredAndSortedTasks().filter(task => task.listId === currentList);
   }
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    router.push('/');
+  };
 
   return (
     <ThemeProvider value={{ theme, setTheme }}>
@@ -303,6 +310,18 @@ const TaskPanel: React.FC = () => {
                     </span>
                   </button>
                 </div>
+                {localStorage.getItem('authToken') && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-400">Logged in</span>
+                    <button
+                      onClick={handleLogout}
+                      className="px-3 py-1.5 rounded text-sm bg-red-600/20 text-red-300 hover:bg-red-600/30 transition-colors"
+                      title="Logout"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             <TaskStats tasks={tasks} />
