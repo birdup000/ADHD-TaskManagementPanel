@@ -17,11 +17,14 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
   const [assignees, setAssignees] = useState<string[]>([]);
   const [tag, setTag] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [subtask, setSubtask] = useState('');
+  const [subtasks, setSubtasks] = useState<{ title: string; completed: boolean }[]>([]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
-      id: Date.now().toString(),
+      id: Date.now().toString(), // Generate ID on client side
       title,
       description,
       priority,
@@ -29,6 +32,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
       dueDate: dueDate ? new Date(dueDate) : undefined,
       assignees,
       tags,
+      subtasks,
       listId: 'default',
     });
   };
@@ -45,6 +49,17 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
       setTags([...tags, tag]);
       setTag('');
     }
+  };
+
+  const addSubtask = () => {
+    if (subtask) {
+      setSubtasks([...subtasks, { title: subtask, completed: false }]);
+      setSubtask('');
+    }
+  };
+
+  const removeSubtask = (index: number) => {
+    setSubtasks(subtasks.filter((_, i) => i !== index));
   };
 
   return (
@@ -176,6 +191,45 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
                 ×
               </button>
             </span>
+          ))}
+        </div>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-200 mb-1">
+          Subtasks
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={subtask}
+            onChange={(e) => setSubtask(e.target.value)}
+            className="flex-1 px-3 py-2 bg-[#333333] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Add subtask"
+          />
+          <button
+            type="button"
+            onClick={addSubtask}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+          >
+            Add
+          </button>
+        </div>
+        <div className="flex flex-col gap-2 mt-2">
+          {subtasks.map((st, index) => (
+            <div
+              key={index}
+              className="px-2 py-1 bg-[#444444] rounded-lg text-sm flex items-center justify-between"
+            >
+              <span>{st.title}</span>
+              <button
+                type="button"
+                onClick={() => removeSubtask(index)}
+                className="text-gray-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
           ))}
         </div>
       </div>

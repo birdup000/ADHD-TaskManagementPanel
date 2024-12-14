@@ -5,14 +5,17 @@ import TaskActions from './TaskActions';
 import { Task } from '../types/task';
 
 interface TaskCardProps {
-  task: Task;
+  task?: Task;
   onClick?: () => void;
   onDelete?: () => void;
   onUpdateTask?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task = { id: '', title: '', description: '', priority: 'low', status: 'todo', dueDate: undefined, tags: [], assignees: [], createdAt: new Date(), updatedAt: new Date() }, onClick, onDelete, onUpdateTask }) => {
-  const { title, description, priority, status, dueDate, tags = [], assignees = [] } = task;
+const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, onUpdateTask }) => {
+  if (!task) {
+    return null;
+  }
+  const { title, description, priority, status, dueDate, tags = [], assignees = [], subtasks = [] } = task;
   const isOverdue = dueDate && new Date(dueDate) < new Date() && status !== 'done';
 
   const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -139,18 +142,18 @@ const priorityColors: PriorityColors = {
           ))}
         </div>
       )}
-      {task.subtasks && task.subtasks.length > 0 && (
+      {subtasks && subtasks.length > 0 && (
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
           <span>Subtasks:</span>
           <div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-blue-600 transition-all"
               style={{
-                width: `${(task.subtasks.filter((s: { completed: boolean }) => s.completed).length / task.subtasks.length) * 100}%`
+                width: `${(subtasks.filter((s: { completed: boolean }) => s.completed).length / subtasks.length) * 100}%`
               }}
             />
           </div>
-          <span>{task.subtasks.filter((s: { completed: boolean }) => s.completed).length}/{task.subtasks.length}</span>
+          <span>{subtasks.filter((s: { completed: boolean }) => s.completed).length}/{subtasks.length}</span>
         </div>
       )}
       {assignees.length > 0 && (
