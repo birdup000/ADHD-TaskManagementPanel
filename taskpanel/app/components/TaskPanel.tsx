@@ -690,6 +690,7 @@ const TaskPanel: React.FC = () => {
                           setIsEditorOpen(false);
                         }}
                         onCancel={() => setIsEditorOpen(false)}
+                        lists={lists}
                       />
                     </div>
                   </div>

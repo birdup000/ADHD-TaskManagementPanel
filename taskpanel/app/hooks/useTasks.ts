@@ -25,6 +25,10 @@ export const useTasks = () => {
   }, [tasks, lists]);
 
   const addTask = (task: Task) => {
+    if (!task.listId) {
+      console.error("Task must have a listId:", task);
+      return;
+    }
     setTasks(prev => [...prev, task]);
   };
 

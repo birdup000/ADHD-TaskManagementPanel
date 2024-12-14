@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import RichTextEditor from './RichTextEditor';
+import { TaskList } from '../types/task';
 
 interface TaskFormProps {
   onSubmit: (task: any) => void;
   onCancel: () => void;
+  lists: TaskList[];
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
@@ -19,6 +21,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
   const [tags, setTags] = useState<string[]>([]);
   const [subtask, setSubtask] = useState('');
   const [subtasks, setSubtasks] = useState<{ title: string; completed: boolean }[]>([]);
+  const [selectedListId, setSelectedListId] = useState(lists.length > 0 ? lists[0].id : '');
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,7 +36,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
       assignees,
       tags,
       subtasks,
-      listId: 'default',
+      listId: selectedListId,
     });
   };
 
@@ -232,6 +235,21 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
             </div>
           ))}
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-200 mb-1">
+          List
+        </label>
+        <select
+          value={selectedListId}
+          onChange={(e) => setSelectedListId(e.target.value)}
+          className="w-full px-3 py-2 bg-[#333333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          {lists.map((list) => (
+            <option key={list.id} value={list.id}>{list.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
