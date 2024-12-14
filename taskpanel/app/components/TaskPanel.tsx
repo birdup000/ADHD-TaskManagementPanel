@@ -24,6 +24,7 @@ import { colors } from '../../tailwind.config';
 import TaskStats from './TaskStats';
 import NotesEditor from './NotesEditor';
 import { ViewType, LayoutType } from '../types/view';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 type ThemeType = typeof colors.dark;
 
@@ -50,7 +51,7 @@ const TaskPanel: React.FC = () => {
   const [currentTab, setCurrentTab] = React.useState<'tasks' | 'notes'>('tasks');
   const [showIntegrations, setShowIntegrations] = React.useState(false);
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
-  const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks, lists, addList, updateList } = useTasks();
+  const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks, lists, addList, updateList, deleteList } = useTasks();
   const {
     searchTerm,
     setSearchTerm,
@@ -71,6 +72,12 @@ const TaskPanel: React.FC = () => {
   const [isRenamingList, setIsRenamingList] = React.useState(false);
   const [renamingListId, setRenamingListId] = React.useState<string | null>(null);
   const [renamingListName, setRenamingListName] = React.useState('');
+  const [isRenamingProject, setIsRenamingProject] = React.useState(false);
+  const [renamingProjectName, setRenamingProjectName] = React.useState('Midnight Eclipse');
+  const [showProjectActions, setShowProjectActions] = React.useState(false);
+  const projectActionsRef = React.useRef<HTMLDivElement>(null);
+  const [showListActions, setShowListActions] = React.useState(false);
+  const listActionsRef = React.useRef<HTMLDivElement>(null);
 
   useKeyboardShortcuts({
     onNewTask: () => setIsEditorOpen(true),
@@ -103,6 +110,22 @@ const TaskPanel: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (projectActionsRef.current && !projectActionsRef.current.contains(event.target as Node)) {
+        setShowProjectActions(false);
+      }
+      if (listActionsRef.current && !listActionsRef.current.contains(event.target as Node)) {
+        setShowListActions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   
@@ -154,7 +177,58 @@ const TaskPanel: React.FC = () => {
           <header className="flex flex-col gap-4 mb-8">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold">Midnight Eclipse</h1>
+                <div className="relative">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{renamingProjectName}</h1>
+                    <button
+                      onClick={() => setShowProjectActions(!showProjectActions)}
+                      className="text-gray-400 hover:text-white focus:outline-none"
+                      title="Project Actions"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  {showProjectActions && (
+                    <div
+                      ref={projectActionsRef}
+                      className="absolute top-full mt-2 right-0 bg-[#2A2A2A] rounded-md shadow-lg z-10"
+                    >
+                      <button
+                        onClick={() => {
+                          setIsRenamingProject(true);
+                          setShowProjectActions(false);
+                        }}
+                        className="block px-4 py-2 text-white hover:bg-[#333333] w-full text-left"
+                      >
+                        Rename
+                      </button>
+                      {/* Add other project actions here */}
+                    </div>
+                  )}
+                  {isRenamingProject && (
+                    <input
+                      type="text"
+                      value={renamingProjectName}
+                      onChange={(e) => setRenamingProjectName(e.target.value)}
+                      onBlur={() => setIsRenamingProject(false)}
+                      className="text-2xl font-bold bg-[#2A2A2A] rounded-md px-2 py-1 focus:outline-none absolute top-0 left-0"
+                      style={{ width: '100%' }}
+                    />
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCurrentTab('tasks')}
@@ -372,28 +446,124 @@ const TaskPanel: React.FC = () => {
                 filterPriority={filterPriority}
                 onFilterChange={setFilterPriority}
               />
-              <div className="flex items-center gap-2">
-                <select
-                  value={currentList}
-                  onChange={(e) => setCurrentList(e.target.value)}
-                  className="px-3 py-1.5 rounded text-sm bg-[#2A2A2A] text-white hover:bg-[#333333] transition-colors"
-                >
-                  {lists.map(list => (
-                    <option key={list.id} value={list.id}>{list.name}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => {
-                    const newListId = crypto.randomUUID();
-                    // Add new list to state
-                    addList({ id: newListId, name: 'New List' });
-                    setCurrentList(newListId);
-                  }}
-                  className="px-3 py-1.5 rounded text-sm bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 transition-colors"
-                  title="Add new list"
-                >
-                  Add List
-                </button>
+              <div className="flex items-center gap-2 relative">
+                {isRenamingList && renamingListId ? (
+                  <input
+                    type="text"
+                    value={renamingListName}
+                    onChange={(e) => setRenamingListName(e.target.value)}
+                    onBlur={() => {
+                      const list = lists.find(l => l.id === renamingListId);
+                      if (list) {
+                        updateList({ ...list, name: renamingListName });
+                      }
+                      setIsRenamingList(false);
+                      setRenamingListId(null);
+                      setRenamingListName('');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const list = lists.find(l => l.id === renamingListId);
+                        if (list) {
+                          updateList({ ...list, name: renamingListName });
+                        }
+                        setIsRenamingList(false);
+                        setRenamingListId(null);
+                        setRenamingListName('');
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded text-sm bg-[#2A2A2A] text-white hover:bg-[#333333] transition-colors"
+                  />
+                ) : (
+                  <select
+                    value={currentList}
+                    onChange={(e) => {
+                      setCurrentList(e.target.value);
+                      setIsRenamingList(false);
+                      setRenamingListId(null);
+                      setRenamingListName('');
+                    }}
+                    className="px-3 py-1.5 rounded text-sm bg-[#2A2A2A] text-white hover:bg-[#333333] transition-colors"
+                  >
+                    {lists.map(list => (
+                      <option key={list.id} value={list.id} onDoubleClick={() => {
+                        setIsRenamingList(true);
+                        setRenamingListId(list.id);
+                        setRenamingListName(list.name);
+                      }}>{list.name}</option>
+                    ))}
+                  </select>
+                )}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowListActions(!showListActions)}
+                    className="px-3 py-1.5 rounded text-sm bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/30 transition-colors flex items-center gap-1"
+                    title="List Actions"
+                  >
+                    List Actions
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  {showListActions && (
+                    <div
+                      ref={listActionsRef}
+                      className="absolute top-full mt-2 left-0 bg-[#2A2A2A] rounded-md shadow-lg z-10"
+                    >
+                      <button
+                        onClick={() => {
+                          const newListId = crypto.randomUUID();
+                          addList({ id: newListId, name: 'New List' });
+                          setCurrentList(newListId);
+                          setShowListActions(false);
+                        }}
+                        className="block px-4 py-2 text-white hover:bg-[#333333] w-full text-left flex items-center gap-2"
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                        Add List
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsRenamingList(true);
+                          setRenamingListId(currentList);
+                          const list = lists.find(l => l.id === currentList);
+                          if (list) {
+                            setRenamingListName(list.name);
+                          }
+                          setShowListActions(false);
+                        }}
+                        className="block px-4 py-2 text-white hover:bg-[#333333] w-full text-left flex items-center gap-2"
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                        Rename List
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (currentList !== 'default') {
+                            deleteList(currentList);
+                            setCurrentList('default');
+                          }
+                          setShowListActions(false);
+                        }}
+                        className="block px-4 py-2 text-white hover:bg-[#333333] w-full text-left flex items-center gap-2"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                        Delete List
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <select
                   value={currentLayout}
                   onChange={(e) => setCurrentLayout(e.target.value as LayoutType)}

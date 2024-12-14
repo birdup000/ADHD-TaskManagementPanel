@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
+    "@heroicons/react": "^2.2.0",
     "@types/slate": "^0.47.16",
     "@types/slate-react": "^0.50.0",
     "next": "15.0.4",
