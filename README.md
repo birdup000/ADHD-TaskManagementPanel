@@ -20,10 +20,10 @@ The ADHD Task Management Panel is a modern, intuitive task management applicatio
 
 ## Installation Instructions
 To get started with the ADHD Task Management Panel, follow these steps:
-1. Clone the repository: `git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git`
-2. Navigate to the project directory: `cd ADHD-TaskManagementPanel/taskpanel`
-3. Install dependencies: `npm install - - peer-legacy-deps`
-4. Start the development server: `npm next dev`
+1. Clone the repository: ```bash git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git```
+2. Navigate to the project directory: ```bash cd ADHD-TaskManagementPanel/taskpanel```
+3. Install dependencies: ```bash npm install - - peer-legacy-deps```
+4. Start the development server: ```bash npm next dev```
 
 ## Usage Examples
 - Use the search bar to quickly find tasks.
