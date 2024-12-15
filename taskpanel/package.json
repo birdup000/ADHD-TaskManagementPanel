@@ -13,6 +13,7 @@
     "@heroicons/react": "^2.2.0",
     "@types/slate": "^0.47.16",
     "@types/slate-react": "^0.50.0",
+    "agixt": "^1.0.57",
     "next": "15.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
