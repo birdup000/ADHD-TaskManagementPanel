@@ -23,7 +23,6 @@ export const TaskList = ({ tasks, onUpdateTask, onReorderTasks, onTaskClick, onD
           {...provided.droppableProps}
           className={`space-y-4 min-h-[100px] ${snapshot?.isDraggingOver ? 'drop-target' : ''}`}
         >
-          <div className="text-gray-500 text-sm mb-2">List ID: {listId}</div>
           {tasks.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <p className="text-xl mb-2">✨</p>

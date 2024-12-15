@@ -7,7 +7,7 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [message, setMessage] = useState('');
-  const [backendUrl, setBackendUrl] = useState('http://localhost:12437'); // Default backend URL
+  const [backendUrl, setBackendUrl] = useState('http://localhost:7437'); // Default backend URL
   const [useWithoutAuth, setUseWithoutAuth] = useState(false);
   const router = useRouter();
 

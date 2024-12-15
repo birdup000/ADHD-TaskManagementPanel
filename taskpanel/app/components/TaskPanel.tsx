@@ -551,6 +551,19 @@ const TaskPanel: React.FC = () => {
                         onClick={() => {
                           const newListId = crypto.randomUUID();
                           addList({ id: newListId, name: 'New List' });
+                          
+                          // Create a default task for the new list
+                          addTask({
+                            id: crypto.randomUUID(),
+                            title: 'New Task',
+                            description: 'This is a default task for the new list.',
+                            status: 'todo',
+                            priority: 'medium',
+                            listId: newListId,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                          });
+                          
                           setCurrentList(newListId);
                           setShowListActions(false);
                         }}
@@ -819,7 +832,6 @@ const TaskPanel: React.FC = () => {
               </div>
             </div>
           )}
-
           {showLogin && <LoginForm />}
           {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
           {showShortcuts && <ShortcutsDialog onClose={() => setShowShortcuts(false)} />}

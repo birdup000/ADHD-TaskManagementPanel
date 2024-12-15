@@ -49,6 +49,13 @@ const priorityColors: PriorityColors = {
     high: '🔴',
   };
 
+  const toggleSubtask = (index: number) => {
+    const updatedSubtasks = subtasks.map((st, i) =>
+      i === index ? { ...st, completed: !st.completed } : st
+    );
+    onUpdateTask?.({ ...task, subtasks: updatedSubtasks });
+  };
+
   return (
     <div
       className={`bg-[#333333] border-l-4 p-4 rounded-lg hover:bg-[#383838] transition-colors cursor-pointer ${statusColors[status]} ${isOverdue ? 'ring-2 ring-red-500/50' : ''}`}
@@ -65,6 +72,11 @@ const priorityColors: PriorityColors = {
           {task.category && (
             <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded">
               📂 {task.category}
+            </span>
+          )}
+           {subtasks && subtasks.length > 0 && (
+            <span className="text-xs bg-gray-500/20 text-gray-300 px-2 py-0.5 rounded" title="Has subtasks">
+              Subtasks
             </span>
           )}
         </h3>
@@ -143,17 +155,37 @@ const priorityColors: PriorityColors = {
         </div>
       )}
       {subtasks && subtasks.length > 0 && (
-        <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-          <span>Subtasks:</span>
-          <div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 transition-all"
-              style={{
-                width: `${(subtasks.filter((s: { completed: boolean }) => s.completed).length / subtasks.length) * 100}%`
-              }}
-            />
+        <div className="mb-2">
+          <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+            <span>Subtasks:</span>
+            <div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-600 transition-all"
+                style={{
+                  width: `${(subtasks.filter((s: { completed: boolean }) => s.completed).length / subtasks.length) * 100}%`
+                }}
+              />
+            </div>
+            <span>{subtasks.filter((s: { completed: boolean }) => s.completed).length}/{subtasks.length}</span>
           </div>
-          <span>{subtasks.filter((s: { completed: boolean }) => s.completed).length}/{subtasks.length}</span>
+          <div className="flex flex-col gap-1 mt-1">
+            {subtasks.map((st, index) => (
+              <div
+                key={index}
+                className="px-2 py-1 bg-[#444444] rounded-md text-sm flex items-center justify-between"
+              >
+                  <div className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        checked={st.completed}
+                        onChange={() => toggleSubtask(index)}
+                        className="rounded-sm text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                    />
+                    <span>{st.title}</span>
+                  </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {assignees.length > 0 && (
