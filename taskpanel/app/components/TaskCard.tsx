@@ -3,6 +3,7 @@
 import React from 'react';
 import TaskActions from './TaskActions';
 import { Task } from '../types/task';
+import { handleGenerateSubtasks } from '../utils/agixt';
 
 interface TaskCardProps {
   task?: Task;
@@ -54,6 +55,21 @@ const priorityColors: PriorityColors = {
       i === index ? { ...st, completed: !st.completed } : st
     );
     onUpdateTask?.({ ...task, subtasks: updatedSubtasks });
+  };
+
+  const handleGenerateSubtasksClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    const agixtApiUri = localStorage.getItem('agixtapi') || '';
+    const agixtApiKey = localStorage.getItem('agixtkey') || '';
+    const selectedAgent = localStorage.getItem('selectedAgent') || 'OpenAI'; // Default agent
+    if (agixtApiUri && agixtApiKey && selectedAgent && task) {
+      const updatedTask = await handleGenerateSubtasks(task, selectedAgent, agixtApiUri, agixtApiKey);
+      if (updatedTask) {
+        onUpdateTask?.(updatedTask);
+      }
+    } else {
+      console.error("AGiXT API URI, API Key, or agent not set.");
+    }
   };
 
   return (
@@ -125,6 +141,13 @@ const priorityColors: PriorityColors = {
             onUpdateTask={(task: Task) => onUpdateTask?.(task)}
             onDelete={() => onDelete?.()}
           />
+          <button
+            onClick={handleGenerateSubtasksClick}
+            className="ml-2 text-gray-400 hover:text-blue-400 p-1 rounded hover:bg-blue-400/10"
+            title="Generate Subtasks"
+          >
+            ✨
+          </button>
         </div>
         {onDelete && (
           <button
