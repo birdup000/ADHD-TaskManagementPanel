@@ -16,7 +16,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, onUpdateTa
   if (!task) {
     return null;
   }
-  const { title, description, priority, status, dueDate, tags = [], assignees = [], subtasks = [] } = task;
+  const { title, description, priority, status, dueDate, tags = [], assignees = [], subtasks = [], createdAt, updatedAt, listId } = task;
   const isOverdue = dueDate && new Date(dueDate) < new Date() && status !== 'done';
 
   const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -113,7 +113,7 @@ const priorityColors: PriorityColors = {
                 : status === 'in-progress' 
                   ? 'done' 
                   : 'todo';
-              onUpdateTask?.({ ...task, status: nextStatus });
+              onUpdateTask?.({ ...task, status: nextStatus, title, createdAt, updatedAt, listId });
             }}
             className={`p-1.5 rounded transition-colors ${
               status === 'done'

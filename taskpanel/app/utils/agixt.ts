@@ -1,4 +1,4 @@
-import AGiXTSDK from 'agixt';
+import AGiXT from 'agixt';
 
 const AGIXT_API_URI_KEY = "agixtapi";
 const AGIXT_API_KEY_KEY = "agixtkey";
@@ -55,11 +55,11 @@ const parseSubtasks = (result: string): Task[] => {
 };
 
 
-const initializeAGiXT = async (agixtApiUri: string, agixtApiKey: string) => {
+const initializeAGiXT = async (backendUrl: string, authToken: string) => {
   try {
-    const agixt = new AGiXTSDK({
-      baseUri: agixtApiUri,
-      apiKey: agixtApiKey,
+    const agixt = new AGiXT({
+      apiKey: authToken,
+      baseUri: backendUrl,
     });
     return agixt;
   } catch (error) {
@@ -68,14 +68,14 @@ const initializeAGiXT = async (agixtApiUri: string, agixtApiKey: string) => {
   }
 };
 
-const getAgents = async (agixtApiUri: string, agixtApiKey: string) => {
-    if (!agixtApiUri || !agixtApiKey) {
-      console.error("AGiXT API URI or API Key is missing");
+const getAgents = async (backendUrl: string, authToken: string) => {
+    if (!backendUrl || !authToken) {
+      console.error("AGiXT backend URL or auth token is missing");
       return;
     }
   
     try {
-      const agixt = await initializeAGiXT(agixtApiUri, agixtApiKey);
+      const agixt = await initializeAGiXT(backendUrl, authToken);
       if (!agixt) {
         return;
       }
@@ -95,13 +95,13 @@ const getAgents = async (agixtApiUri: string, agixtApiKey: string) => {
     }
   };
 
-  const handleGenerateSubtasks = async (task: Task, selectedAgent: string, agixtApiUri: string, agixtApiKey: string) => {
+  const handleGenerateSubtasks = async (task: any, selectedAgent: string, backendUrl: string, authToken: string) => {
     if (!selectedAgent) {
       return;
     }
   
     try {
-      const agixt = await initializeAGiXT(agixtApiUri, agixtApiKey);
+      const agixt = await initializeAGiXT(backendUrl, authToken);
       if (!agixt) {
         return;
       }
@@ -164,13 +164,13 @@ const getAgents = async (agixtApiUri: string, agixtApiKey: string) => {
     }
   };
 
-  const handleRunChain = async (task: Task, selectedAgent: string, agixtApiUri: string, agixtApiKey: string) => {
+  const handleRunChain = async (task: any, selectedAgent: string, backendUrl: string, authToken: string) => {
     if (!selectedAgent) {
       return;
     }
   
     try {
-      const agixt = await initializeAGiXT(agixtApiUri, agixtApiKey);
+      const agixt = await initializeAGiXT(backendUrl, authToken);
       if (!agixt) {
         return;
       }
