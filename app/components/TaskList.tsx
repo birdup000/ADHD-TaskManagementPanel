@@ -4,6 +4,7 @@ import React from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Task } from '../types/task';
 import { TaskCard } from './TaskCard';
+import ScheduledTasks from './ScheduledTasks';
 
 interface TaskListProps {
   droppableId: string;
@@ -25,26 +26,33 @@ export const TaskList: React.FC<TaskListProps> = ({
   listId
 }) => {
   return (
-    <Droppable droppableId={droppableId}>
-      {(provided) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.droppableProps}
-          className="space-y-4"
-        >
-          {tasks.map((task, index) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              index={index}
-              onUpdateTask={onUpdateTask}
-              onClick={() => onTaskClick(task)}
-              onDelete={() => onDeleteTask(task)}
-            />
-          ))}
-          {provided.placeholder}
-        </div>
-      )}
-    </Droppable>
+    <div>
+      <Droppable droppableId={droppableId}>
+        {(provided) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className="space-y-4"
+          >
+            {tasks.map((task, index) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                index={index}
+                onUpdateTask={onUpdateTask}
+                onClick={() => onTaskClick(task)}
+                onDelete={() => onDeleteTask(task)}
+              />
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+      <ScheduledTasks
+        tasks={tasks}
+        onTaskClick={onTaskClick}
+        onDeleteTask={onDeleteTask}
+      />
+    </div>
   );
 };

@@ -15,6 +15,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [dueDate, setDueDate] = useState('');
+  const [scheduledFor, setScheduledFor] = useState('');
   const [assignee, setAssignee] = useState('');
   const [assignees, setAssignees] = useState<string[]>([]);
   const [tag, setTag] = useState('');
@@ -50,6 +51,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
       priority,
       status: 'todo',
       dueDate: dueDate ? new Date(dueDate) : undefined,
+      scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
       assignees,
       tags,
       subtasks,
@@ -170,6 +172,18 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 bg-[#333333] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-200 mb-1">
+              Schedule For
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduledFor}
+              onChange={(e) => setScheduledFor(e.target.value)}
               className="w-full px-3 py-2 bg-[#333333] rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>

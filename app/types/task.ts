@@ -5,6 +5,7 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   status: 'todo' | 'in-progress' | 'done';
   dueDate?: Date;
+  scheduledFor?: Date;
   assignees?: string[];
   tags?: string[];
   dependsOn?: string[];
