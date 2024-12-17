@@ -24,6 +24,7 @@ import { Comment } from './CommentSection';
 import { colors } from '../../tailwind.config';
 import TaskStats from './TaskStats';
 import NotesEditor from './NotesEditor';
+import { WorkspacePanel } from './WorkspacePanel';
 import { ViewType, LayoutType } from '../types/view';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
@@ -56,7 +57,7 @@ const TaskPanel: React.FC = () => {
     });
   };
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const [currentTab, setCurrentTab] = React.useState<'tasks' | 'notes'>('tasks');
+  const [currentTab, setCurrentTab] = React.useState<'tasks' | 'notes' | 'workspaces'>('tasks');
   const [showCompletedRecurring, setShowCompletedRecurring] = React.useState(true);
   const [showIntegrations, setShowIntegrations] = React.useState(false);
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
@@ -344,6 +345,12 @@ const TaskPanel: React.FC = () => {
                   >
                     Notes
                   </button>
+                  <button
+                    onClick={() => setCurrentTab('workspaces')}
+                    className={`px-4 py-2 rounded-md ${currentTab === 'workspaces' ? 'bg-indigo-600' : 'bg-[#2A2A2A] hover:bg-[#333333]'} transition-colors`}
+                  >
+                    Workspaces
+                  </button>
                 </div>
                 <div className="text-sm text-gray-400">
                   Press "?" for keyboard shortcuts
@@ -406,6 +413,18 @@ const TaskPanel: React.FC = () => {
                       </button>
                       <span className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">
                         AI Assistant
+                      </span>
+                    </div>
+                    <div className="relative group">
+                      <button
+                        onClick={() => setCurrentTab('workspaces')}
+                        className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
+                        title="Workspaces"
+                      >
+                        <span>📦</span>
+                      </button>
+                      <span className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">
+                        Workspaces
                       </span>
                     </div>
                   </div>
@@ -887,7 +906,11 @@ const TaskPanel: React.FC = () => {
             </DragDropContext>
           ) : (
             <main className="bg-[#212121] rounded-lg overflow-hidden h-[calc(100vh-12rem)]">
-              <NotesEditor />
+              {currentTab === 'notes' ? (
+                <NotesEditor />
+              ) : (
+                <WorkspacePanel />
+              )}
             </main>
           )}
 
