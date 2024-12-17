@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import RichTextEditor from './RichTextEditor';
 import { TaskList } from '../types/task';
+import { Collaborator } from '../types/collaboration';
 
 interface TaskFormProps {
   onSubmit: (task: any) => void;
@@ -26,6 +27,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
     const [editedSubtaskTitle, setEditedSubtaskTitle] = useState('');
   const [selectedListId, setSelectedListId] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [collaboratorEmail, setCollaboratorEmail] = useState('');
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 
     useEffect(() => {
         if (lists.length > 0) {
@@ -56,6 +59,17 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
       tags,
       subtasks,
       listId: selectedListId,
+      owner: 'current-user-id', // Replace with actual user ID from auth
+      collaborators,
+      activityLog: [{
+        id: Date.now().toString(),
+        taskId: Date.now().toString(),
+        userId: 'current-user-id', // Replace with actual user ID from auth
+        action: 'created',
+        timestamp: new Date(),
+      }],
+      comments: [],
+      version: 1,
     });
   };
 
@@ -316,6 +330,62 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
                   type="button"
                   onClick={() => removeSubtask(index)}
                   className="text-gray-400 hover:text-white"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset className="border border-gray-700 rounded-lg p-4">
+        <legend className="text-sm font-medium text-gray-200">Collaborators</legend>
+        <div>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={collaboratorEmail}
+              onChange={(e) => setCollaboratorEmail(e.target.value)}
+              className="flex-1 px-3 py-2 bg-[#333333] rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Add collaborator by email"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (collaboratorEmail && !collaborators.some(c => c.email === collaboratorEmail)) {
+                  setCollaborators([...collaborators, {
+                    id: Date.now().toString(),
+                    name: collaboratorEmail.split('@')[0],
+                    email: collaboratorEmail,
+                    role: 'editor',
+                    joinedAt: new Date(),
+                  }]);
+                  setCollaboratorEmail('');
+                }
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
+            >
+              Add
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {collaborators.map((collaborator) => (
+              <div
+                key={collaborator.id}
+                className="flex items-center gap-2 bg-[#444444] px-3 py-2 rounded-lg"
+              >
+                <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-sm text-white">
+                  {collaborator.name[0]}
+                </div>
+                <div>
+                  <p className="text-sm text-white">{collaborator.name}</p>
+                  <p className="text-xs text-gray-400">{collaborator.email}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCollaborators(collaborators.filter(c => c.id !== collaborator.id))}
+                  className="ml-2 text-gray-400 hover:text-white"
                 >
                   ×
                 </button>

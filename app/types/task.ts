@@ -1,3 +1,5 @@
+import { Collaborator, ActivityLog, Comment } from './collaboration';
+
 export interface Task {
   id: string;
   title: string;
@@ -23,6 +25,15 @@ export interface Task {
   createdAt: Date;
   updatedAt: Date;
   listId: string;
+  // Collaboration features
+  owner: string;
+  collaborators: Collaborator[];
+  activityLog: ActivityLog[];
+  comments: Comment[];
+  lastViewed?: {
+    [userId: string]: Date;
+  };
+  version: number; // For handling concurrent edits
 }
 
 export interface TaskList {

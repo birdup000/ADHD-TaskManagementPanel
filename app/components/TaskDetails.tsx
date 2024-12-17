@@ -2,8 +2,11 @@
 
 import React from 'react';
 import { Task } from '../types/task';
+import { ActivityLog, Collaborator } from '../types/collaboration';
+import { useCollaboration } from '../hooks/useCollaboration';
 import { Comment } from './CommentSection';
 import CommentSection from './CommentSection';
+import CollaboratorActions from './CollaboratorActions';
 import RichTextEditor from './RichTextEditor';
 
 interface TaskDetailsProps {
@@ -22,6 +25,58 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
   comments,
   onAddComment,
 }) => {
+  // Use the collaboration hook to manage permissions and actions
+  const {
+    isCollaborator,
+    userRole,
+    canEdit,
+    canManageCollaborators,
+    addCollaborator,
+    removeCollaborator,
+    updateCollaboratorRole
+  } = useCollaboration({
+    task,
+    currentUser: 'current-user-id', // In a real app, this would come from auth
+    onUpdateTask
+  });
+
+  const renderActivityLog = (log: ActivityLog) => {
+    const getActionColor = (action: ActivityLog['action']) => {
+      switch (action) {
+        case 'created':
+          return 'text-green-400';
+        case 'updated':
+          return 'text-blue-400';
+        case 'commented':
+          return 'text-purple-400';
+        case 'status_changed':
+          return 'text-yellow-400';
+        case 'assigned':
+          return 'text-indigo-400';
+        default:
+          return 'text-gray-400';
+      }
+    };
+
+    return (
+      <div key={log.id} className="flex items-start gap-2 text-sm">
+        <span className={getActionColor(log.action)}>●</span>
+        <div>
+          <p className="text-gray-300">
+            {log.action === 'commented' && log.details?.comment 
+              ? `${log.userId} commented: "${log.details.comment}"`
+              : log.action === 'updated' && log.details?.field
+              ? `${log.userId} updated ${log.details.field} from "${log.details.oldValue}" to "${log.details.newValue}"`
+              : `${log.userId} ${log.action}`}
+          </p>
+          <span className="text-xs text-gray-500">
+            {new Date(log.timestamp).toLocaleString()}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-[#212121] p-6 rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
@@ -40,23 +95,44 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
               {task.priority}
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {task.collaborators && task.collaborators.length > 0 && (
+              <div className="flex -space-x-2">
+                {task.collaborators.map((collaborator) => (
+                  <div
+                    key={collaborator.id}
+                    className="w-8 h-8 rounded-full bg-gray-500 border-2 border-[#212121] flex items-center justify-center text-sm text-white"
+                    title={`${collaborator.name} (${collaborator.role})`}
+                  >
+                    {collaborator.name[0]}
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="space-y-6">
           <div>
             <h3 className="text-sm font-medium text-gray-400 mb-2">Description</h3>
-            <RichTextEditor
-              initialContent={task.description}
-              onChange={(content) =>
-                onUpdateTask({ ...task, description: content })
-              }
-            />
+            {canEdit ? (
+              <RichTextEditor
+                initialContent={task.description}
+                onChange={(content) =>
+                  onUpdateTask({ ...task, description: content })
+                }
+              />
+            ) : (
+              <div className="bg-[#2A2A2A] rounded-lg p-4 text-gray-300">
+                {task.description}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -120,6 +196,41 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
                   {tag}
                 </span>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Activity Log</h3>
+            <div className="bg-[#2A2A2A] rounded-lg p-4 space-y-2 max-h-40 overflow-y-auto">
+              {task.activityLog?.map(renderActivityLog)}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Collaborators</h3>
+            <div className="bg-[#2A2A2A] rounded-lg p-4">
+              <div className="flex flex-wrap gap-2">
+                {task.collaborators?.map((collaborator) => (
+                  <div
+                    key={collaborator.id}
+                    className="flex items-center gap-2 bg-[#333333] px-3 py-2 rounded-lg"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-sm text-white">
+                      {collaborator.name[0]}
+                    </div>
+                    <div>
+                      <p className="text-sm text-white">{collaborator.name}</p>
+                      <p className="text-xs text-gray-400">{collaborator.role}</p>
+                    </div>
+                    <CollaboratorActions
+                      collaborator={collaborator}
+                      canManageCollaborators={canManageCollaborators}
+                      onUpdateRole={(role) => updateCollaboratorRole(collaborator.id, role)}
+                      onRemove={() => removeCollaborator(collaborator.id)}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

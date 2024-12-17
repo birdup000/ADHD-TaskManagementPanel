@@ -4,6 +4,7 @@ import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import TaskActions from './TaskActions';
 import { Task } from '../types/task';
+import { Collaborator } from '../types/collaboration';
 import { handleGenerateSubtasks } from '../utils/agixt';
 
 export interface TaskCardProps {
@@ -114,6 +115,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
               <span className={`${priorityColors[priority]} px-2 py-1 rounded text-xs text-white flex items-center gap-1`}>
                 {priorityIcons[priority]} {priority}
               </span>
+              {task.collaborators?.length > 0 && (
+                <span className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs flex items-center gap-1">
+                  👥 {task.collaborators.length}
+                </span>
+              )}
               {task.recurring && (
                 <span className="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded text-xs flex items-center gap-1">
                   🔄 {task.recurring.frequency}

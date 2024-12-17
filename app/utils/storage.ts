@@ -21,6 +21,29 @@ export const loadTasksFromLocalStorage = (): Task[] => {
     return tasks.map((task: any) => ({
       ...task,
       dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+      // Convert collaboration dates
+      collaborators: task.collaborators?.map(c => ({
+        ...c,
+        joinedAt: new Date(c.joinedAt)
+      })),
+      activityLog: task.activityLog?.map(log => ({
+        ...log,
+        timestamp: new Date(log.timestamp)
+      })),
+      comments: task.comments?.map(comment => ({
+        ...comment,
+        createdAt: new Date(comment.createdAt),
+        updatedAt: comment.updatedAt ? new Date(comment.updatedAt) : undefined,
+        replies: comment.replies?.map(reply => ({
+          ...reply,
+          createdAt: new Date(reply.createdAt),
+          updatedAt: reply.updatedAt ? new Date(reply.updatedAt) : undefined,
+        }))
+      })),
+      lastViewed: task.lastViewed ? Object.entries(task.lastViewed).reduce((acc, [userId, date]) => ({
+        ...acc,
+        [userId]: new Date(date)
+      }), {}) : undefined,
     }));
   } catch (error) {
     console.error('Error loading tasks from localStorage:', error);

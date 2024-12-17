@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Task, TaskList } from '../types/task';
+import { ActivityLog } from '../types/collaboration';
+import { findChanges, mergeTaskChanges } from '../utils/collaboration';
 import { loadTasksFromLocalStorage, saveTasksToLocalStorage, loadListsFromLocalStorage, saveListsToLocalStorage } from '../utils/storage';
 
 const TASKS_STORAGE_KEY = 'tasks';
@@ -50,6 +52,35 @@ export const useTasks = () => {
   };
 
   const updateTask = (updatedTask: Task) => {
+    // Get the old version of the task
+    const oldTask = tasks.find(t => t.id === updatedTask.id);
+    if (!oldTask) return;
+
+    // Track changes for activity log
+    const changes = findChanges(oldTask, updatedTask);
+    const newActivityLogs: ActivityLog[] = changes.map(change => ({
+      id: Date.now().toString(),
+      taskId: updatedTask.id,
+      userId: currentUser,
+      action: 'updated',
+      timestamp: new Date(),
+      details: {
+        field: change.field,
+        oldValue: change.oldValue,
+        newValue: change.newValue
+      }
+    }));
+
+    // Prepare the updated task with new version and activity logs
+    const taskWithUpdates = {
+      ...updatedTask,
+      version: (oldTask.version || 0) + 1,
+      activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
+      lastViewed: {
+        ...(oldTask.lastViewed || {}),
+        [currentUser]: new Date()
+      }
+    };
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
   };
 
