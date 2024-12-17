@@ -17,11 +17,22 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Node.js dependencies
+      - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Run frontend tests
-        run: npm test
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: npm run test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
 
   build:
     needs: test

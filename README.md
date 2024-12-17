@@ -22,6 +22,7 @@ The ADHD Task Management Panel is a modern, intuitive task management applicatio
 ## Prerequisites
 - Docker and Docker Compose installed on your system
 - AGiXT running on port 7437 (see AGiXT setup instructions below)
+- Node.js 20.x for local development
 
 ## Installation Instructions
 
@@ -56,7 +57,7 @@ The ADHD Task Management Panel is a modern, intuitive task management applicatio
    ```
 3. Install dependencies:
    ```bash
-   npm install --peer-legacy-deps
+   npm install --legacy-peer-deps
    ```
 4. Create a .env.local file:
    ```bash
@@ -67,6 +68,39 @@ The ADHD Task Management Panel is a modern, intuitive task management applicatio
    ```bash
    npm run dev
    ```
+
+## Running Tests
+
+### Setup Testing Environment
+1. Install Playwright browsers and dependencies:
+   ```bash
+   npx playwright install --with-deps
+   ```
+
+### Running Tests
+- Run all tests:
+  ```bash
+  npm test
+  ```
+- Run tests with UI mode:
+  ```bash
+  npm run test:ui
+  ```
+- View test report:
+  ```bash
+  npx playwright show-report
+  ```
+
+### Test Coverage
+The test suite includes:
+- Authentication tests
+  - Login functionality
+  - "Use without authentication" option
+- Task Management tests
+  - Creating tasks
+  - Editing tasks
+  - Completing tasks
+  - Deleting tasks
 
 ## AGiXT Integration
 The application integrates with AGiXT for enhanced task management capabilities:
@@ -82,7 +116,6 @@ The application integrates with AGiXT for enhanced task management capabilities:
 - Use keyboard shortcuts for faster navigation
 - Sort and filter tasks by various criteria
 - Add tags and assignees for better organization
-- Leverage AGiXT's AI capabilities for task management
 
 ## About
 A panel to help with focusing 😄
@@ -105,3 +138,4 @@ A panel to help with focusing 😄
 - Next.js
 - Docker
 - AGiXT Integration
+- Playwright for testing

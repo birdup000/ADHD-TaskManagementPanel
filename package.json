@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
@@ -21,6 +24,7 @@
     "slate-react": "^0.112.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@types/is-hotkey": "^0.1.10",
     "@types/node": "20.17.10",
     "@types/react": "19.0.1",
