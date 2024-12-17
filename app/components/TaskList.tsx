@@ -1,54 +1,47 @@
 "use client";
 
-import { Droppable, Draggable } from '@hello-pangea/dnd';
+import React from 'react';
+import { Droppable } from '@hello-pangea/dnd';
 import { Task } from '../types/task';
-import TaskCard from './TaskCard';
+import { TaskCard } from './TaskCard';
 
 interface TaskListProps {
+  droppableId: string;
   tasks: Task[];
   onUpdateTask: (task: Task) => void;
-  onReorderTasks: (tasks: Task[]) => void;
   onTaskClick: (task: Task) => void;
   onDeleteTask: (task: Task) => void;
-  droppableId: string;
+  onReorderTasks: (tasks: Task[]) => void;
   listId: string;
 }
 
-export const TaskList = ({ tasks, onUpdateTask, onReorderTasks, onTaskClick, onDeleteTask, droppableId, listId }: TaskListProps) => {
+export const TaskList: React.FC<TaskListProps> = ({
+  droppableId,
+  tasks,
+  onUpdateTask,
+  onTaskClick,
+  onDeleteTask,
+  onReorderTasks,
+  listId
+}) => {
   return (
     <Droppable droppableId={droppableId}>
-      {(provided, snapshot) => (
+      {(provided) => (
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={`space-y-4 min-h-[100px] ${snapshot?.isDraggingOver ? 'drop-target' : ''}`}
+          className="space-y-4"
         >
-          {tasks.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <p className="text-xl mb-2">✨</p>
-              <p>No tasks here</p>
-              <p className="text-sm text-gray-500">Drag tasks here or create a new one</p>
-            </div>
-          ) : (
-            tasks.map((task, index) => (
-              <Draggable key={task.id} draggableId={task.id} index={index}>
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                  >
-                    <TaskCard
-                      task={task}
-                      onClick={() => onTaskClick(task)}
-                      onDelete={() => onDeleteTask(task)}
-                      onUpdateTask={onUpdateTask}
-                    />
-                  </div>
-                )}
-              </Draggable>
-            ))
-          )}
+          {tasks.map((task, index) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              index={index}
+              onUpdateTask={onUpdateTask}
+              onClick={() => onTaskClick(task)}
+              onDelete={() => onDeleteTask(task)}
+            />
+          ))}
           {provided.placeholder}
         </div>
       )}

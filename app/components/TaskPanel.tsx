@@ -7,7 +7,7 @@ import { ThemeProvider } from '../hooks/useTheme';
 import { useTasks } from '../hooks/useTasks';
 import { useSearch } from '../hooks/useSearch';
 import SearchBar from './SearchBar';
-import TaskCard from './TaskCard';
+import { TaskCard } from './TaskCard';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import ThemeSelector from './ThemeSelector';
 import TaskForm from './TaskForm';
@@ -129,8 +129,6 @@ const TaskPanel: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -718,84 +716,84 @@ const TaskPanel: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Task Details Modal */}
-                {selectedTask && (
-                  <TaskDetails
-                    task={selectedTask}
-                    onClose={() => setSelectedTask(null)}
-                    onUpdateTask={(updatedTask: Task) => {
-                      updateTask(updatedTask);
-                      setSelectedTask(updatedTask);
-                    }}
-                    onDeleteTask={(task: Task) => {
-                      deleteTask(task.id);
-                      setSelectedTask(null);
-                    }}
-                    comments={comments[selectedTask.id] || []}
-                    onAddComment={(taskId: string, comment: Omit<Comment, 'id' | 'createdAt'>) => {
-                      const newComment = {
-                        ...comment,
-                        id: Date.now().toString(),
-                        createdAt: new Date(),
-                      };
-                      setComments({
-                        ...comments,
-                        [taskId]: [...(comments[taskId] || []), newComment],
-                      });
-                    }}
-                  />
-                )}
-
-                {currentView === 'calendar' && (
-                  <CalendarView
-                    tasks={tasks}
-                    onTaskClick={(task: Task) => setSelectedTask(task)}
-                    onDeleteTask={(task: Task) => {
-                      deleteTask(task.id);
-                      setSelectedTask(null);
-                    }}
-                  />
-                )}
-
-                {/* Integrations Modal */}
-                {showIntegrations && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-[#212121] p-6 rounded-lg w-full max-w-md mx-4">
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-semibold">Integrations</h2>
-                        <button
-                          onClick={() => setShowIntegrations(false)}
-                          className="text-gray-400 hover:text-white"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="space-y-4">
-                        <IntegrationButton
-                          type="google"
-                          onClick={() => {
-                            console.log('Connecting to Google Calendar...');
-                            // Implement Google Calendar OAuth flow
-                          }}
-                        />
-                        <IntegrationButton
-                          type="slack"
-                          onClick={() => {
-                            console.log('Connecting to Slack...');
-                            // Implement Slack OAuth flow
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </main>
             </DragDropContext>
           ) : (
             <main className="bg-[#212121] rounded-lg overflow-hidden h-[calc(100vh-12rem)]">
               <NotesEditor />
             </main>
+          )}
+
+          {/* Task Details Modal */}
+          {selectedTask && (
+            <TaskDetails
+              task={selectedTask}
+              onClose={() => setSelectedTask(null)}
+              onUpdateTask={(updatedTask: Task) => {
+                updateTask(updatedTask);
+                setSelectedTask(updatedTask);
+              }}
+              onDeleteTask={(task: Task) => {
+                deleteTask(task.id);
+                setSelectedTask(null);
+              }}
+              comments={comments[selectedTask.id] || []}
+              onAddComment={(taskId: string, comment: Omit<Comment, 'id' | 'createdAt'>) => {
+                const newComment = {
+                  ...comment,
+                  id: Date.now().toString(),
+                  createdAt: new Date(),
+                };
+                setComments({
+                  ...comments,
+                  [taskId]: [...(comments[taskId] || []), newComment],
+                });
+              }}
+            />
+          )}
+
+          {currentView === 'calendar' && (
+            <CalendarView
+              tasks={tasks}
+              onTaskClick={(task: Task) => setSelectedTask(task)}
+              onDeleteTask={(task: Task) => {
+                deleteTask(task.id);
+                setSelectedTask(null);
+              }}
+            />
+          )}
+
+          {/* Integrations Modal */}
+          {showIntegrations && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-[#212121] p-6 rounded-lg w-full max-w-md mx-4">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">Integrations</h2>
+                  <button
+                    onClick={() => setShowIntegrations(false)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <IntegrationButton
+                    type="google"
+                    onClick={() => {
+                      console.log('Connecting to Google Calendar...');
+                      // Implement Google Calendar OAuth flow
+                    }}
+                  />
+                  <IntegrationButton
+                    type="slack"
+                    onClick={() => {
+                      console.log('Connecting to Slack...');
+                      // Implement Slack OAuth flow
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Delete Confirmation Modal */}
@@ -832,6 +830,7 @@ const TaskPanel: React.FC = () => {
               </div>
             </div>
           )}
+
           {showLogin && <LoginForm />}
           {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
           {showShortcuts && <ShortcutsDialog onClose={() => setShowShortcuts(false)} />}
