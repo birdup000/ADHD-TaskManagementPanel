@@ -26,8 +26,14 @@ import NotesEditor from './NotesEditor';
 import { ViewType, LayoutType } from '../types/view';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
+import { initializeAGiXT, getAgents, handleGenerateSubtasks, handleRunChain, updateConversationLog } from '../utils/agixt';
+import AGiXTConfig from './AGiXTConfig';
 
 type ThemeType = typeof colors.dark;
+
+interface Agent {
+  name: string;
+}
 
 const TaskPanel: React.FC = () => {
   const handleTaskDelete = (task: Task) => {
@@ -79,7 +85,86 @@ const TaskPanel: React.FC = () => {
   const projectActionsRef = React.useRef<HTMLDivElement>(null);
   const [showListActions, setShowListActions] = React.useState(false);
   const listActionsRef = React.useRef<HTMLDivElement>(null);
+  // AGiXT state
+  const [agents, setAgents] = React.useState<Agent[]>([]);
+  const [selectedAgent, setSelectedAgent] = React.useState<string>('');
+  const [isLoadingAI, setIsLoadingAI] = React.useState(false);
+  const [showAGiXTConfig, setShowAGiXTConfig] = React.useState(false);
   const router = useRouter();
+
+  const handleSaveAGiXTConfig = ({ backendUrl, authToken }: { backendUrl: string; authToken: string }) => {
+    localStorage.setItem('agixtapi', backendUrl);
+    localStorage.setItem('agixtkey', authToken);
+    initAGiXT();
+  };
+
+  const initAGiXT = async () => {
+    const backendUrl = localStorage.getItem('agixtapi');
+    const authToken = localStorage.getItem('agixtkey');
+    
+    if (backendUrl && authToken) {
+      try {
+        const agentList = await getAgents(backendUrl, authToken);
+        if (agentList && agentList.length > 0) {
+          setAgents(agentList);
+          setSelectedAgent(agentList[0].name);
+        }
+      } catch (error) {
+        console.error('Error initializing AGiXT:', error);
+        setShowAGiXTConfig(true);
+      }
+    } else {
+      setShowAGiXTConfig(true);
+    }
+  };
+
+  React.useEffect(() => {
+    initAGiXT();
+  }, []);
+
+  const generateSubtasks = async (task: Task) => {
+    const backendUrl = localStorage.getItem('agixtapi');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!backendUrl || !authToken || !selectedAgent) {
+      console.error('AGiXT configuration missing');
+      return;
+    }
+
+    setIsLoadingAI(true);
+    try {
+      const updatedTask = await handleGenerateSubtasks(task, selectedAgent, backendUrl, authToken);
+      if (updatedTask) {
+        updateTask(updatedTask);
+      }
+    } catch (error) {
+      console.error('Error generating subtasks:', error);
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  const runChain = async (task: Task) => {
+    const backendUrl = localStorage.getItem('agixtapi');
+    const authToken = localStorage.getItem('authToken');
+
+    if (!backendUrl || !authToken || !selectedAgent) {
+      console.error('AGiXT configuration missing');
+      return;
+    }
+
+    setIsLoadingAI(true);
+    try {
+      const updatedTask = await handleRunChain(task, selectedAgent, backendUrl, authToken);
+      if (updatedTask) {
+        updateTask(updatedTask);
+      }
+    } catch (error) {
+      console.error('Error running chain:', error);
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
 
   useKeyboardShortcuts({
     onNewTask: () => setIsEditorOpen(true),
@@ -276,17 +361,46 @@ const TaskPanel: React.FC = () => {
                 )}
                 <ThemeSelector currentTheme={theme} onThemeChange={setTheme} />
                 <div className="flex items-center space-x-2">
-                  <div className="relative group">
-                    <button
-                      onClick={() => setShowAI(true)}
-                      className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
-                      title="AI Assistant"
-                    >
-                      🤖
-                    </button>
-                    <span className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">
-                      AI Assistant
-                    </span>
+                  <div className="flex items-center gap-2">
+                    {agents.length > 0 ? (
+                      <select
+                        value={selectedAgent}
+                        onChange={(e) => setSelectedAgent(e.target.value)}
+                        className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors text-sm"
+                        title="Select AI Agent"
+                      >
+                        {agents.map((agent) => (
+                          <option key={agent.name} value={agent.name}>
+                            {agent.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <button
+                        onClick={() => setShowAGiXTConfig(true)}
+                        className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors text-sm"
+                        title="Configure AGiXT"
+                      >
+                        Configure AGiXT
+                      </button>
+                    )}
+                    <div className="relative group">
+                      <button
+                        onClick={() => setShowAI(true)}
+                        className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
+                        title="AI Assistant"
+                        disabled={isLoadingAI}
+                      >
+                        {isLoadingAI ? (
+                          <span className="animate-spin">⚙️</span>
+                        ) : (
+                          <span>🤖</span>
+                        )}
+                      </button>
+                      <span className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">
+                        AI Assistant
+                      </span>
+                    </div>
                   </div>
                   
                   <button
@@ -832,7 +946,21 @@ const TaskPanel: React.FC = () => {
           )}
 
           {showLogin && <LoginForm />}
-          {showAI && <AIAssistant onClose={() => setShowAI(false)} />}
+          {showAI && (
+            <AIAssistant 
+              onClose={() => setShowAI(false)}
+              selectedAgent={selectedAgent}
+              onGenerateSubtasks={generateSubtasks}
+              onRunChain={runChain}
+              isLoading={isLoadingAI}
+            />
+          )}
+          {showAGiXTConfig && (
+            <AGiXTConfig
+              onClose={() => setShowAGiXTConfig(false)}
+              onSave={handleSaveAGiXTConfig}
+            />
+          )}
           {showShortcuts && <ShortcutsDialog onClose={() => setShowShortcuts(false)} />}
         </div>
       </div>
