@@ -30,6 +30,11 @@ export const useWorkspaces = () => {
       id: crypto.randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
+      settings: {
+        ...workspace.settings,
+        lastAccessed: new Date(),
+        visibility: workspace.settings?.visibility || 'private'
+      },
     };
     setWorkspaces([...workspaces, newWorkspace]);
     return newWorkspace;

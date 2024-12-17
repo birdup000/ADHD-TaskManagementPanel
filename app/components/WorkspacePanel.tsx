@@ -18,6 +18,9 @@ export const WorkspacePanel: React.FC = () => {
 
   const [showNewWorkspace, setShowNewWorkspace] = React.useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = React.useState('');
+  const [newWorkspaceVisibility, setNewWorkspaceVisibility] = React.useState<'private' | 'public' | 'team'>('private');
+  const [showCollaborators, setShowCollaborators] = React.useState(false);
+  const [newCollaborator, setNewCollaborator] = React.useState('');
   const [showNewRepo, setShowNewRepo] = React.useState(false);
   const [newRepoData, setNewRepoData] = React.useState({
     name: '',
@@ -32,10 +35,30 @@ export const WorkspacePanel: React.FC = () => {
         name: newWorkspaceName,
         description: '',
         repositories: [],
-        settings: {}
+        settings: {
+          visibility: newWorkspaceVisibility,
+          collaborators: []
+        }
       });
       setNewWorkspaceName('');
+      setNewWorkspaceVisibility('private');
       setShowNewWorkspace(false);
+    }
+  };
+
+  const handleAddCollaborator = (workspaceId: string) => {
+    if (newCollaborator && currentWorkspaceData) {
+      const updatedCollaborators = [
+        ...(currentWorkspaceData.settings.collaborators || []),
+        newCollaborator
+      ];
+      updateWorkspace(workspaceId, {
+        settings: {
+          ...currentWorkspaceData.settings,
+          collaborators: updatedCollaborators
+        }
+      });
+      setNewCollaborator('');
     }
   };
 
@@ -80,9 +103,25 @@ export const WorkspacePanel: React.FC = () => {
           >
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h3 className="font-medium">{workspace.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium">{workspace.name}</h3>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    workspace.settings?.visibility === 'public' 
+                      ? 'bg-green-600/20 text-green-300'
+                      : workspace.settings?.visibility === 'team'
+                      ? 'bg-blue-600/20 text-blue-300'
+                      : 'bg-gray-600/20 text-gray-300'
+                  }`}>
+                    {workspace.settings?.visibility || 'private'}
+                  </span>
+                </div>
                 {workspace.description && (
                   <p className="text-sm text-gray-400">{workspace.description}</p>
+                )}
+                {workspace.settings?.collaborators?.length > 0 && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    {workspace.settings.collaborators.length} collaborator(s)
+                  </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -110,8 +149,18 @@ export const WorkspacePanel: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="text-sm text-gray-400">
-              {workspace.repositories.length} repositories
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+                <span>{workspace.repositories.length} repositories</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentWorkspace(workspace.id);
+                    setShowCollaborators(true);
+                  }}
+                  className="px-2 py-1 rounded bg-[#444444] hover:bg-[#555555] transition-colors"
+                >
+                  Manage Collaborators
+                </button>
             </div>
           </div>
         ))}
@@ -200,6 +249,15 @@ export const WorkspacePanel: React.FC = () => {
               placeholder="Workspace name"
               className="w-full p-2 rounded bg-[#333333] text-white mb-4"
             />
+            <select
+              value={newWorkspaceVisibility}
+              onChange={(e) => setNewWorkspaceVisibility(e.target.value as 'private' | 'public' | 'team')}
+              className="w-full p-2 rounded bg-[#333333] text-white mb-4"
+            >
+              <option value="private">Private</option>
+              <option value="public">Public</option>
+              <option value="team">Team</option>
+            </select>
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setShowNewWorkspace(false)}
@@ -265,6 +323,61 @@ export const WorkspacePanel: React.FC = () => {
                 className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700 transition-colors"
               >
                 Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Collaborators Modal */}
+      {showCollaborators && currentWorkspaceData && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#212121] p-6 rounded-lg w-full max-w-md mx-4">
+            <h2 className="text-xl font-semibold mb-4">Manage Collaborators</h2>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newCollaborator}
+                onChange={(e) => setNewCollaborator(e.target.value)}
+                placeholder="Email address"
+                className="flex-1 p-2 rounded bg-[#333333] text-white"
+              />
+              <button
+                onClick={() => handleAddCollaborator(currentWorkspaceData.id)}
+                className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            <div className="space-y-2">
+              {currentWorkspaceData.settings.collaborators?.map((collaborator, index) => (
+                <div key={index} className="flex justify-between items-center p-2 rounded bg-[#333333]">
+                  <span>{collaborator}</span>
+                  <button
+                    onClick={() => {
+                      const updatedCollaborators = currentWorkspaceData.settings.collaborators?.filter(
+                        (_, i) => i !== index
+                      );
+                      updateWorkspace(currentWorkspaceData.id, {
+                        settings: {
+                          ...currentWorkspaceData.settings,
+                          collaborators: updatedCollaborators
+                        }
+                      });
+                    }}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowCollaborators(false)}
+                className="px-4 py-2 rounded bg-[#444444] hover:bg-[#555555] transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>

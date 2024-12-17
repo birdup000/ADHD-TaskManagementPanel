@@ -22,6 +22,10 @@ export interface WorkspaceSettings {
   defaultBranch?: string;
   buildConfiguration?: BuildConfig;
   deploymentTargets?: DeploymentTarget[];
+  collaborators?: string[];
+  description?: string;
+  visibility?: 'private' | 'public' | 'team';
+  lastAccessed?: Date;
 }
 
 export interface RepositorySettings {
