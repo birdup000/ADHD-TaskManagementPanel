@@ -29,6 +29,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [collaboratorEmail, setCollaboratorEmail] = useState('');
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [checkpointTitle, setCheckpointTitle] = useState('');
+  const [checkpointDescription, setCheckpointDescription] = useState('');
+  const [checkpoints, setCheckpoints] = useState<Task['checkpoints']>([]);
 
     useEffect(() => {
         if (lists.length > 0) {
@@ -53,6 +56,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
       description,
       priority,
       status: 'todo',
+      checkpoints,
+      progress: 0,
       dueDate: dueDate ? new Date(dueDate) : undefined,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
       assignees,
@@ -277,6 +282,69 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
                   ×
                 </button>
               </span>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset className="border border-gray-700 rounded-lg p-4">
+        <legend className="text-sm font-medium text-gray-200">Checkpoints</legend>
+        <div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={checkpointTitle}
+              onChange={(e) => setCheckpointTitle(e.target.value)}
+              className="flex-1 px-3 py-2 bg-[#333333] rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Checkpoint title"
+            />
+            <input
+              type="text"
+              value={checkpointDescription}
+              onChange={(e) => setCheckpointDescription(e.target.value)}
+              className="flex-1 px-3 py-2 bg-[#333333] rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Description (optional)"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (checkpointTitle) {
+                  setCheckpoints([...checkpoints, {
+                    id: Date.now().toString(),
+                    title: checkpointTitle,
+                    description: checkpointDescription,
+                    completed: false,
+                    createdAt: new Date()
+                  }]);
+                  setCheckpointTitle('');
+                  setCheckpointDescription('');
+                }
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
+            >
+              Add
+            </button>
+          </div>
+          <div className="flex flex-col gap-2 mt-2">
+            {checkpoints.map((checkpoint, index) => (
+              <div
+                key={checkpoint.id}
+                className="px-3 py-2 bg-[#444444] rounded-md text-sm flex items-center justify-between"
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-white">{checkpoint.title}</div>
+                  {checkpoint.description && (
+                    <div className="text-gray-400 text-sm mt-1">{checkpoint.description}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCheckpoints(checkpoints.filter((_, i) => i !== index))}
+                  className="text-gray-400 hover:text-white ml-2"
+                >
+                  ×
+                </button>
+              </div>
             ))}
           </div>
         </div>

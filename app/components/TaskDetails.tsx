@@ -135,6 +135,79 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
             )}
           </div>
 
+          <div>
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Progress</h3>
+            <div className="w-full bg-[#2A2A2A] rounded-full h-4">
+              <div 
+                className="bg-indigo-600 h-4 rounded-full transition-all duration-300"
+                style={{ width: `${task.progress}%` }}
+              />
+            </div>
+            <span className="text-sm text-gray-400 mt-1">{task.progress}% Complete</span>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-gray-400 mb-2">Checkpoints</h3>
+            <div className="space-y-2">
+              {task.checkpoints?.map((checkpoint) => (
+                <div 
+                  key={checkpoint.id}
+                  className="flex items-start gap-2 bg-[#2A2A2A] rounded-lg p-3"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checkpoint.completed}
+                    onChange={() => {
+                      const updatedCheckpoints = task.checkpoints?.map(cp =>
+                        cp.id === checkpoint.id ? { ...cp, completed: !cp.completed } : cp
+                      );
+                      const completedCount = updatedCheckpoints?.filter(cp => cp.completed).length || 0;
+                      const totalCount = updatedCheckpoints?.length || 0;
+                      const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                      onUpdateTask({
+                        ...task,
+                        checkpoints: updatedCheckpoints,
+                        progress
+                      });
+                    }}
+                    className="mt-1 rounded-sm text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div className="flex-1">
+                    <h4 className="text-white font-medium">{checkpoint.title}</h4>
+                    {checkpoint.description && (
+                      <p className="text-gray-400 text-sm mt-1">{checkpoint.description}</p>
+                    )}
+                    <span className="text-xs text-gray-500 mt-2 block">
+                      Created {new Date(checkpoint.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {canEdit && (
+                <button
+                  onClick={() => {
+                    const newCheckpoint = {
+                      id: Date.now().toString(),
+                      title: 'New Checkpoint',
+                      completed: false,
+                      createdAt: new Date(),
+                      description: ''
+                    };
+                    const updatedCheckpoints = [...(task.checkpoints || []), newCheckpoint];
+                    onUpdateTask({
+                      ...task,
+                      checkpoints: updatedCheckpoints,
+                      progress: task.progress || 0
+                    });
+                  }}
+                  className="w-full px-4 py-2 bg-[#333333] hover:bg-[#444444] rounded-lg text-white transition-colors"
+                >
+                  Add Checkpoint
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <h3 className="text-sm font-medium text-gray-400 mb-2">Status</h3>

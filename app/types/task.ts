@@ -15,6 +15,14 @@ export interface Task {
   recurring?: {
     frequency: 'daily' | 'weekly' | 'monthly';
   };
+  checkpoints?: {
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt: Date;
+    description?: string;
+  }[];
+  progress: number;
   subtasks?: {
     id: string;
     title: string;
