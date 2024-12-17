@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import ExportMenu from './ExportMenu';
 import { TaskList as TaskListComponent } from './TaskList';
 import { ThemeProvider } from '../hooks/useTheme';
 import { useTasks } from '../hooks/useTasks';
@@ -84,7 +85,9 @@ const TaskPanel: React.FC = () => {
   const [showProjectActions, setShowProjectActions] = React.useState(false);
   const projectActionsRef = React.useRef<HTMLDivElement>(null);
   const [showListActions, setShowListActions] = React.useState(false);
+  const [showExportMenu, setShowExportMenu] = React.useState(false);
   const listActionsRef = React.useRef<HTMLDivElement>(null);
+  const exportMenuRef = React.useRef<HTMLDivElement>(null);
   // AGiXT state
   const [agents, setAgents] = React.useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = React.useState<string>('');
@@ -206,6 +209,9 @@ const TaskPanel: React.FC = () => {
       }
       if (listActionsRef.current && !listActionsRef.current.contains(event.target as Node)) {
         setShowListActions(false);
+      }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
       }
     };
 
@@ -529,31 +535,37 @@ const TaskPanel: React.FC = () => {
                   >
                     Import
                   </button>
-                  <button
-                    onClick={() => {
-                      const csv = tasks.map(t => {
-                        return [
-                          t.title,
-                          t.description,
-                          t.status,
-                          t.priority,
-                          t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '',
-                          t.tags?.join(', ') || '',
-                          t.assignees?.join(', ') || ''
-                        ].join(',');
-                      }).join('\n');
-                      const blob = new Blob([csv], { type: 'text/csv' });
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'tasks.csv';
-                      a.click();
-                    }}
-                    className="px-3 py-1.5 rounded text-sm bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 transition-colors"
-                    title="Export tasks as CSV"
-                  >
-                    Export
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                      className="px-3 py-1.5 rounded text-sm bg-gray-600/20 text-gray-300 hover:bg-gray-600/30 transition-colors flex items-center gap-2"
+                      title="Export options"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                        />
+                      </svg>
+                      Export
+                    </button>
+                    {showExportMenu && (
+                      <div ref={exportMenuRef}>
+                        <ExportMenu
+                          tasks={filteredTasks()}
+                          onClose={() => setShowExportMenu(false)}
+                        />
+                      </div>
+                    )}
+                  </div>
                 <button
                   onClick={() => {
                     // Save current tasks as template
@@ -729,7 +741,7 @@ const TaskPanel: React.FC = () => {
           
           {currentTab === 'tasks' ? (
             <DragDropContext onDragEnd={onDragEnd}>
-              <main className={currentLayout === 'developer' ? 'flex' : (currentView === 'calendar' ? '' : 'grid grid-cols-1 md:grid-cols-3 gap-6')}>
+              <main className={`task-board ${currentLayout === 'developer' ? 'flex' : (currentView === 'calendar' ? '' : 'grid grid-cols-1 md:grid-cols-3 gap-6')}`}>
                 {currentLayout === 'developer' ? (
                   <div className="bg-[#2A2A2A] rounded-lg p-4">
                     <h2 className="text-xl font-semibold mb-4">Developer Layout</h2>
