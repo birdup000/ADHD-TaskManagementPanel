@@ -17,33 +17,72 @@ The ADHD Task Management Panel is a modern, intuitive task management applicatio
 - Tag and assignee management
 - Visual feedback for interactions
 - Customizable themes
+- AGiXT Integration for AI-powered task management
+
+## Prerequisites
+- Docker and Docker Compose installed on your system
+- AGiXT running on port 7437 (see AGiXT setup instructions below)
 
 ## Installation Instructions
-To get started with the ADHD Task Management Panel, follow these steps:
+
+### Using Docker (Recommended)
 1. Clone the repository: 
    ```bash
    git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git
    ```
 2. Navigate to the project directory:
- ```bash
-    cd ADHD-TaskManagementPanel
- ```
+   ```bash
+   cd ADHD-TaskManagementPanel
+   ```
+3. Make sure AGiXT is running and its Docker network is created:
+   ```bash
+   # AGiXT should be running with its default network 'agixt_default'
+   # The frontend will connect to AGiXT at http://agixt:7437
+   ```
+4. Start the application:
+   ```bash
+   docker-compose up -d
+   ```
+5. Access the application at http://localhost:3000
+
+### Manual Installation
+1. Clone the repository: 
+   ```bash
+   git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git
+   ```
+2. Navigate to the project directory:
+   ```bash
+   cd ADHD-TaskManagementPanel
+   ```
 3. Install dependencies:
    ```bash
-    npm install - - peer-legacy-deps
+   npm install --peer-legacy-deps
    ```
-4. Start the development server:
+4. Create a .env.local file:
    ```bash
-    npm next dev
+   NEXT_PUBLIC_AGIXT_URL=http://localhost:7437
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   ```
+5. Start the development server:
+   ```bash
+   npm run dev
    ```
 
+## AGiXT Integration
+The application integrates with AGiXT for enhanced task management capabilities:
+
+1. Make sure AGiXT is running and accessible (default: http://localhost:7437)
+2. Log in using your AGiXT credentials
+3. The application will automatically connect to AGiXT for AI-powered features
+
 ## Usage Examples
-- Use the search bar to quickly find tasks.
-- Drag tasks between columns to update their status.
-- Click on a task to view and edit details.
-- Use keyboard shortcuts for faster navigation.
-- Sort and filter tasks by various criteria.
-- Add tags and assignees for better organization.
+- Use the search bar to quickly find tasks
+- Drag tasks between columns to update their status
+- Click on a task to view and edit details
+- Use keyboard shortcuts for faster navigation
+- Sort and filter tasks by various criteria
+- Add tags and assignees for better organization
+- Leverage AGiXT's AI capabilities for task management
 
 ## About
 A panel to help with focusing 😄
@@ -63,3 +102,6 @@ A panel to help with focusing 😄
 ## Technologies Used
 - TypeScript
 - JavaScript
+- Next.js
+- Docker
+- AGiXT Integration

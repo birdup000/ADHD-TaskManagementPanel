@@ -1,30 +1,29 @@
 import { useState, useEffect } from 'react';
 
-const MAGICALAUTH_URL = process.env.NEXT_PUBLIC_MAGICALAUTH_URL || 'http://localhost:12437';
+const AGIXT_URL = process.env.NEXT_PUBLIC_AGIXT_URL || 'http://localhost:7437';
 
 export interface AuthResponse {
   success: boolean;
   message: string;
   token?: string;
-  email?: string;
+  username?: string;
 }
 
 export interface LoginRequest {
-  email: string;
-  otp?: string;
-  referrer?: string;
+  username: string;
+  password: string;
 }
 
-export const initiateLogin = async (email: string): Promise<AuthResponse> => {
+export const login = async (username: string, password: string): Promise<AuthResponse> => {
   try {
-    const response = await fetch(`${MAGICALAUTH_URL}/v1/login`, {
+    const response = await fetch(`${AGIXT_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ 
-        email,
-        referrer: window.location.origin 
+        username,
+        password
       } as LoginRequest),
     });
 
@@ -33,7 +32,9 @@ export const initiateLogin = async (email: string): Promise<AuthResponse> => {
     if (response.ok) {
       return {
         success: true,
-        message: 'Please check your email for the magic link.',
+        message: 'Login successful',
+        token: data.token,
+        username: username
       };
     }
 
@@ -49,93 +50,25 @@ export const initiateLogin = async (email: string): Promise<AuthResponse> => {
   }
 };
 
-export const verifyMagicLink = async (token: string): Promise<AuthResponse> => {
-  try {
-    const response = await fetch(`${MAGICALAUTH_URL}/v1/user`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token
-      },
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      return {
-        success: true,
-        message: 'Authentication successful',
-        token: token,
-        email: data.email
-      };
-    }
-
-    return {
-      success: false,
-      message: data.detail || 'Verification failed',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: 'An error occurred during verification.',
-    };
-  }
-};
-
-export const initiateOAuthLogin = async (provider: string): Promise<AuthResponse> => {
-  try {
-    const response = await fetch(`${MAGICALAUTH_URL}/v1/oauth2/${provider}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        referrer: window.location.origin
-      }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      return {
-        success: true,
-        message: 'OAuth authentication initiated',
-        token: data.token,
-        email: data.email
-      };
-    }
-
-    return {
-      success: false,
-      message: data.detail || 'OAuth login failed',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: 'An error occurred during OAuth login.',
-    };
-  }
-};
-
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    const email = localStorage.getItem('userEmail');
+    const storedUsername = localStorage.getItem('username');
     setIsAuthenticated(!!token);
-    setUserEmail(email);
+    setUsername(storedUsername);
     setLoading(false);
   }, []);
 
   const logout = () => {
     localStorage.removeItem('authToken');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('username');
     setIsAuthenticated(false);
-    setUserEmail(null);
+    setUsername(null);
   };
 
-  return { isAuthenticated, loading, logout, userEmail };
+  return { isAuthenticated, loading, logout, username };
 };

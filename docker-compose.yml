@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_AGIXT_URL=http://agixt:7437
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    networks:
+      - agixt-network
+
+networks:
+  agixt-network:
+    name: agixt_default
+    external: true
