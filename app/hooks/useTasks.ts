@@ -4,44 +4,80 @@ import { useState, useEffect } from 'react';
 import { Task, TaskList } from '../types/task';
 import { ActivityLog } from '../types/collaboration';
 import { findChanges, mergeTaskChanges } from '../utils/collaboration';
-import { loadTasksFromLocalStorage, saveTasksToLocalStorage, loadListsFromLocalStorage, saveListsToLocalStorage } from '../utils/storage';
+import { createStorageManager } from '../utils/storage';
+import { StorageConfig } from '../types/storage';
 
-const TASKS_STORAGE_KEY = 'tasks';
-const LISTS_STORAGE_KEY = 'lists';
-
-export const useTasks = () => {
+export const useTasks = (storageConfig: StorageConfig) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [lists, setLists] = useState<TaskList[]>([]);
 
-  // Load tasks and lists from localStorage only on client-side after initial render
-  useEffect(() => {
-    const storedTasks = loadTasksFromLocalStorage() || [];
-    const storedLists = loadListsFromLocalStorage() || [{ id: 'default', name: 'General Task List' }];
-    
-    if (storedTasks.length === 0 && storedLists.length > 0) {
-      const defaultListId = storedLists[0].id;
-      const defaultTask: Task = {
-        id: 'default-task',
-        title: 'Example Task',
-        listId: defaultListId,
-        description: 'This is an example task.',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        completedAt: undefined,
-        priority: 'medium',
-        status: 'todo',
-      };
-      setTasks([defaultTask]);
-    } else {
-      setTasks(storedTasks);
-    }
-    setLists(storedLists);
-  }, []);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const storage = createStorageManager(storageConfig);
 
+  // Load tasks and lists from storage
   useEffect(() => {
-    saveTasksToLocalStorage(tasks);
-    saveListsToLocalStorage(lists);
-  }, [tasks, lists]);
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [storedTasks, storedLists] = await Promise.all([
+          storage.getTasks(),
+          storage.getLists()
+        ]);
+
+        const defaultList = { id: 'default', name: 'General Task List' };
+        const initialLists = storedLists.length > 0 ? storedLists : [defaultList];
+        setLists(initialLists);
+
+        if (storedTasks.length === 0 && initialLists.length > 0) {
+          const defaultTask: Task = {
+            id: 'default-task',
+            title: 'Example Task',
+            listId: initialLists[0].id,
+            description: 'This is an example task.',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            completedAt: undefined,
+            priority: 'medium',
+            status: 'todo',
+            owner: storageConfig.userId || 'anonymous',
+            collaborators: [],
+            activityLog: [],
+            comments: [],
+            version: 1
+          };
+          setTasks([defaultTask]);
+          await storage.saveTasks([defaultTask]);
+        } else {
+          setTasks(storedTasks);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to load data'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [storage]);
+
+  // Sync with storage when tasks or lists change
+  useEffect(() => {
+    const syncData = async () => {
+      try {
+        await Promise.all([
+          storage.saveTasks(tasks),
+          storage.saveLists(lists)
+        ]);
+      } catch (err) {
+        console.error('Error syncing data:', err);
+      }
+    };
+
+    if (!isLoading) {
+      syncData();
+    }
+  }, [tasks, lists, storage, isLoading]);
 
   const addTask = (task: Task) => {
     if (!task.listId) {
@@ -61,7 +97,7 @@ export const useTasks = () => {
     const newActivityLogs: ActivityLog[] = changes.map(change => ({
       id: Date.now().toString(),
       taskId: updatedTask.id,
-      userId: currentUser,
+      userId: storageConfig.userId || 'anonymous',
       action: 'updated',
       timestamp: new Date(),
       details: {
@@ -78,7 +114,7 @@ export const useTasks = () => {
       activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
       lastViewed: {
         ...(oldTask.lastViewed || {}),
-        [currentUser]: new Date()
+        [storageConfig.userId || 'anonymous']: new Date()
       }
     };
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
@@ -125,5 +161,8 @@ export const useTasks = () => {
     addList,
     updateList,
     deleteList,
+    sync,
+    isLoading,
+    error
   };
 };

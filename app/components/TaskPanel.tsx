@@ -20,6 +20,7 @@ import LoginForm from './LoginForm';
 import AIAssistant from './AIAssistant';
 import ShortcutsDialog from './ShortcutsDialog';
 import { Task, TaskList } from '../types/task';
+import { StorageConfig } from '../types/storage';
 import { Comment } from './CommentSection';
 import { colors } from '../../tailwind.config';
 import TaskStats from './TaskStats';
@@ -61,7 +62,32 @@ const TaskPanel: React.FC = () => {
   const [showCompletedRecurring, setShowCompletedRecurring] = React.useState(true);
   const [showIntegrations, setShowIntegrations] = React.useState(false);
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
-  const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks, lists, addList, updateList, deleteList } = useTasks();
+  const [storageConfig, setStorageConfig] = React.useState<StorageConfig>(() => {
+    const email = localStorage.getItem('email');
+    const userId = email || 'anonymous';
+    return {
+      remoteEnabled: localStorage.getItem('remoteStorageEnabled') === 'true',
+      apiKey: localStorage.getItem('remoteStorageApiKey') || undefined,
+      userId
+    };
+  });
+
+  const { 
+    tasks, 
+    addTask, 
+    updateTask, 
+    deleteTask, 
+    reorderTasks, 
+    importTasks, 
+    lists, 
+    addList, 
+    updateList, 
+    deleteList,
+    sync,
+    isLoading
+  } = useTasks(storageConfig);
+
+  const [isSyncing, setIsSyncing] = React.useState(false);
   const {
     searchTerm,
     setSearchTerm,
@@ -436,6 +462,32 @@ const TaskPanel: React.FC = () => {
                   >
                     🔌
                   </button>
+                  {storageConfig.remoteEnabled && (
+                    <div className="relative group">
+                      <button
+                        onClick={async () => {
+                          try {
+                            setIsSyncing(true);
+                            const userId = storageConfig.userId || 'anonymous';
+                            setStorageConfig(prev => ({ ...prev, userId }));
+                            await sync();
+                          } catch (error) {
+                            console.error('Sync failed:', error);
+                          } finally {
+                            setIsSyncing(false);
+                          }
+                        }}
+                        className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
+                        title="Sync Tasks"
+                        disabled={isSyncing || isLoading}
+                      >
+                        {isSyncing ? '⏳' : '🔄'}
+                      </button>
+                      <span className="absolute hidden group-hover:block bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">
+                        {isSyncing ? 'Syncing...' : 'Sync Tasks'}
+                      </span>
+                    </div>
+                  )}
                   <button
                     onClick={() => setShowLogin(true)}
                     className="p-2 rounded-lg bg-[#2A2A2A] hover:bg-[#333333] transition-colors"
@@ -525,21 +577,28 @@ const TaskPanel: React.FC = () => {
                         reader.onload = (event) => {
                           const csv = event.target?.result as string;
                           const lines = csv.split('\n');
+                          const userId = storageConfig.userId || 'anonymous';
                           const importedTasks = lines.map(line => {
                             const [title, description, status, priority, dueDate, tags, assignees] = line.split(',');
-                            return {
+                            const task: Task = {
                               id: crypto.randomUUID(),
-                              title,
-                              description,
-                              status: status as Task['status'],
-                              priority: priority as Task['priority'],
+                              title: title || 'Untitled Task',
+                              description: description || '',
+                              status: (status as Task['status']) || 'todo',
+                              priority: (priority as Task['priority']) || 'medium',
                               dueDate: dueDate ? new Date(dueDate) : undefined,
                               tags: tags ? tags.split(', ').filter(t => t) : undefined,
                               assignees: assignees ? assignees.split(', ').filter(a => a) : undefined,
                               createdAt: new Date(),
                               updatedAt: new Date(),
                               listId: currentList,
+                              owner: userId,
+                              collaborators: [],
+                              activityLog: [],
+                              comments: [],
+                              version: 1
                             };
+                            return task;
                           });
                           importTasks(importedTasks, currentList);
                           e.target.value = ''; // Reset file input
@@ -697,7 +756,8 @@ const TaskPanel: React.FC = () => {
                           addList({ id: newListId, name: 'New List' });
                           
                           // Create a default task for the new list
-                          addTask({
+                          const userId = storageConfig.userId || 'anonymous';
+                          const newTask: Task = {
                             id: crypto.randomUUID(),
                             title: 'New Task',
                             description: 'This is a default task for the new list.',
@@ -706,7 +766,13 @@ const TaskPanel: React.FC = () => {
                             listId: newListId,
                             createdAt: new Date(),
                             updatedAt: new Date(),
-                          });
+                            owner: userId,
+                            collaborators: [],
+                            activityLog: [],
+                            comments: [],
+                            version: 1
+                          };
+                          addTask(newTask);
                           
                           setCurrentList(newListId);
                           setShowListActions(false);
