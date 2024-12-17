@@ -81,12 +81,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`bg-[#333333] border-l-4 p-4 rounded-lg hover:bg-[#383838] transition-colors cursor-pointer ${statusColors[status]} ${isOverdue ? 'ring-2 ring-red-500/50' : ''}`}
+          className={`bg-[#333333] border-l-4 p-4 rounded-lg hover:bg-[#383838] transition-colors cursor-pointer ${statusColors[status]} ${isOverdue ? 'ring-2 ring-red-500/50' : ''} ${task.recurring && status === 'done' ? 'opacity-75' : ''}`}
           onClick={onClick}
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-              {title}
+              <span className={task.recurring && status === 'done' ? 'line-through text-gray-400' : ''}>
+                {title}
+                {task.recurring && status === 'done' && (
+                  <span className="ml-2 text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">
+                    ✓ Completed
+                  </span>
+                )}
+              </span>
               {task.dependsOn && task.dependsOn.length > 0 && (
                 <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded" title="Has dependencies">
                   🔗 {task.dependsOn.length}

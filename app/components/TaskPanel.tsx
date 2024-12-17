@@ -57,6 +57,7 @@ const TaskPanel: React.FC = () => {
   };
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [currentTab, setCurrentTab] = React.useState<'tasks' | 'notes'>('tasks');
+  const [showCompletedRecurring, setShowCompletedRecurring] = React.useState(true);
   const [showIntegrations, setShowIntegrations] = React.useState(false);
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
   const { tasks, addTask, updateTask, deleteTask, reorderTasks, importTasks, lists, addList, updateList, deleteList } = useTasks();
@@ -770,6 +771,46 @@ const TaskPanel: React.FC = () => {
                         onReorderTasks={reorderTasks}
                         listId={currentList}
                       />
+                      
+                      {/* Completed Recurring Tasks Section */}
+                      {filteredTasks().some(t => t.recurring && t.status === 'done') && (
+                        <div className="mt-6 border-t border-[#444444] pt-4">
+                          <div 
+                            className="flex items-center gap-2 mb-4 cursor-pointer hover:text-gray-300 transition-colors"
+                            onClick={() => setShowCompletedRecurring(!showCompletedRecurring)}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className={`h-4 w-4 transform transition-transform ${showCompletedRecurring ? 'rotate-90' : ''}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                            <h3 className="text-md font-medium text-gray-400">Completed Recurring Tasks</h3>
+                            <span className="text-sm text-gray-500">
+                              ({filteredTasks().filter(t => t.recurring && t.status === 'done').length})
+                            </span>
+                          </div>
+                          <div className={`transition-all duration-200 ${showCompletedRecurring ? 'block' : 'hidden'}`}>
+                            <TaskListComponent
+                              droppableId="completed-recurring"
+                              tasks={filteredTasks().filter(task => task.recurring && task.status === 'done')}
+                              onUpdateTask={updateTask}
+                              onTaskClick={(task: Task) => setSelectedTask(task)}
+                              onDeleteTask={(task: Task) => deleteTask(task.id)}
+                              onReorderTasks={reorderTasks}
+                              listId={currentList}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-[#2A2A2A] rounded-lg p-4">
