@@ -52,6 +52,112 @@ const parseSubtasks = (result: string): Task[] => {
     console.error('Error parsing subtasks:', error);
     return [];
   }
+
+const handleRunChain = async (task: any, selectedAgent: string, backendUrl: string, authToken: string) =>{
+    if (!selectedAgent) {
+      return;
+    }
+
+    try {
+      const agixt = await initializeAGiXT(backendUrl, authToken);
+      if (!agixt) {
+        return;
+      }
+      const conversationName = task.conversationId || `Chain_${task.id}`;
+      if (!task.conversationId) {
+        await agixt.newConversation(selectedAgent, conversationName);
+        task.conversationId = conversationName;
+      }
+
+      const result = await agixt.runChain(
+        'Task Management',
+        task.text,
+        selectedAgent,
+        false,
+        1,
+        {
+          conversation_name: conversationName,
+        }
+      );
+
+      const updatedTask = { ...task, status: 'Running' as const };
+      return updatedTask;
+    } catch (error) {
+      console.error('Error running chain:', error);
+      const updatedTask = { ...task, status: 'Failed' as const };
+      return updatedTask;
+    }
+  };
+
+  const updateConversationLog = (
+    task: Task,
+    role: string,
+    message: string
+  ) =>{
+    const updatedTask = {
+      ...task,
+      conversationLog: [...(task.conversationLog || []), { role, message }],
+    };
+    return updatedTask;
+  };
+
+  const createCheckpoint = async (
+    taskId: string,
+    checkpointData: any,
+    backendUrl: string,
+    authToken: string
+  ) =>{
+    try {
+      const agixt = await initializeAGiXT(backendUrl, authToken);
+      if (!agixt) {
+        throw new Error("Failed to initialize AGiXT");
+      }
+
+      // Assuming AGiXT has a method to store custom data
+      await agixt.createTaskCheckpoint(taskId, checkpointData);
+
+      const checkpoint = {
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        state: checkpointData,
+      };
+
+      console.log("Checkpoint created:", checkpoint);
+      return checkpoint;
+    } catch (error) {
+      console.error("Error creating checkpoint:", error);
+      return null;
+    }
+  };
+
+  const loadCheckpoint = async (
+    taskId: string,
+    checkpointId: string,
+    backendUrl: string,
+    authToken: string
+  ) =>{
+    try {
+      const agixt = await initializeAGiXT(backendUrl, authToken);
+      if (!agixt) {
+        throw new Error("Failed to initialize AGiXT");
+      }
+
+      // Assuming AGiXT has a method to retrieve custom data
+      const checkpointData = await agixt.getTaskCheckpoint(
+        taskId,
+        checkpointId
+      );
+
+      console.log("Checkpoint loaded:", checkpointData);
+      return checkpointData;
+    } catch (error) {
+      console.error("Error loading checkpoint:", error);
+      return null;
+    }
+  };
+
+  export { initializeAGiXT, getAgents, handleGenerateSubtasks, handleRunChain, updateConversationLog, parseSubtasks, createCheckpoint, loadCheckpoint };
+
 };
 
 
@@ -160,22 +266,33 @@ const getAgents = async (backendUrl: string, authToken: string) => {
         .replace('{priority}', task.priority || '')
         .replace('{additionalContext}', '');
   
-      const result = await agixt.chat(
+const result = await agixt.chat(
         selectedAgent,
         userInput,
         conversationName,
         4
       );
-  
+
       const subtasks = parseSubtasks(result);
-      const updatedTask = {
-        ...task,
-        subtasks: subtasks,
-        status: 'Pending' as const,
-      };
+
+      // Create an initial checkpoint after generating subtasks
+      const initialCheckpoint = await createCheckpoint(
+        task.id,
+        {
+          subtasks: subtasks,
+          agentState: {}, // Replace with actual agent state if available
+        },
+        backendUrl,
+        authToken,
+      );
+
+      if (initialCheckpoint) {
+        updatedTask.checkpoints = [initialCheckpoint];
+      }
+
       return updatedTask;
     } catch (error) {
-      console.error('Error generating subtasks:', error);
+      console.error("Error generating subtasks:", error);
     }
   };
 
