@@ -89,7 +89,7 @@ const {
 const currentWorkspaceData = workspaces.find((w) =>w.id === currentWorkspace);
 
   const handleCreateGroup = () =>{
-    if (newGroupName &amp;&amp; currentWorkspace) {
+if (newGroupName && currentWorkspace) {
       createGroup(currentWorkspace, newGroupName);
       setNewGroupName("");
       setShowNewGroupForm(false);
