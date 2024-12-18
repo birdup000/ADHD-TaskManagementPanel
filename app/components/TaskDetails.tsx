@@ -121,20 +121,59 @@ const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(
               ✕
             </button>
           </div>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-medium text-gray-400 mb-2">Description</h3>
+&lt;h3 className="text-sm font-medium text-gray-400 mb-2"&gt;Description&lt;/h3&gt;
             {canEdit ? (
-              <RichTextEditor
+              &lt;RichTextEditor
                 initialContent={task.description}
-                onChange={(content) =>
+                onChange={(content) =&gt;
                   onUpdateTask({ ...task, description: content })
                 }
-              />
+              /&gt;
             ) : (
-              <div className="bg-[#2A2A2A] rounded-lg p-4 text-gray-300">
+              &lt;div className="bg-[#2A2A2A] rounded-lg p-4 text-gray-300"&gt;
+                {task.description || &lt;i&gt;No description provided.&lt;/i&gt;}
+              &lt;/div&gt;
+            )}
+          &lt;/div&gt;
+
+            {task.checkpoints?.length >0 &amp;&amp; (
+              &lt;div&gt;
+                &lt;h4 className="text-white font-medium"&gt;
+                  Checkpoints:
+                &lt;/h4&gt;
+                &lt;ul className="list-disc pl-5 mt-2"&gt;
+                  {task.checkpoints.map((checkpoint) =&gt; (
+                    &lt;li key={checkpoint.id} className="text-gray-300"&gt;
+                      {checkpoint.createdAt.toLocaleString()}
+                      &lt;button
+                        onClick={async () =&gt; {
+                          setLoadingCheckpoint(checkpoint.id);
+                          const loadedState = await loadCheckpoint(
+                            task.id,
+                            checkpoint.id,
+                            localStorage.getItem('agixtapi') || '',
+                            localStorage.getItem('agixtkey') || ''
+                          );
+                          if (loadedState) {
+                            // Handle loading the state by updating the task with the loaded state
+                            onUpdateTask({ ...task, ...loadedState, checkpoints: task.checkpoints });
+                          } else {
+                            // Display an error message
+                            alert('Failed to load checkpoint');
+                          }
+                          setLoadingCheckpoint(null);
+                        }}
+                        disabled={loadingCheckpoint === checkpoint.id}
+                        className="ml-2 text-blue-500 hover:text-blue-700"
+                      &gt;
+                        {loadingCheckpoint === checkpoint.id ? 'Loading...' : 'Load'}
+                      &lt;/button&gt;
+                    &lt;/li&gt;
+                  ))}
+                &lt;/ul&gt;
+              &lt;/div&gt;
+            )}
+          &lt;/div&gt;
 &lt;div&gt;
 // Handle loading the state by updating the task with the loaded state
     onUpdateTask({ ...task, ...loadedState, checkpoints: task.checkpoints });
