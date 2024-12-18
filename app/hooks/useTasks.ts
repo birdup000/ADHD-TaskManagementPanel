@@ -84,8 +84,30 @@ export const useTasks = (storageConfig: StorageConfig) => {
       console.error("Task must have a listId:", task);
       return;
     }
-    setTasks(prev => [...prev, task]);
-  };
+setTasks((prev) =>[...prev, task]);
+      };
+
+      const loadTaskCheckpoint = async (
+        taskId: string,
+        checkpointId: string
+      ) =>{
+        const task = tasks.find((t) =>t.id === taskId);
+        if (!task) {
+          throw new Error(`Task not found: ${taskId}`);
+        }
+
+        const checkpoint = task.checkpoints?.find((cp) =>cp.id === checkpointId);
+        if (!checkpoint) {
+          throw new Error(`Checkpoint not found: ${checkpointId}`);
+        }
+
+        if (checkpoint.state) {
+          // Assuming the state can be directly applied to update the task
+          updateTask({ ...task, ...checkpoint.state });
+        } else {
+          throw new Error("Checkpoint state is undefined");
+        }
+      };
 
 // Update checkpoints if present
     if (updatedTask.checkpoints) {
