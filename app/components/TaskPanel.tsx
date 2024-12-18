@@ -1,5 +1,10 @@
 "use client";
 
+      import React from 'react';
+      import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+
+"use client";
+
 import React from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import ExportMenu from './ExportMenu';
@@ -53,12 +58,12 @@ const TaskPanel: React.FC = () => {
     setShowConfirmDelete(true);
   };
 
-  const handleBatchComplete = () => {
-    const selectedTasks = tasks.filter(task => task.status !== 'done');
-selectedTasks.forEach(task =>{
-          archiveTask(task.id);
-        });
-  };
+const handleBatchComplete = () =&gt; {
+          const selectedTasks = tasks.filter(task =&gt; task.status !== 'done');
+          selectedTasks.forEach(task =&gt; {
+            archiveTask(task.id);
+          });
+        };
 
   const handleArchiveDone = () => {
     const doneTasks = tasks.filter(task => task.status === 'done');
@@ -94,6 +99,8 @@ deleteTask,
     deleteList,
     archiveTask,
     archivedTasks,
+    sync,
+    isLoading
     sync,
     isLoading
   } = useTasks(storageConfig);
