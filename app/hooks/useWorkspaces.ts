@@ -7,15 +7,51 @@ export const useWorkspaces = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<string | null>(null);
 
-  useEffect(() => {
+useEffect(() =>{
     // Load workspaces from localStorage on mount
     const storedWorkspaces = localStorage.getItem(STORAGE_KEY);
     if (storedWorkspaces) {
       const parsed = JSON.parse(storedWorkspaces);
       setWorkspaces(parsed);
-      if (parsed.length > 0) {
-        setCurrentWorkspace(parsed[0].id);
+      if (parsed.length >0) {
+        setCurrentWorkspace(parsed.find((w: Workspace) =>w.isDefault)?.id || parsed[0].id);
+      } else {
+        // Create a default workspace if none exists
+        const defaultWorkspace: Workspace = {
+          id: crypto.randomUUID(),
+          name: 'Default Workspace',
+          description: 'Your default workspace',
+          repositories: [],
+          settings: {
+            visibility: 'private',
+            collaborators: [],
+            lastAccessed: new Date(),
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isDefault: true,
+        };
+        setWorkspaces([defaultWorkspace]);
+        setCurrentWorkspace(defaultWorkspace.id);
       }
+    } else {
+      // Create a default workspace if none exists
+      const defaultWorkspace: Workspace = {
+        id: crypto.randomUUID(),
+        name: 'Default Workspace',
+        description: 'Your default workspace',
+        repositories: [],
+        settings: {
+          visibility: 'private',
+          collaborators: [],
+          lastAccessed: new Date(),
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isDefault: true,
+      };
+      setWorkspaces([defaultWorkspace]);
+      setCurrentWorkspace(defaultWorkspace.id);
     }
   }, []);
 
@@ -24,7 +60,7 @@ export const useWorkspaces = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
   }, [workspaces]);
 
-  const createWorkspace = (workspace: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt'>) => {
+const createWorkspace = (workspace: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt'>) =>{
     const newWorkspace: Workspace = {
       ...workspace,
       id: crypto.randomUUID(),
@@ -36,7 +72,13 @@ export const useWorkspaces = () => {
         visibility: workspace.settings?.visibility || 'private'
       },
     };
+
+    if (workspaces.length === 0) {
+      newWorkspace.isDefault = true;
+    }
+
     setWorkspaces([...workspaces, newWorkspace]);
+    setCurrentWorkspace(newWorkspace.id);
     return newWorkspace;
   };
 
@@ -48,10 +90,15 @@ export const useWorkspaces = () => {
     ));
   };
 
-  const deleteWorkspace = (id: string) => {
-    setWorkspaces(workspaces.filter(workspace => workspace.id !== id));
+const deleteWorkspace = (id: string) =>{
+    const updatedWorkspaces = workspaces.filter(workspace =>workspace.id !== id);
+    setWorkspaces(updatedWorkspaces);
     if (currentWorkspace === id) {
-      setCurrentWorkspace(workspaces[0]?.id ?? null);
+      setCurrentWorkspace(
+        updatedWorkspaces.find(w =>w.isDefault)?.id ||
+        updatedWorkspaces[0]?.id ||
+        null
+      );
     }
   };
 
