@@ -1,19 +1,12 @@
 import { Collaborator, ActivityLog, Comment } from './collaboration';
 
-checkpoints?: {
-    id: string;
-    createdAt: Date;
-    state?: any; // Store agent state, conversation history, etc.
-  }[];
-  progress: number;
-
 export interface Checkpoint {
-        id: string;
-        title: string;
-        completed: boolean;
-        createdAt: Date;
-        description?: string;
-      }
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
+  description?: string;
+}
 
 export interface Task {
   id: string;
