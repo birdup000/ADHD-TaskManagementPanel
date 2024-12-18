@@ -12,6 +12,16 @@ export interface Task {
   id: string;
 import { Collaborator, ActivityLog, Comment } from './collaboration';
 
+import { Collaborator, ActivityLog, Comment } from './collaboration';
+
+  export interface Checkpoint {
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt: Date;
+    description?: string;
+  }
+
   export interface Task {
     id: string;
     title: string;
@@ -53,6 +63,16 @@ import { Collaborator, ActivityLog, Comment } from './collaboration';
     lastViewed?: {
       [userId: string]: Date;
     };
+  checkpoints?: Checkpoint[];
+        progress: number;
+        version: number; // For handling concurrent edits
+      }
+
+      export interface TaskList {
+        id: string;
+        name: string;
+      }
+  }
 checkpoints?: Checkpoint[];
       progress: number;
       version: number; // For handling concurrent edits
