@@ -41,6 +41,10 @@ export interface Task {
   lastViewed?: {
     [userId: string]: Date;
   };
+
+version: number; // For handling concurrent edits
+      archivedAt?: Date;
+
   version: number; // For handling concurrent edits
 }
 
