@@ -4,7 +4,7 @@ import { Workspace, Repository } from '../types/workspace';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 export const WorkspacePanel: React.FC = () => {
-  const {
+const {
     workspaces,
     currentWorkspace,
     setCurrentWorkspace,
@@ -14,7 +14,18 @@ export const WorkspacePanel: React.FC = () => {
     addRepository,
     removeRepository,
     updateRepositorySettings,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    getGroup,
   } = useWorkspaces();
+
+  const [showNewGroupForm, setShowNewGroupForm] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState&lt;string | null&gt;(null);
+  const [isRenamingGroup, setIsRenamingGroup] = useState(false);
+  const [renamingGroupId, setRenamingGroupId] = useState&lt;string | null&gt;(null);
+  const [editedGroupName, setEditedGroupName] = useState("");
 
   const [showNewWorkspace, setShowNewWorkspace] = React.useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = React.useState('');
@@ -75,7 +86,55 @@ export const WorkspacePanel: React.FC = () => {
     }
   };
 
-  const currentWorkspaceData = workspaces.find(w => w.id === currentWorkspace);
+const currentWorkspaceData = workspaces.find((w) =>w.id === currentWorkspace);
+
+  const handleCreateGroup = () =>{
+    if (newGroupName &amp;&amp; currentWorkspace) {
+      createGroup(currentWorkspace, newGroupName);
+      setNewGroupName("");
+      setShowNewGroupForm(false);
+    }
+  };
+
+  const handleRenameGroup = (group: Group) =>{
+    setRenamingGroupId(group.id);
+    setEditedGroupName(group.name);
+    setIsRenamingGroup(true);
+  };
+
+  const handleSaveGroupName = (groupId: string) =>{
+    if (currentWorkspace &amp;&amp; editedGroupName) {
+      updateGroup(currentWorkspace, groupId, { name: editedGroupName });
+    }
+    setIsRenamingGroup(false);
+    setRenamingGroupId(null);
+    setEditedGroupName("");
+  };
+
+  const handleDeleteGroup = (groupId: string) =>{
+    if (
+      currentWorkspace &amp;&amp;
+      confirm("Are you sure you want to delete this group?")
+    ) {
+      deleteGroup(currentWorkspace, groupId);
+      setSelectedGroup(null);
+    }
+  };
+
+  const handleSelectGroup = (groupId: string) =>{
+    setSelectedGroup(groupId);
+  };
+
+  const filteredRepositories = React.useMemo(() =>{
+    if (!currentWorkspaceData) return [];
+    if (!selectedGroup) return currentWorkspaceData.repositories;
+
+    const group = getGroup(currentWorkspaceData.id, selectedGroup);
+    if (!group) return [];
+
+    return currentWorkspaceData.repositories.filter((repo) =>group.repositoryIds.includes(repo.id)
+    );
+  }, [currentWorkspaceData, selectedGroup]);
 
   return (
     <div className="bg-[#2A2A2A] rounded-lg p-4">
@@ -90,81 +149,195 @@ export const WorkspacePanel: React.FC = () => {
         </button>
       </div>
 
-      <div className="space-y-4">
-        {workspaces.map(workspace => (
-          <div
-            key={workspace.id}
-            className={`p-4 rounded-lg ${
-              workspace.id === currentWorkspace
-                ? 'bg-indigo-600/20 border border-indigo-500/30'
-                : 'bg-[#333333] hover:bg-[#3A3A3A]'
-            } transition-colors cursor-pointer`}
-            onClick={() => setCurrentWorkspace(workspace.id)}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium">{workspace.name}</h3>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    workspace.settings?.visibility === 'public' 
-                      ? 'bg-green-600/20 text-green-300'
-                      : workspace.settings?.visibility === 'team'
-                      ? 'bg-blue-600/20 text-blue-300'
-                      : 'bg-gray-600/20 text-gray-300'
-                  }`}>
-                    {workspace.settings?.visibility || 'private'}
-                  </span>
-                </div>
-                {workspace.description && (
-                  <p className="text-sm text-gray-400">{workspace.description}</p>
-                )}
-                {workspace.settings?.collaborators?.length > 0 && (
-                  <div className="text-xs text-gray-400 mt-1">
-                    {workspace.settings.collaborators.length} collaborator(s)
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateWorkspace(workspace.id, {
-                      name: prompt('New workspace name:', workspace.name) || workspace.name
-                    });
-                  }}
-                  className="p-1 rounded hover:bg-[#444444] transition-colors"
-                >
-                  <PencilIcon className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm('Are you sure you want to delete this workspace?')) {
-                      deleteWorkspace(workspace.id);
-                    }
-                  }}
-                  className="p-1 rounded hover:bg-[#444444] transition-colors"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-                <span>{workspace.repositories.length} repositories</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
+&lt;div className="space-y-4"&gt;
+            {workspaces.map((workspace) =&gt; (
+              &lt;div key={workspace.id}&gt;
+                &lt;div
+                  className={`p-4 rounded-lg ${
+                    workspace.id === currentWorkspace
+                      ? "bg-indigo-600/20 border border-indigo-500/30"
+                      : "bg-[#333333] hover:bg-[#3A3A3A]"
+                  } transition-colors cursor-pointer`}
+                  onClick={() =&gt; {
                     setCurrentWorkspace(workspace.id);
-                    setShowCollaborators(true);
+                    setSelectedGroup(null); // Reset selected group when switching workspaces
                   }}
-                  className="px-2 py-1 rounded bg-[#444444] hover:bg-[#555555] transition-colors"
-                >
-                  Manage Collaborators
-                </button>
-            </div>
-          </div>
-        ))}
-      </div>
+                &gt;
+                  &lt;div className="flex justify-between items-start mb-2"&gt;
+                    &lt;div&gt;
+                      &lt;div className="flex items-center gap-2"&gt;
+                        &lt;h3 className="font-medium"&gt;{workspace.name}&lt;/h3&gt;
+                        &lt;span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            workspace.settings?.visibility === "public"
+                              ? "bg-green-600/20 text-green-300"
+                              : workspace.settings?.visibility === "team"
+                              ? "bg-blue-600/20 text-blue-300"
+                              : "bg-gray-600/20 text-gray-300"
+                          }`}
+                        &gt;
+                          {workspace.settings?.visibility || "private"}
+                        &lt;/span&gt;
+                      &lt;/div&gt;
+                      {workspace.description &amp;&amp; (
+                        &lt;p className="text-sm text-gray-400"&gt;
+                          {workspace.description}
+                        &lt;/p&gt;
+                      )}
+                      {workspace.settings?.collaborators?.length &gt; 0 &amp;&amp; (
+                        &lt;div className="text-xs text-gray-400 mt-1"&gt;
+                          {workspace.settings.collaborators.length} collaborator(s)
+                        &lt;/div&gt;
+                      )}
+                    &lt;/div&gt;
+                    &lt;div className="flex items-center gap-2"&gt;
+                      &lt;button
+                        onClick={(e) =&gt; {
+                          e.stopPropagation();
+                          updateWorkspace(workspace.id, {
+                            name:
+                              prompt("New workspace name:", workspace.name) ||
+                              workspace.name,
+                          });
+                        }}
+                        className="p-1 rounded hover:bg-[#444444] transition-colors"
+                      &gt;
+                        &lt;PencilIcon className="h-4 w-4" /&gt;
+                      &lt;/button&gt;
+                      &lt;button
+                        onClick={(e) =&gt; {
+                          e.stopPropagation();
+                          if (
+                            confirm("Are you sure you want to delete this workspace?")
+                          ) {
+                            deleteWorkspace(workspace.id);
+                          }
+                        }}
+                        className="p-1 rounded hover:bg-[#444444] transition-colors"
+                      &gt;
+                        &lt;TrashIcon className="h-4 w-4" /&gt;
+                      &lt;/button&gt;
+                    &lt;/div&gt;
+                  &lt;/div&gt;
+                  &lt;div className="flex items-center gap-2 text-sm text-gray-400"&gt;
+                    &lt;span&gt;{workspace.repositories.length} repositories&lt;/span&gt;
+                    &lt;button
+                      onClick={(e) =&gt; {
+                        e.stopPropagation();
+                        setCurrentWorkspace(workspace.id);
+                        setShowCollaborators(true);
+                      }}
+                      className="px-2 py-1 rounded bg-[#444444] hover:bg-[#555555] transition-colors"
+                    &gt;
+                      Manage Collaborators
+                    &lt;/button&gt;
+                  &lt;/div&gt;
+                &lt;/div&gt;
+                {workspace.id === currentWorkspace &amp;&amp; (
+                  &lt;div className="mt-4"&gt;
+                    &lt;div className="flex justify-between items-center mb-2"&gt;
+                      &lt;h4 className="text-lg font-medium"&gt;Groups&lt;/h4&gt;
+                      &lt;button
+                        onClick={() =&gt; setShowNewGroupForm(true)}
+                        className="px-3 py-1.5 rounded text-sm bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                      &gt;
+                        &lt;PlusIcon className="h-4 w-4" /&gt;
+                        New Group
+                      &lt;/button&gt;
+                    &lt;/div&gt;
+                    &lt;div className="space-y-2"&gt;
+                      {workspace.groups.map((group) =&gt; (
+                        &lt;div
+                          key={group.id}
+                          className={`p-2 rounded-lg ${
+                            selectedGroup === group.id
+                              ? "bg-indigo-600/20 border border-indigo-500/30"
+                              : "bg-[#444444] hover:bg-[#4A4A4A]"
+                          } transition-colors cursor-pointer`}
+                          onClick={() =&gt; handleSelectGroup(group.id)}
+                        &gt;
+                          &lt;div className="flex justify-between items-center"&gt;
+                            &lt;span className="font-medium"&gt;
+                              {isRenamingGroup &amp;&amp; renamingGroupId === group.id ? (
+                                &lt;input
+                                  type="text"
+                                  value={editedGroupName}
+                                  onChange={(e) =&gt;
+                                    setEditedGroupName(e.target.value)
+                                  }
+                                  onBlur={() =&gt; handleSaveGroupName(group.id)}
+                                  onKeyDown={(e) =&gt; {
+                                    if (e.key === "Enter") {
+                                      handleSaveGroupName(group.id);
+                                    }
+                                  }}
+                                  className="px-2 py-1 rounded bg-[#333333] text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  autoFocus
+                                /&gt;
+                              ) : (
+                                group.name
+                              )}
+                            &lt;/span&gt;
+                            &lt;div className="flex items-center gap-2"&gt;
+                              &lt;button
+                                onClick={(e) =&gt; {
+                                  e.stopPropagation();
+                                  handleRenameGroup(group);
+                                }}
+                                className="p-1 rounded hover:bg-[#555555] transition-colors"
+                              &gt;
+                                &lt;PencilIcon className="h-4 w-4" /&gt;
+                              &lt;/button&gt;
+                              &lt;button
+                                onClick={(e) =&gt; {
+                                  e.stopPropagation();
+                                  handleDeleteGroup(group.id);
+                                }}
+                                className="p-1 rounded hover:bg-[#555555] transition-colors"
+                              &gt;
+                                &lt;TrashIcon className="h-4 w-4" /&gt;
+                              &lt;/button&gt;
+                            &lt;/div&gt;
+                          &lt;/div&gt;
+                        &lt;/div&gt;
+                      ))}
+                    &lt;/div&gt;
+                  &lt;/div&gt;
+                )}
+                {/* New Group Form */}
+                {showNewGroupForm &amp;&amp; (
+                  &lt;div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"&gt;
+                    &lt;div className="bg-[#212121] p-6 rounded-lg w-full max-w-md mx-4"&gt;
+                      &lt;h2 className="text-xl font-semibold mb-4"&gt;
+                        Create New Group
+                      &lt;/h2&gt;
+                      &lt;input
+                        type="text"
+                        value={newGroupName}
+                        onChange={(e) =&gt; setNewGroupName(e.target.value)}
+                        placeholder="Group name"
+                        className="w-full p-2 rounded bg-[#333333] text-white mb-4"
+                      /&gt;
+                      &lt;div className="flex justify-end gap-4"&gt;
+                        &lt;button
+                          onClick={() =&gt; setShowNewGroupForm(false)}
+                          className="px-4 py-2 rounded bg-[#444444] hover:bg-[#555555] transition-colors"
+                        &gt;
+                          Cancel
+                        &lt;/button&gt;
+                        &lt;button
+                          onClick={handleCreateGroup}
+                          className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                        &gt;
+                          Create
+                        &lt;/button&gt;
+                      &lt;/div&gt;
+                    &lt;/div&gt;
+                  &lt;/div&gt;
+                )}
+              &lt;/div&gt;
+            ))}
+          &lt;/div&gt;
 
       {currentWorkspaceData && (
         <div className="mt-8">
