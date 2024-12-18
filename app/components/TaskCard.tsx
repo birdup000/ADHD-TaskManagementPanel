@@ -198,7 +198,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
             </div>
           )}
           {subtasks && subtasks.length > 0 && (
-{task.progress &gt;= 0 &amp;&amp; (
+{task.progress >= 0 &amp;&amp; (
             &lt;div className="mb-2"&gt;
 {task.progress >= 0 && (<div className="mb-2"><div className="flex items-center gap-2 text-xs text-gray-400 mb-1"><span>Progress:</span><div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden"><div
                     className="h-full bg-blue-600 transition-all"
