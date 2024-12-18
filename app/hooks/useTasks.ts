@@ -87,6 +87,11 @@ export const useTasks = (storageConfig: StorageConfig) => {
     setTasks(prev => [...prev, task]);
   };
 
+// Update checkpoints if present
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+    }
+
   const updateTask = (updatedTask: Task) => {
     // Get the old version of the task
     const oldTask = tasks.find(t => t.id === updatedTask.id);
