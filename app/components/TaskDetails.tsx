@@ -23,6 +23,9 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
   onClose,
   onUpdateTask,
   comments,
+
+const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(null);
+
   onAddComment,
 }) => {
   // Use the collaboration hook to manage permissions and actions
@@ -136,20 +139,49 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-gray-400 mb-2">Progress</h3>
-            <div className="w-full bg-[#2A2A2A] rounded-full h-4">
-              <div 
+&lt;h3 className="text-sm font-medium text-gray-400 mb-2"&gt;Progress&lt;/h3&gt;
+            &lt;div className="w-full bg-[#2A2A2A] rounded-full h-4"&gt;
+              &lt;div
                 className="bg-indigo-600 h-4 rounded-full transition-all duration-300"
                 style={{ width: `${task.progress}%` }}
-              />
-            </div>
-            <span className="text-sm text-gray-400 mt-1">{task.progress}% Complete</span>
+              /&gt;
+            &lt;/div&gt;
+            &lt;span className="text-sm text-gray-400 mt-1"&gt;{task.progress}% Complete&lt;/span&gt;
           </div>
 
           <div>
 
             {task.checkpoints?.length &gt; 0 &amp;&amp; (
-                          &lt;div&gt;
+&lt;div&gt;
+            {task.checkpoints?.length &gt; 0 &amp;&amp; (
+              &lt;div&gt;
+                &lt;h4 className="text-white font-medium"&gt;
+                  Checkpoints:
+                &lt;/h4&gt;
+                &lt;ul className="list-disc pl-5 mt-2"&gt;
+                  {task.checkpoints.map((checkpoint) =&gt; (
+                    &lt;li key={checkpoint.id} className="text-gray-300"&gt;
+                      {checkpoint.createdAt.toLocaleString()}
+                      {/* Add a button to load the checkpoint */}
+                      &lt;button
+                        onClick={() =&gt; {
+                          const loadedState = loadCheckpoint(
+                            task.id,
+                            checkpoint.id,
+                            localStorage.getItem('agixtapi') || '',
+                            localStorage.getItem('agixtkey') || ''
+                          );
+                          // Handle loading the state
+                        }}
+                        className="ml-2 text-blue-500 hover:text-blue-700"
+                      &gt;
+                        Load
+                      &lt;/button&gt;
+                    &lt;/li&gt;
+                  ))}
+                &lt;/ul&gt;
+              &lt;/div&gt;
+            )}
                             &lt;h4 className="text-white font-medium"&gt;
                               Checkpoints:
                             &lt;/h4&gt;
@@ -158,19 +190,28 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
                                 &lt;li key={checkpoint.id} className="text-gray-300"&gt;
                                   {checkpoint.createdAt.toLocaleString()}
                                   {/* Add a button to load the checkpoint */}
-                                  &lt;button
-                                    onClick={() =&gt; {
-                                      const loadedState = loadCheckpoint(
+&lt;button
+                                    onClick={async () =&gt; {
+                                      setLoadingCheckpoint(checkpoint.id);
+                                      const loadedState = await loadCheckpoint(
                                         task.id,
                                         checkpoint.id,
                                         localStorage.getItem('agixtapi') || '',
                                         localStorage.getItem('agixtkey') || ''
                                       );
-                                      // Handle loading the state
+                                      if (loadedState) {
+                                        // Handle loading the state
+                                        onUpdateTask({ ...task, ...loadedState });
+                                      } else {
+                                        // Display an error message
+                                        alert('Failed to load checkpoint');
+                                      }
+                                      setLoadingCheckpoint(null);
                                     }}
+                                    disabled={loadingCheckpoint === checkpoint.id}
                                     className="ml-2 text-blue-500 hover:text-blue-700"
                                   &gt;
-                                    Load
+                                    {loadingCheckpoint === checkpoint.id ? 'Loading...' : 'Load'}
                                   &lt;/button&gt;
                                 &lt;/li&gt;
                               ))}
@@ -198,7 +239,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
                       onUpdateTask({
                         ...task,
                         checkpoints: updatedCheckpoints,
-                        progress
+progress: 0
                       });
                     }}
                     className="mt-1 rounded-sm text-indigo-600 focus:ring-indigo-500"
@@ -221,15 +262,21 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
                       id: Date.now().toString(),
                       title: 'New Checkpoint',
                       completed: false,
+
+                    description: ''
+
                       createdAt: new Date(),
                       description: ''
                     };
                     const updatedCheckpoints = [...(task.checkpoints || []), newCheckpoint];
-                    onUpdateTask({
-                      ...task,
-                      checkpoints: updatedCheckpoints,
-                      progress: task.progress || 0
-                    });
+const completedCount = updatedCheckpoints?.filter(cp =>cp.completed).length || 0;
+                      const totalCount = updatedCheckpoints?.length || 0;
+                      const progress = totalCount &gt; 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                      onUpdateTask({
+                        ...task,
+                        checkpoints: updatedCheckpoints,
+                        progress
+                      });
                   }}
                   className="w-full px-4 py-2 bg-[#333333] hover:bg-[#444444] rounded-lg text-white transition-colors"
                 >
