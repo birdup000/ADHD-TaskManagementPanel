@@ -1,141 +1,152 @@
-⚠️ **WARNING: Under Heavy Development!** ⚠️
+# ADHD-Focused Task Management Panel
 
-The AGiXT integrations for this project are currently undergoing heavy development. Expect frequent changes, potential instability, and features that may not be fully functional. Your patience and feedback are appreciated!
+Welcome to the ADHD-Focused Task Management Panel! This application is specifically designed to cater to the unique needs of individuals with ADHD, helping them stay organized, focused, and productive. By leveraging the power of AI through AGiXT integration, alongside an intuitive and user-friendly interface, this tool aims to transform the way you manage tasks.
 
-# ADHD Task Management Panel
+## Key Features
 
-The ADHD Task Management Panel is a modern, intuitive task management application designed to help individuals with ADHD focus and manage their tasks effectively. The application features a drag-and-drop Kanban board, advanced search and filtering, keyboard shortcuts, and multiple views to enhance productivity.
+-   **Intuitive Kanban Boards**: Visualize your workflow with customizable Kanban boards. Easily drag and drop tasks between stages to track progress and maintain momentum.
+-   **Smart Task Prioritization**: Automatically prioritize tasks based on due dates, importance, and effort, helping you focus on what truly matters.
+-   **Distraction-Free Mode**: Minimize visual clutter and distractions with a streamlined interface designed to enhance concentration.
+-   **AI-Powered Task Suggestions**: Receive intelligent suggestions for task breakdown, scheduling, and prioritization, powered by AGiXT.
+-   **Timeboxing and Pomodoro Timer**: Implement proven time management techniques to boost productivity and maintain focus for set intervals.
+-   **Customizable Reminders and Notifications**: Set personalized reminders to stay on track without feeling overwhelmed.
+-   **Progress Tracking and Analytics**: Monitor your productivity trends and achievements with insightful analytics, tailored to your unique work patterns.
+-   **Seamless Integration with AGiXT**: Leverage advanced AI capabilities for task analysis, generation, and management, making your task management smarter and more adaptive.
+-   **Cross-Platform Synchronization**: Access your tasks and stay organized across all your devices with real-time synchronization.
+-   **Collaboration Tools**: Share tasks and collaborate with team members or support networks, enhancing accountability and teamwork.
+-   **Personalized Themes and Layouts**: Customize the look and feel of your task management panel to suit your preferences and reduce sensory overload.
 
-## Features
-- Drag-and-drop task management with Kanban board
-- Advanced search and filtering functionality
-- Keyboard shortcuts for improved productivity
-- Mobile responsive design
-- Multiple views (Kanban, List, Calendar)
-- Task prioritization and organization
-- Rich text editing for task descriptions
-- Tag and assignee management
-- Visual feedback for interactions
-- Customizable themes
-- AGiXT Integration for AI-powered task management
+## Getting Started
 
-## Prerequisites
-- Docker and Docker Compose installed on your system
-- AGiXT running on port 7437 (see AGiXT setup instructions below)
-- Node.js 20.x for local development
+### Prerequisites
 
-## Installation Instructions
+-   Docker and Docker Compose (for containerized deployment)
+-   Node.js (version 20.x or later) and npm (for local development)
+-   An operational AGiXT instance for AI-powered features
 
-### Using Docker (Recommended)
-1. Clone the repository: 
-   ```bash
-   git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git
-   ```
+### Installation
+
+#### Using Docker (Recommended)
+
+1. Clone this repository:
+
+    ```bash
+    git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git
+    ```
+
 2. Navigate to the project directory:
-   ```bash
-   cd ADHD-TaskManagementPanel
-   ```
-3. Make sure AGiXT is running and its Docker network is created:
-   ```bash
-   # AGiXT should be running with its default network 'agixt_default'
-   # The frontend will connect to AGiXT at http://agixt:7437
-   ```
-4. Start the application:
-   ```bash
-   docker-compose up -d
-   ```
-5. Access the application at http://localhost:3000
 
-### Manual Installation
-1. Clone the repository: 
-   ```bash
-   git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git
-   ```
+    ```bash
+    cd ADHD-TaskManagementPanel
+    ```
+
+3. Ensure AGiXT is running and its Docker network is created. The frontend will connect to AGiXT at the specified URL (default: `http://agixt:7437`).
+
+4. Start the application using Docker Compose:
+
+    ```bash
+    docker-compose up -d
+    ```
+
+5. Access the application via your web browser at `http://localhost:3000`.
+
+#### Manual Installation
+
+1. Clone this repository:
+
+    ```bash
+    git clone https://github.com/birdup000/ADHD-TaskManagementPanel.git
+    ```
+
 2. Navigate to the project directory:
-   ```bash
-   cd ADHD-TaskManagementPanel
-   ```
-3. Install dependencies:
-   ```bash
-   npm install --legacy-peer-deps
-   ```
-4. Create a .env.local file:
-   ```bash
-   NEXT_PUBLIC_AGIXT_URL=http://localhost:7437
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   ```
+
+    ```bash
+    cd ADHD-TaskManagementPanel
+    ```
+
+3. Install the required dependencies:
+
+    ```bash
+    npm install --legacy-peer-deps
+    ```
+
+4. Create a `.env.local` file in the root directory and configure the following variables:
+
+    ```bash
+    NEXT_PUBLIC_AGIXT_URL=http://your-agixt-instance:7437
+    NEXT_PUBLIC_APP_URL=http://localhost:3000
+    ```
+
 5. Start the development server:
-   ```bash
-   npm run dev
-   ```
 
-## Running Tests
+    ```bash
+    npm run dev
+    ```
 
-### Setup Testing Environment
-1. Install Playwright browsers and dependencies:
-   ```bash
-   npx playwright install --with-deps
-   ```
+### AGiXT Integration
+
+This task management panel harnesses the power of AGiXT to provide AI-driven features such as smart task suggestions, prioritization, and natural language processing capabilities.
+
+#### Setting Up AGiXT
+
+1. Ensure you have an AGiXT instance running and accessible. You can set up AGiXT locally or use a hosted version.
+2. Obtain your AGiXT API URL and API key.
+3. Configure the `NEXT_PUBLIC_AGIXT_URL` in your `.env.local` file to point to your AGiXT instance.
+4. Restart your development server or rebuild your Docker containers to apply the changes.
+
+## Usage
+
+-   **Creating Tasks**: Click the "New Task" button to add tasks. Fill in the details and use the AI-powered suggestions to break down complex tasks into manageable subtasks.
+-   **Managing Tasks**: Drag and drop tasks across the Kanban board to update their status. Click on a task to view and edit details, add comments, or assign it to a team member.
+-   **Utilizing AI Features**: Engage with the AI assistant to generate task ideas, suggest optimal schedules, and provide insights based on your work patterns.
+-   **Keyboard Shortcuts**: Use shortcuts like `Ctrl/Cmd + N` to create a new task, `Ctrl/Cmd + K` to focus on the search bar, and `Ctrl/Cmd + V` to toggle between views for enhanced productivity.
+
+## Testing
+
+### Setting Up the Testing Environment
+
+1. Install Playwright and its dependencies:
+
+    ```bash
+    npx playwright install --with-deps
+    ```
 
 ### Running Tests
-- Run all tests:
-  ```bash
-  npm test
-  ```
-- Run tests with UI mode:
-  ```bash
-  npm run test:ui
-  ```
-- View test report:
-  ```bash
-  npx playwright show-report
-  ```
+
+-   To run all tests:
+
+    ```bash
+    npm run test
+    ```
+
+-   To run tests in UI mode:
+
+    ```bash
+    npm run test:ui
+    ```
+
+-   To view the test report:
+
+    ```bash
+    npx playwright show-report
+    ```
 
 ### Test Coverage
-The test suite includes:
-- Authentication tests
-  - Login functionality
-  - "Use without authentication" option
-- Task Management tests
-  - Creating tasks
-  - Editing tasks
-  - Completing tasks
-  - Deleting tasks
 
-## AGiXT Integration
-The application integrates with AGiXT for enhanced task management capabilities:
+The test suite includes comprehensive tests for:
 
-1. Make sure AGiXT is running and accessible (default: http://localhost:7437)
-2. Log in using your AGiXT credentials
-3. The application will automatically connect to AGiXT for AI-powered features
+-   Authentication flows, including login and "Use without authentication" options.
+-   Task management functionalities such as creating, editing, completing, and deleting tasks.
 
-## Usage Examples
-- Use the search bar to quickly find tasks
-- Drag tasks between columns to update their status
-- Click on a task to view and edit details
-- Use keyboard shortcuts for faster navigation
-- Sort and filter tasks by various criteria
-- Add tags and assignees for better organization
+## Contributing
 
-## About
-A panel to help with focusing 😄
+We welcome contributions from the community! Whether it's adding new features, fixing bugs, or improving documentation, your help is greatly appreciated. Please refer to our contributing guidelines for more information on how to get involved.
 
-## Topics
-- Task
-- School
-- Motivation
-- Tasks
-- Work
-- Focus
-- Time-management
-- Hyperfocus
-- ADHD
-- Focusing
+## License
 
-## Technologies Used
-- TypeScript
-- JavaScript
-- Next.js
-- Docker
-- AGiXT Integration
-- Playwright for testing
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+-   Thanks to the AGiXT team for providing a powerful AI platform that enhances this task management panel.
+-   Special thanks to all contributors and users who help improve this tool with their feedback and support.
