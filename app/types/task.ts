@@ -12,12 +12,15 @@ export interface Checkpoint {
     }
 
 export interface Checkpoint {
-  id: string;
-  title: string;
-  completed: boolean;
-  createdAt: Date;
-  description?: string;
-}
+      id: string;
+      title: string;
+      completed: boolean;
+      createdAt: Date;
+      description?: string;
+      state?: {
+        [key: string]: any;
+      };
+    }
 
 checkpoints?: Checkpoint[];
 
@@ -39,6 +42,8 @@ export interface Checkpoint {
 
 export interface Task {
   id: string;
+  checkpoints?: Checkpoint[];
+  progress: number;
 import { Collaborator, ActivityLog, Comment } from './collaboration';
 
 import { Collaborator, ActivityLog, Comment } from './collaboration';
