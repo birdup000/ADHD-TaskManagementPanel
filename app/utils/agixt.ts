@@ -479,6 +479,75 @@ const subtasks = parseSubtasks(result);
     }
   };
 
+const createCheckpoint = async (
+    taskId: string,
+    checkpointData: any,
+    backendUrl: string,
+    authToken: string,
+  ) =>{
+    try {
+      const agixt = await initializeAGiXT(backendUrl, authToken);
+      if (!agixt) {
+        throw new Error("Failed to initialize AGiXT");
+      }
+
+      // Assuming AGiXT has a method to store custom data
+      await agixt.createTaskCheckpoint(taskId, checkpointData);
+
+      const checkpoint = {
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        title: "Checkpoint",
+        completed: false,
+        state: checkpointData,
+      };
+
+      console.log("Checkpoint created:", checkpoint);
+      return checkpoint;
+    } catch (error) {
+        if (error instanceof Error) {
+          console.error("Error creating checkpoint:", error.message);
+          alert('Failed to create checkpoint: ' + error.message);
+        } else {
+          console.error("Unknown error creating checkpoint:", error);
+          alert('An unknown error occurred while creating the checkpoint.');
+        }
+      return null;
+    }
+  };
+
+  const loadCheckpoint = async (
+    taskId: string,
+    checkpointId: string,
+    backendUrl: string,
+    authToken: string,
+  ) =>{
+    try {
+      const agixt = await initializeAGiXT(backendUrl, authToken);
+      if (!agixt) {
+        throw new Error("Failed to initialize AGiXT");
+      }
+
+      // Assuming AGiXT has a method to retrieve custom data
+      const checkpointData = await agixt.getTaskCheckpoint(
+        taskId,
+        checkpointId,
+      );
+
+      console.log("Checkpoint loaded:", checkpointData);
+      return checkpointData;
+    } catch (error) {
+        if (error instanceof Error) {
+          console.error("Error loading checkpoint:", error.message);
+          alert('Failed to load checkpoint: ' + error.message);
+        } else {
+          console.error("Unknown error loading checkpoint:", error);
+          alert('An unknown error occurred while loading the checkpoint.');
+        }
+      return null;
+    }
+  };
+
   const handleRunChain = async (
     task: any,
     selectedAgent: string,
