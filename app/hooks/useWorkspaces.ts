@@ -4,7 +4,8 @@ import { Workspace, Repository, WorkspaceSettings } from '../types/workspace';
 const STORAGE_KEY = 'workspaces';
 
 export const useWorkspaces = () => {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+const [workspaces, setWorkspaces] = useState&lt;Workspace[]&gt;([]);
+  const [groups, setGroups] = useState&lt;Group[]&gt;([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<string | null>(null);
 
 useEffect(() =>{
@@ -55,23 +56,90 @@ useEffect(() =>{
     }
   }, []);
 
+const getWorkspace = (workspaceId: string): Workspace | undefined =>{
+    return workspaces.find((w) =>w.id === workspaceId);
+  };
+
+  const getGroup = (workspaceId: string, groupId: string): Group | undefined =>{
+    const workspace = getWorkspace(workspaceId);
+    if (!workspace) return undefined;
+    return workspace.groups.find((g) =>g.id === groupId);
+  };
+
+  const createGroup = (workspaceId: string, groupName: string): Group =>{
+    const newGroup: Group = {
+      id: crypto.randomUUID(),
+      name: groupName,
+      repositoryIds: [],
+    };
+
+    setWorkspaces(
+      workspaces.map((workspace) =>workspace.id === workspaceId
+          ? { ...workspace, groups: [...workspace.groups, newGroup] }
+          : workspace
+      )
+    );
+
+    return newGroup;
+  };
+
+  const updateGroup = (
+    workspaceId: string,
+    groupId: string,
+    updates: Partial&lt;Group&gt;
+  ) =>{
+    setWorkspaces(
+      workspaces.map((workspace) =>workspace.id === workspaceId
+          ? {
+              ...workspace,
+              groups: workspace.groups.map((group) =>group.id === groupId ? { ...group, ...updates } : group
+              ),
+            }
+          : workspace
+      )
+    );
+  };
+
+  const deleteGroup = (workspaceId: string, groupId: string) =>{
+    setWorkspaces(
+      workspaces.map((workspace) =>workspace.id === workspaceId
+          ? {
+              ...workspace,
+              groups: workspace.groups.filter((group) =>group.id !== groupId),
+            }
+          : workspace
+      )
+    );
+  };
+
   useEffect(() => {
     // Save workspaces to localStorage when they change
     localStorage.setItem(STORAGE_KEY, JSON.stringify(workspaces));
   }, [workspaces]);
 
-const createWorkspace = (workspace: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt'>) =>{
+const createWorkspace = (
+    workspace: Omit&lt;Workspace, "id" | "createdAt" | "updatedAt" | "groups"&gt;
+  ) =>{
     const newWorkspace: Workspace = {
       ...workspace,
       id: crypto.randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date(),
+      groups: [],
       settings: {
         ...workspace.settings,
         lastAccessed: new Date(),
-        visibility: workspace.settings?.visibility || 'private'
+        visibility: workspace.settings?.visibility || "private",
       },
     };
+
+    const defaultGroup: Group = {
+      id: crypto.randomUUID(),
+      name: "Default Group",
+      repositoryIds: [],
+    };
+
+    newWorkspace.groups.push(defaultGroup);
 
     if (workspaces.length === 0) {
       newWorkspace.isDefault = true;
@@ -102,30 +170,62 @@ const deleteWorkspace = (id: string) =>{
     }
   };
 
-  const addRepository = (workspaceId: string, repository: Omit<Repository, 'id' | 'addedAt'>) => {
+const addRepository = (
+    workspaceId: string,
+    repository: Omit&lt;Repository, "id" | "addedAt"&gt;,
+    groupId?: string
+  ) =>{
+    const workspace = getWorkspace(workspaceId);
+    if (!workspace) {
+      throw new Error(`Workspace not found: ${workspaceId}`);
+    }
+
     const newRepository: Repository = {
       ...repository,
       id: crypto.randomUUID(),
       addedAt: new Date(),
+      groupId: groupId || workspace.groups[0]?.id, // Add to the specified group or the first group by default
     };
 
     updateWorkspace(workspaceId, {
-      repositories: [
-        ...(workspaces.find(w => w.id === workspaceId)?.repositories || []),
-        newRepository
-      ]
+      repositories: [...workspace.repositories, newRepository],
     });
+
+    // Add the repository ID to the group's repositoryIds array
+    if (groupId) {
+      updateGroup(workspaceId, groupId, {
+        repositoryIds: [
+          ...(workspace.groups.find((g) =>g.id === groupId)?.repositoryIds ||
+            []),
+          newRepository.id,
+        ],
+      });
+    }
 
     return newRepository;
   };
 
-  const removeRepository = (workspaceId: string, repositoryId: string) => {
-    const workspace = workspaces.find(w => w.id === workspaceId);
-    if (workspace) {
-      updateWorkspace(workspaceId, {
-        repositories: workspace.repositories.filter(r => r.id !== repositoryId)
-      });
+const removeRepository = (workspaceId: string, repositoryId: string) =>{
+    const workspace = getWorkspace(workspaceId);
+    if (!workspace) return;
+
+    const repository = workspace.repositories.find((r) =>r.id === repositoryId);
+    if (!repository) return;
+
+    // Remove the repository from its group
+    if (repository.groupId) {
+      const group = getGroup(workspaceId, repository.groupId);
+      if (group) {
+        updateGroup(workspaceId, repository.groupId, {
+          repositoryIds: group.repositoryIds.filter((id) =>id !== repositoryId),
+        });
+      }
     }
+
+    // Remove the repository from the workspace
+    updateWorkspace(workspaceId, {
+      repositories: workspace.repositories.filter((r) =>r.id !== repositoryId),
+    });
   };
 
   const updateRepositorySettings = (
@@ -152,7 +252,7 @@ const deleteWorkspace = (id: string) =>{
     }
   };
 
-  return {
+return {
     workspaces,
     currentWorkspace,
     setCurrentWorkspace,
@@ -163,5 +263,9 @@ const deleteWorkspace = (id: string) =>{
     removeRepository,
     updateRepositorySettings,
     updateWorkspaceSettings,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    getGroup,
   };
 };
