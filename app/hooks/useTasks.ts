@@ -92,24 +92,24 @@ export const useTasks = (storageConfig: StorageConfig) => {
       taskWithUpdates.checkpoints = updatedTask.checkpoints;
     }
 
-  const updateTask = (updatedTask: Task) => {
+const updateTask = (updatedTask: Task) =>{
     // Get the old version of the task
-    const oldTask = tasks.find(t => t.id === updatedTask.id);
+    const oldTask = tasks.find((t) =>t.id === updatedTask.id);
     if (!oldTask) return;
 
     // Track changes for activity log
     const changes = findChanges(oldTask, updatedTask);
-    const newActivityLogs: ActivityLog[] = changes.map(change => ({
+    const newActivityLogs: ActivityLog[] = changes.map((change) =>({
       id: Date.now().toString(),
       taskId: updatedTask.id,
-      userId: storageConfig.userId || 'anonymous',
-      action: 'updated',
+      userId: storageConfig.userId || "anonymous",
+      action: "updated",
       timestamp: new Date(),
       details: {
         field: change.field,
         oldValue: change.oldValue,
-        newValue: change.newValue
-      }
+        newValue: change.newValue,
+      },
     }));
 
     // Prepare the updated task with new version and activity logs
@@ -119,10 +119,17 @@ export const useTasks = (storageConfig: StorageConfig) => {
       activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
       lastViewed: {
         ...(oldTask.lastViewed || {}),
-        [storageConfig.userId || 'anonymous']: new Date()
-      }
+        [storageConfig.userId || "anonymous"]: new Date(),
+      },
     };
-    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+
+// Update checkpoints if present
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+    }
+
+    setTasks((prev) =>prev.map((t) =>(t.id === updatedTask.id ? taskWithUpdates : t))
+    );
   };
 
   const deleteTask = (taskId: string) => {
