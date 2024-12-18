@@ -3,9 +3,17 @@ export interface Workspace {
   name: string;
   description?: string;
   repositories: Repository[];
+  groups: Group[];
   settings: WorkspaceSettings;
   createdAt: Date;
   updatedAt: Date;
+  isDefault?: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  repositoryIds: string[]; // Array to store IDs of repositories in the group
 }
 
 export interface Repository {
@@ -16,6 +24,7 @@ export interface Repository {
   defaultBranch: string;
   settings?: RepositorySettings;
   addedAt: Date;
+  groupId?: string; // Optional group ID for the repository
 }
 
 export interface WorkspaceSettings {
