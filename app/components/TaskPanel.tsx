@@ -38,6 +38,15 @@ interface Agent {
   name: string;
 }
 
+"use client";
+
+      import React from 'react';
+      import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+      import ExportMenu from './ExportMenu';
+      import { TaskList as TaskListComponent } from './TaskList';
+      import { ThemeProvider } from '../hooks/useTheme';
+      import { useTasks } from '../hooks/useTasks';
+
 const TaskPanel: React.FC = () => {
   const handleTaskDelete = (task: Task) => {
     setTaskToDelete(task);
@@ -46,9 +55,9 @@ const TaskPanel: React.FC = () => {
 
   const handleBatchComplete = () => {
     const selectedTasks = tasks.filter(task => task.status !== 'done');
-    selectedTasks.forEach(task => {
-      updateTask({ ...task, status: 'done' });
-    });
+selectedTasks.forEach(task =>{
+          archiveTask(task.id);
+        });
   };
 
   const handleArchiveDone = () => {
@@ -76,13 +85,15 @@ const TaskPanel: React.FC = () => {
     tasks, 
     addTask, 
     updateTask, 
-    deleteTask, 
-    reorderTasks, 
-    importTasks, 
-    lists, 
-    addList, 
-    updateList, 
+deleteTask,
+    reorderTasks,
+    importTasks,
+    lists,
+    addList,
+    updateList,
     deleteList,
+    archiveTask,
+    archivedTasks,
     sync,
     isLoading
   } = useTasks(storageConfig);
