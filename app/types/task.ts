@@ -45,6 +45,9 @@ export interface Task {
 version: number; // For handling concurrent edits
       archivedAt?: Date;
 
+version: number; // For handling concurrent edits
+      archivedAt?: Date;
+
   version: number; // For handling concurrent edits
 }
 
