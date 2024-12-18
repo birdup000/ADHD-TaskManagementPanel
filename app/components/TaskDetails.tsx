@@ -136,7 +136,7 @@ const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(
             )}
           &lt;/div&gt;
 
-            {task.checkpoints?.length >0 &amp;&amp; (
+{task.checkpoints?.length >0 &amp;&amp; (
               &lt;div&gt;
                 &lt;h4 className="text-white font-medium"&gt;
                   Checkpoints:
@@ -176,8 +176,7 @@ const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(
           &lt;/div&gt;
 &lt;div&gt;
 // Handle loading the state by updating the task with the loaded state
-    onUpdateTask({ ...task, ...loadedState, checkpoints: task.checkpoints });
-          onUpdateTask({ ...task, ...loadedState });
+      onUpdateTask({ ...task, ...loadedState, checkpoints: task.checkpoints });
         } else {
           // Display an error message
           alert('Failed to load checkpoint');
