@@ -84,40 +84,98 @@ export const useTasks = (storageConfig: StorageConfig) => {
       console.error("Task must have a listId:", task);
       return;
     }
-    setTasks(prev => [...prev, task]);
+setTasks((prev) =>[...prev, task]);
+      };
+
+      const loadTaskCheckpoint = async (
+        taskId: string,
+        checkpointId: string
+      ) =>{
+        const task = tasks.find((t) =>t.id === taskId);
+        if (!task) {
+          throw new Error(`Task not found: ${taskId}`);
+        }
+
+        const checkpoint = task.checkpoints?.find((cp) =>cp.id === checkpointId);
+        if (!checkpoint) {
+          throw new Error(`Checkpoint not found: ${checkpointId}`);
+        }
+
+        if (checkpoint.state) {
+          // Assuming the state can be directly applied to update the task
+          updateTask({ ...task, ...checkpoint.state });
+        } else {
+          throw new Error("Checkpoint state is undefined");
+        }
+      };
+
+// Update checkpoints if present
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+const updateTask = (updatedTask: Task) =>{
+        // Get the old version of the task
+        const oldTask = tasks.find((t) =>t.id === updatedTask.id);
+        if (!oldTask) return;
+
+        // Track changes for activity log
+        const changes = findChanges(oldTask, updatedTask);
+        const newActivityLogs: ActivityLog[] = changes.map((change) =>({
+            id: Date.now().toString(),
+            taskId: updatedTask.id,
+            userId: storageConfig.userId || "anonymous",
+            action: "updated",
+            timestamp: new Date(),
+            details: {
+                field: change.field,
+                oldValue: change.oldValue,
+                newValue: change.newValue,
+            },
+        }));
+
+        // Prepare the updated task with new version and activity logs
+        const taskWithUpdates = {
+            ...updatedTask,
+            version: (oldTask.version || 0) + 1,
+            activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
+            lastViewed: {
+                ...(oldTask.lastViewed || {}),
+                [storageConfig.userId || "anonymous"]: new Date(),
+            },
+        };
+
+// Update checkpoints if present
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+    }
+
+    setTasks((prev) =>prev.map((t) =>(t.id === updatedTask.id ? taskWithUpdates : t))
+    );
   };
 
-  const updateTask = (updatedTask: Task) => {
-    // Get the old version of the task
-    const oldTask = tasks.find(t => t.id === updatedTask.id);
-    if (!oldTask) return;
+  const loadTaskCheckpoint = async (taskId: string, checkpointId: string) =>{
+    const task = tasks.find((t) =>t.id === taskId);
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
 
-    // Track changes for activity log
-    const changes = findChanges(oldTask, updatedTask);
-    const newActivityLogs: ActivityLog[] = changes.map(change => ({
-      id: Date.now().toString(),
-      taskId: updatedTask.id,
-      userId: storageConfig.userId || 'anonymous',
-      action: 'updated',
-      timestamp: new Date(),
-      details: {
-        field: change.field,
-        oldValue: change.oldValue,
-        newValue: change.newValue
-      }
-    }));
+    const checkpoint = task.checkpoints?.find((cp) =>cp.id === checkpointId);
+    if (!checkpoint) {
+      throw new Error(`Checkpoint not found: ${checkpointId}`);
+    }
 
-    // Prepare the updated task with new version and activity logs
-    const taskWithUpdates = {
-      ...updatedTask,
-      version: (oldTask.version || 0) + 1,
-      activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
-      lastViewed: {
-        ...(oldTask.lastViewed || {}),
-        [storageConfig.userId || 'anonymous']: new Date()
-      }
-    };
-    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    if (checkpoint.state) {
+      // Assuming the state can be directly applied to update the task
+      updateTask({ ...task, ...checkpoint.state });
+    } else {
+      throw new Error("Checkpoint state is undefined");
+    }
+  };
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+    }
+
+    setTasks((prev) =>prev.map((t) =>(t.id === updatedTask.id ? taskWithUpdates : t))
+    );
   };
 
   const deleteTask = (taskId: string) => {
