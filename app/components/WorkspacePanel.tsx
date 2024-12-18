@@ -103,7 +103,7 @@ if (newGroupName && currentWorkspace) {
   };
 
   const handleSaveGroupName = (groupId: string) =>{
-    if (currentWorkspace &amp;&amp; editedGroupName) {
+if (currentWorkspace &amp;&amp; editedGroupName) {
       updateGroup(currentWorkspace, groupId, { name: editedGroupName });
     }
     setIsRenamingGroup(false);
