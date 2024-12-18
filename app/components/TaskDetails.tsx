@@ -147,6 +147,37 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
           </div>
 
           <div>
+
+            {task.checkpoints?.length &gt; 0 &amp;&amp; (
+                          &lt;div&gt;
+                            &lt;h4 className="text-white font-medium"&gt;
+                              Checkpoints:
+                            &lt;/h4&gt;
+                            &lt;ul className="list-disc pl-5 mt-2"&gt;
+                              {task.checkpoints.map((checkpoint) =&gt; (
+                                &lt;li key={checkpoint.id} className="text-gray-300"&gt;
+                                  {checkpoint.createdAt.toLocaleString()}
+                                  {/* Add a button to load the checkpoint */}
+                                  &lt;button
+                                    onClick={() =&gt; {
+                                      const loadedState = loadCheckpoint(
+                                        task.id,
+                                        checkpoint.id,
+                                        localStorage.getItem('agixtapi') || '',
+                                        localStorage.getItem('agixtkey') || ''
+                                      );
+                                      // Handle loading the state
+                                    }}
+                                    className="ml-2 text-blue-500 hover:text-blue-700"
+                                  &gt;
+                                    Load
+                                  &lt;/button&gt;
+                                &lt;/li&gt;
+                              ))}
+                            &lt;/ul&gt;
+                          &lt;/div&gt;
+                        )}
+
             <h3 className="text-sm font-medium text-gray-400 mb-2">Checkpoints</h3>
             <div className="space-y-2">
               {task.checkpoints?.map((checkpoint) => (
