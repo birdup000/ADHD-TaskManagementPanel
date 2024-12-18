@@ -107,7 +107,9 @@ comments: Comment[];
     name: string;
   }
             description?: string;
-            state?: any;
+state?: {
+        [key: string]: any;
+      };
           }
 
       export interface TaskList {
