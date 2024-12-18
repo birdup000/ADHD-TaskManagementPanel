@@ -143,33 +143,14 @@ const updateTask = (updatedTask: Task) =>{
             },
         };
 
-        // Update checkpoints if present
-        if (updatedTask.checkpoints) {
-            taskWithUpdates.checkpoints = updatedTask.checkpoints;
-        }
+// Update checkpoints if present
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+    }
 
-        setTasks((prev) =>prev.map((t) =>(t.id === updatedTask.id ? taskWithUpdates : t))
-        );
-    };
-
-    const loadTaskCheckpoint = async (taskId: string, checkpointId: string) =>{
-        const task = tasks.find((t) =>t.id === taskId);
-        if (!task) {
-            throw new Error(`Task not found: ${taskId}`);
-        }
-
-        const checkpoint = task.checkpoints?.find((cp) =>cp.id === checkpointId);
-        if (!checkpoint) {
-            throw new Error(`Checkpoint not found: ${checkpointId}`);
-        }
-
-        if (checkpoint.state) {
-            // Assuming the state can be directly applied to update the task
-            updateTask({ ...task, ...checkpoint.state });
-        } else {
-            throw new Error("Checkpoint state is undefined");
-        }
-    };
+    setTasks((prev) =>prev.map((t) =>(t.id === updatedTask.id ? taskWithUpdates : t))
+    );
+  };
 
   const loadTaskCheckpoint = async (taskId: string, checkpointId: string) =>{
     const task = tasks.find((t) =>t.id === taskId);
