@@ -1,6 +1,17 @@
 import { Collaborator, ActivityLog, Comment } from './collaboration';
 
 export interface Checkpoint {
+      id: string;
+      title: string;
+      completed: boolean;
+      createdAt: Date;
+      description?: string;
+      state?: {
+        [key: string]: any;
+      };
+    }
+
+export interface Checkpoint {
   id: string;
   title: string;
   completed: boolean;
@@ -9,6 +20,10 @@ export interface Checkpoint {
 }
 
 checkpoints?: Checkpoint[];
+
+    checkpoints?: Checkpoint[];
+        progress: number;
+
       progress: number;
 
 export interface Task {
