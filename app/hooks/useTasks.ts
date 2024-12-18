@@ -16,6 +16,20 @@ import { StorageConfig } from '../types/storage';
       import { createStorageManager } from '../utils/storage';
       import { StorageConfig } from '../types/storage';
 
+    "use client";
+
+          import { useState, useEffect } from 'react';
+          import { Task, TaskList } from '../types/task';
+          import { ActivityLog } from '../types/collaboration';
+          import { findChanges, mergeTaskChanges } from '../utils/collaboration';
+          import { createStorageManager } from '../utils/storage';
+          import { StorageConfig } from '../types/storage';
+
+          export const useTasks = (storageConfig: StorageConfig) =&gt; {
+            const [tasks, setTasks] = useState&lt;Task[]&gt;([]);
+            const [archivedTasks, setArchivedTasks] = useState&lt;Task[]&gt;([]);
+            const [lists, setLists] = useState&lt;TaskList[]&gt;([]);
+
       export const useTasks = (storageConfig: StorageConfig) =>{
         const [tasks, setTasks] = useState<Task[]>([]);
         const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
@@ -148,6 +162,20 @@ const archiveTask = (taskId: string) =>{
         });
       };
 
+const archiveTask = (taskId: string) =&gt; {
+        setTasks(prevTasks =&gt; {
+          const taskToArchive = prevTasks.find(t =&gt; t.id === taskId);
+          if (!taskToArchive) {
+            console.error('Task to archive not found');
+            return prevTasks;
+          }
+
+          const archivedTask = { ...taskToArchive, archivedAt: new Date() };
+          setArchivedTasks(prevArchived =&gt; [...prevArchived, archivedTask]);
+          return prevTasks.filter(t =&gt; t.id !== taskId);
+        });
+      };
+
   const deleteTask = (taskId: string) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
   };
@@ -192,6 +220,10 @@ const archiveTask = (taskId: string) =>{
 
     archiveTask,
           archivedTasks,
+
+    archiveTask,
+          archivedTasks,
+          sync,
 
     sync,
     isLoading,
