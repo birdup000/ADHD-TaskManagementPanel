@@ -6,6 +6,7 @@ export interface Workspace {
   settings: WorkspaceSettings;
   createdAt: Date;
   updatedAt: Date;
+  isDefault?: boolean;
 }
 
 export interface Repository {
