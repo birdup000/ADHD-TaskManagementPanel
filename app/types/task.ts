@@ -26,6 +26,17 @@ checkpoints?: Checkpoint[];
 
       progress: number;
 
+export interface Checkpoint {
+    id: string;
+    title: string;
+    completed: boolean;
+    createdAt: Date;
+    description?: string;
+    state?: {
+      [key: string]: any;
+    };
+  }
+
 export interface Task {
   id: string;
 import { Collaborator, ActivityLog, Comment } from './collaboration';
@@ -77,20 +88,19 @@ import { Collaborator, ActivityLog, Comment } from './collaboration';
     owner: string;
     collaborators: Collaborator[];
     activityLog: ActivityLog[];
-    comments: Comment[];
+comments: Comment[];
     lastViewed?: {
       [userId: string]: Date;
     };
-  checkpoints?: Checkpoint[];
-        progress: number;
-        version: number; // For handling concurrent edits
-      }
+    checkpoints?: Checkpoint[];
+    progress: number;
+    version: number; // For handling concurrent edits
+  }
 
-    export interface Checkpoint {
-            id: string;
-            title: string;
-            completed: boolean;
-            createdAt: Date;
+  export interface TaskList {
+    id: string;
+    name: string;
+  }
             description?: string;
             state?: any;
           }
