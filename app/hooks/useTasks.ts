@@ -121,6 +121,40 @@ const updateTask = (updatedTask: Task) =>{
           },
         };
 
+// Update checkpoints if present
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+const updateTask = (updatedTask: Task) =>{
+        // Get the old version of the task
+        const oldTask = tasks.find((t) =>t.id === updatedTask.id);
+        if (!oldTask) return;
+
+        // Track changes for activity log
+        const changes = findChanges(oldTask, updatedTask);
+        const newActivityLogs: ActivityLog[] = changes.map((change) =>({
+          id: Date.now().toString(),
+          taskId: updatedTask.id,
+          userId: storageConfig.userId || "anonymous",
+          action: "updated",
+          timestamp: new Date(),
+          details: {
+            field: change.field,
+            oldValue: change.oldValue,
+            newValue: change.newValue,
+          },
+        }));
+
+        // Prepare the updated task with new version and activity logs
+        const taskWithUpdates = {
+          ...updatedTask,
+          version: (oldTask.version || 0) + 1,
+          activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
+          lastViewed: {
+            ...(oldTask.lastViewed || {}),
+            [storageConfig.userId || "anonymous"]: new Date(),
+          },
+        };
+
     // Update checkpoints if present
         if (updatedTask.checkpoints) {
           taskWithUpdates.checkpoints = updatedTask.checkpoints;
@@ -129,6 +163,13 @@ const updateTask = (updatedTask: Task) =>{
         setTasks((prev) =>prev.map((t) =>(t.id === updatedTask.id ? taskWithUpdates : t))
         );
       };
+    if (updatedTask.checkpoints) {
+      taskWithUpdates.checkpoints = updatedTask.checkpoints;
+    }
+
+    setTasks((prev) =>prev.map((t) =>(t.id === updatedTask.id ? taskWithUpdates : t))
+    );
+  };
     if (updatedTask.checkpoints) {
       taskWithUpdates.checkpoints = updatedTask.checkpoints;
     }
