@@ -8,6 +8,9 @@ export interface Checkpoint {
   description?: string;
 }
 
+checkpoints?: Checkpoint[];
+      progress: number;
+
 export interface Task {
   id: string;
 import { Collaborator, ActivityLog, Comment } from './collaboration';
@@ -67,6 +70,15 @@ import { Collaborator, ActivityLog, Comment } from './collaboration';
         progress: number;
         version: number; // For handling concurrent edits
       }
+
+    export interface Checkpoint {
+            id: string;
+            title: string;
+            completed: boolean;
+            createdAt: Date;
+            description?: string;
+            state?: any;
+          }
 
       export interface TaskList {
         id: string;
