@@ -72,24 +72,39 @@ const handleRunChain = async (task: any, selectedAgent: string, backendUrl: stri
       const result = await agixt.runChain(
         'Task Management',
         task.text,
-        selectedAgent,
+selectedAgent,
         false,
         1,
         {
           conversation_name: conversationName,
-        }
+        },
       );
 
-      const updatedTask = { ...task, status: 'Running' as const };
+      // Create a checkpoint after each step in the chain
+      const checkpoint = await createCheckpoint(
+        task.id,
+        {
+          chainStep: result, // Assuming result contains relevant data
+          agentState: {}, // Replace with actual agent state if available
+        },
+        backendUrl,
+        authToken,
+      );
+
+      if (checkpoint) {
+        task.checkpoints = [...(task.checkpoints || []), checkpoint];
+      }
+
+      const updatedTask = { ...task, status: "Running" as const };
       return updatedTask;
     } catch (error) {
-      console.error('Error running chain:', error);
-      const updatedTask = { ...task, status: 'Failed' as const };
+      console.error("Error running chain:", error);
+      const updatedTask = { ...task, status: "Failed" as const };
       return updatedTask;
     }
   };
 
-  const updateConversationLog = (
+  export { initializeAGiXT, getAgents, handleGenerateSubtasks, handleRunChain, updateConversationLog, parseSubtasks, createCheckpoint, loadCheckpoint };
     task: Task,
     role: string,
     message: string
@@ -216,6 +231,61 @@ const getAgents = async (backendUrl: string, authToken: string) => {
         updatedTask.checkpoints = [initialCheckpoint];
       }
 
+const createCheckpoint = async (
+    taskId: string,
+    checkpointData: any,
+    backendUrl: string,
+    authToken: string,
+  ) =>{
+    try {
+      const agixt = await initializeAGiXT(backendUrl, authToken);
+      if (!agixt) {
+        throw new Error("Failed to initialize AGiXT");
+      }
+
+      // Assuming AGiXT has a method to store custom data
+      await agixt.createTaskCheckpoint(taskId, checkpointData);
+
+      const checkpoint = {
+        id: crypto.randomUUID(),
+        createdAt: new Date(),
+        state: checkpointData,
+      };
+
+      console.log("Checkpoint created:", checkpoint);
+      return checkpoint;
+    } catch (error) {
+      console.error("Error creating checkpoint:", error);
+      return null;
+    }
+  };
+
+  const loadCheckpoint = async (
+    taskId: string,
+    checkpointId: string,
+    backendUrl: string,
+    authToken: string,
+  ) =>{
+    try {
+      const agixt = await initializeAGiXT(backendUrl, authToken);
+      if (!agixt) {
+        throw new Error("Failed to initialize AGiXT");
+      }
+
+      // Assuming AGiXT has a method to retrieve custom data
+      const checkpointData = await agixt.getTaskCheckpoint(
+        taskId,
+        checkpointId,
+      );
+
+      console.log("Checkpoint loaded:", checkpointData);
+      return checkpointData;
+    } catch (error) {
+      console.error("Error loading checkpoint:", error);
+      return null;
+    }
+  };
+
   const handleGenerateSubtasks = async (task: any, selectedAgent: string, backendUrl: string, authToken: string) => {
     if (!selectedAgent) {
       return;
@@ -285,6 +355,18 @@ const result = await agixt.chat(
         authToken,
       );
 
+      const updatedTask = {
+        ...task,
+        subtasks: subtasks,
+        status: 'in-progress' as const,
+        checkpoints: initialCheckpoint ? [initialCheckpoint] : [],
+      };
+
+      return updatedTask;
+    } catch (error) {
+      console.error("Error generating subtasks:", error);
+    }
+  };
       const updatedTask = {
         ...task,
         subtasks: subtasks,
