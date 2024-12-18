@@ -74,6 +74,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
         timestamp: new Date(),
       }],
       comments: [],
+
+    progress: 0,
+
       version: 1,
     });
   };
