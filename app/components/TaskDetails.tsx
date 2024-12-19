@@ -136,7 +136,7 @@ const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(
             )}
           &lt;/div&gt;
 
-{task.checkpoints?.length >0 &amp;&amp; (
+task.checkpoints?.length >0 &amp;&amp; (
               &lt;div&gt;
                 &lt;h4 className="text-white font-medium"&gt;
                   Checkpoints:
