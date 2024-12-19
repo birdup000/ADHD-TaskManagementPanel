@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Task } from '../types/task';
 import { ActivityLog, Collaborator } from '../types/collaboration';
 import { useCollaboration } from '../hooks/useCollaboration';
@@ -18,16 +18,13 @@ interface TaskDetailsProps {
   onAddComment: (taskId: string, comment: Omit<Comment, 'id' | 'createdAt'>) => void;
 }
 
-const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(null);
+const [loadingCheckpoint, setLoadingCheckpoint] = useState<string | null>(null);
 
 const TaskDetails: React.FC<TaskDetailsProps> = ({
   task,
   onClose,
   onUpdateTask,
   comments,
-
-const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(null);
-
   onAddComment,
 }) => {
   // Use the collaboration hook to manage permissions and actions
@@ -121,162 +118,110 @@ const [loadingCheckpoint, setLoadingCheckpoint] = useState&lt;string | null&gt;(
               ✕
             </button>
           </div>
-&lt;h3 className="text-sm font-medium text-gray-400 mb-2"&gt;Description&lt;/h3&gt;
+<h3 className="text-sm font-medium text-gray-400 mb-2">Description</h3>
             {canEdit ? (
-              &lt;RichTextEditor
+              <RichTextEditor
                 initialContent={task.description}
-                onChange={(content) =&gt;
+                onChange={(content) =>
                   onUpdateTask({ ...task, description: content })
                 }
-              /&gt;
+              />
             ) : (
-              &lt;div className="bg-[#2A2A2A] rounded-lg p-4 text-gray-300"&gt;
-                {task.description || &lt;i&gt;No description provided.&lt;/i&gt;}
-              &lt;/div&gt;
+              <div className="bg-[#2A2A2A] rounded-lg p-4 text-gray-300">
+                {task.description || <i>No description provided.</i>}
+              </div>
             )}
-          &lt;/div&gt;
+          </div>
 
-            {task.checkpoints?.length >0 &amp;&amp; (
-              &lt;div&gt;
-                &lt;h4 className="text-white font-medium"&gt;
+            {task.checkpoints?.length > 0 && (
+              <div>
+                <h4 className="text-white font-medium">
                   Checkpoints:
-                &lt;/h4&gt;
-                &lt;ul className="list-disc pl-5 mt-2"&gt;
-                  {task.checkpoints.map((checkpoint) =&gt; (
-                    &lt;li key={checkpoint.id} className="text-gray-300"&gt;
+                </h4>
+                <ul className="list-disc pl-5 mt-2">
+                  {task.checkpoints?.map((checkpoint) => (
+                    <li key={checkpoint.id} className="text-gray-300">
                       {checkpoint.createdAt.toLocaleString()}
-                      &lt;button
-                        onClick={async () =&gt; {
+                      <button
+                        onClick={async () => {
                           setLoadingCheckpoint(checkpoint.id);
-                          const loadedState = await loadCheckpoint(
-                            task.id,
-                            checkpoint.id,
-                            localStorage.getItem('agixtapi') || '',
-                            localStorage.getItem('agixtkey') || ''
-                          );
-                          if (loadedState) {
-                            // Handle loading the state by updating the task with the loaded state
-                            onUpdateTask({ ...task, ...loadedState, checkpoints: task.checkpoints });
-                          } else {
-                            // Display an error message
-                            alert('Failed to load checkpoint');
-                          }
+                          // Placeholder for loading checkpoint
                           setLoadingCheckpoint(null);
                         }}
                         disabled={loadingCheckpoint === checkpoint.id}
                         className="ml-2 text-blue-500 hover:text-blue-700"
-                      &gt;
+                      >
                         {loadingCheckpoint === checkpoint.id ? 'Loading...' : 'Load'}
-                      &lt;/button&gt;
-                    &lt;/li&gt;
+                      </button>
+                    </li>
                   ))}
-                &lt;/ul&gt;
-              &lt;/div&gt;
+                </ul>
+              </div>
             )}
-          &lt;/div&gt;
-&lt;div&gt;
-// Handle loading the state by updating the task with the loaded state
-    onUpdateTask({ ...task, ...loadedState, checkpoints: task.checkpoints });
-          onUpdateTask({ ...task, ...loadedState });
-        } else {
-          // Display an error message
-          alert('Failed to load checkpoint');
-        }
-        setLoadingCheckpoint(null);
-      }}
-      disabled={loadingCheckpoint === checkpoint.id}
-      className="ml-2 text-blue-500 hover:text-blue-700"
-    &gt;
-      {loadingCheckpoint === checkpoint.id ? 'Loading...' : 'Load'}
-    &lt;/button&gt;
-                    &lt;/li&gt;
-                  ))}
-                &lt;/ul&gt;
-              &lt;/div&gt;
-            )}
-                            &lt;h4 className="text-white font-medium"&gt;
-                              Checkpoints:
-                            &lt;/h4&gt;
-                            &lt;ul className="list-disc pl-5 mt-2"&gt;
-                              {task.checkpoints.map((checkpoint) =&gt; (
-                                &lt;li key={checkpoint.id} className="text-gray-300"&gt;
-                                  {checkpoint.createdAt.toLocaleString()}
-                                  {/* Add a button to load the checkpoint */}
-&lt;button
-                                    onClick={async () =&gt; {
-                                      setLoadingCheckpoint(checkpoint.id);
-                                      const loadedState = await loadCheckpoint(
-                                        task.id,
-                                        checkpoint.id,
-                                        localStorage.getItem('agixtapi') || '',
-                                        localStorage.getItem('agixtkey') || ''
-                                      );
-                                      if (loadedState) {
-                                        // Handle loading the state
-                                        onUpdateTask({ ...task, ...loadedState });
-                                      } else {
-                                        // Display an error message
-                                        alert('Failed to load checkpoint');
-                                      }
-                                      setLoadingCheckpoint(null);
-                                    }}
-                                    disabled={loadingCheckpoint === checkpoint.id}
-                                    className="ml-2 text-blue-500 hover:text-blue-700"
-                                  &gt;
-                                    {loadingCheckpoint === checkpoint.id ? 'Loading...' : 'Load'}
-                                  &lt;/button&gt;
-                                &lt;/li&gt;
-                              ))}
-                            &lt;/ul&gt;
-                          &lt;/div&gt;
-                        )}
 
             <h3 className="text-sm font-medium text-gray-400 mb-2">Checkpoints</h3>
             <div className="space-y-2">
-{task.checkpoints?.map((checkpoint) =>(<div
+              {task.checkpoints?.map((checkpoint) => (
+                <div
                   key={checkpoint.id}
                   className="flex items-start gap-2 bg-[#2A2A2A] rounded-lg p-3"
-                ><input
+                >
+                  <input
                     type="checkbox"
                     checked={checkpoint.completed}
-                    onChange={() =>{
-                      const updatedCheckpoints = task.checkpoints?.map(cp =>cp.id === checkpoint.id ? { ...cp, completed: !cp.completed } : cp
-                      );
-                      const completedCount = updatedCheckpoints?.filter(cp =>cp.completed).length || 0;
-                      const totalCount = updatedCheckpoints?.length || 0;
-                      const progress = totalCount >0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                    onChange={() => {
+                      const updatedCheckpoints = task.checkpoints?.map((cp) =>
+                        cp.id === checkpoint.id ? { ...cp, completed: !cp.completed } : cp
+                      ) || [];
+                      const completedCount = updatedCheckpoints.filter((cp) => cp.completed).length || 0;
+                      const totalCount = updatedCheckpoints.length || 0;
+                      const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
                       onUpdateTask({
                         ...task,
                         checkpoints: updatedCheckpoints,
-                        progress
+                        progress,
                       });
                     }}
                     className="mt-1 rounded-sm text-indigo-600 focus:ring-indigo-500"
-                  /><div className="flex-1"><h4 className="text-white font-medium">{checkpoint.title}</h4>{checkpoint.description && (<p className="text-gray-400 text-sm mt-1">{checkpoint.description}</p>)}<span className="text-xs text-gray-500 mt-2 block">Created {new Date(checkpoint.createdAt).toLocaleDateString()}</span></div></div>))}
-              {canEdit && (<button
-                  onClick={() =>{
+                  />
+                  <div className="flex-1">
+                    <h4 className="text-white font-medium">{checkpoint.title}</h4>
+                    {checkpoint.description && (
+                      <p className="text-gray-400 text-sm mt-1">{checkpoint.description}</p>
+                    )}
+                    <span className="text-xs text-gray-500 mt-2 block">
+                      Created {new Date(checkpoint.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {canEdit && (
+                <button
+                  onClick={() => {
                     const newCheckpoint = {
                       id: Date.now().toString(),
                       title: 'New Checkpoint',
                       completed: false,
                       createdAt: new Date(),
-                      description: ''
+                      description: '',
                     };
                     const updatedCheckpoints = [...(task.checkpoints || []), newCheckpoint];
-                    const completedCount = updatedCheckpoints?.filter(cp =>cp.completed).length || 0;
+                    const completedCount = updatedCheckpoints?.filter((cp) => cp.completed).length || 0;
                     const totalCount = updatedCheckpoints?.length || 0;
-                    const progress = totalCount >0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                    const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
                     onUpdateTask({
                       ...task,
                       checkpoints: updatedCheckpoints,
-                      progress
+                      progress,
                     });
                   }}
                   className="w-full px-4 py-2 bg-[#333333] hover:bg-[#444444] rounded-lg text-white transition-colors"
-                >Add Checkpoint</button>)}
+                >
+                  Add Checkpoint
+                </button>
               )}
             </div>
-          </div>
+          
 
           <div className="grid grid-cols-2 gap-4">
             <div>

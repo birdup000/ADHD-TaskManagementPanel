@@ -19,7 +19,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
   if (!task) {
     return null;
   }
-  const { title, description, priority, status, dueDate, tags = [], assignees = [], subtasks = [], createdAt, updatedAt, listId } = task;
+  const { title, description, priority, status, dueDate, tags = [], assignees = [], subtasks = [], createdAt, updatedAt, listId, progress } = task;
   const isOverdue = dueDate && new Date(dueDate) < new Date() && status !== 'done';
 
   const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -197,72 +197,61 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
               ))}
             </div>
           )}
-          {subtasks && subtasks.length > 0 && (
-{task.progress &gt;= 0 &amp;&amp; (
-            &lt;div className="mb-2"&gt;
-{task.progress >= 0 && (<div className="mb-2"><div className="flex items-center gap-2 text-xs text-gray-400 mb-1"><span>Progress:</span><div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden"><div
+          {progress >= 0 && (
+            <div className="mb-2">
+              <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                <span>Progress:</span>
+                <div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div
                     className="h-full bg-blue-600 transition-all"
-                    style={{ width: `${task.progress}%` }}
-                  /></div><span>{task.progress}%</span></div></div>)}
-          {subtasks && subtasks.length >0 && (<div className="mb-2"><div className="flex items-center gap-2 text-xs text-gray-400 mb-1"><span>Subtasks:</span><div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden"><div
-                    className="h-full bg-blue-600 transition-all"
-                    style={{
-                      width: `${(subtasks.filter((s: { completed: boolean }) =>s.completed).length /
-{task.progress >= 0 &amp;&amp; (
-            &lt;div className="mb-2"&gt;
-              &lt;div className="flex items-center gap-2 text-xs text-gray-400 mb-1"&gt;
-                &lt;span&gt;Progress:&lt;/span&gt;
-                &lt;div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden"&gt;
-                  &lt;div
-                    className="h-full bg-blue-600 transition-all"
-                    style={{ width: `${task.progress}%` }}
-                  /&gt;
-                &lt;/div&gt;
-                &lt;span&gt;{task.progress}%&lt;/span&gt;
-              &lt;/div&gt;
-            &lt;/div&gt;
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <span>{progress}%</span>
+              </div>
+            </div>
           )}
-          {subtasks &amp;&amp; subtasks.length &gt; 0 &amp;&amp; (
-            &lt;div className="mb-2"&gt;
-              &lt;div className="flex items-center gap-2 text-xs text-gray-400 mb-1"&gt;
-                &lt;span&gt;Subtasks:&lt;/span&gt;
-                &lt;div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden"&gt;
-                  &lt;div
+          {subtasks && subtasks.length > 0 && (
+            <div className="mb-2">
+              <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                <span>Subtasks:</span>
+                <div className="w-32 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div
                     className="h-full bg-blue-600 transition-all"
                     style={{
                       width: `${
-                        (subtasks.filter((s: { completed: boolean }) =&gt; s.completed)
+                        (subtasks.filter((s: { completed: boolean }) => s.completed)
                           .length /
                           subtasks.length) *
                         100
                       }%`,
                     }}
-                  /&gt;
-                &lt;/div&gt;
-                &lt;span&gt;
-                  {subtasks.filter((s: { completed: boolean }) =&gt; s.completed).length}
+                  />
+                </div>
+                <span>
+                  {subtasks.filter((s: { completed: boolean }) => s.completed).length}
                   /{subtasks.length}
-                &lt;/span&gt;
-              &lt;/div&gt;
-              &lt;div className="flex flex-col gap-1 mt-1"&gt;
-                {subtasks.map((st, index) =&gt; (
-                  &lt;div
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 mt-1">
+                {subtasks.map((st, index) => (
+                  <div
                     key={index}
                     className="px-2 py-1 bg-[#444444] rounded-md text-sm flex items-center justify-between"
-                  &gt;
-                    &lt;div className="flex items-center gap-2"&gt;
-                      &lt;input
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
                         type="checkbox"
                         checked={st.completed}
-                        onChange={() =&gt; toggleSubtask(index)}
+                        onChange={() => toggleSubtask(index)}
                         className="rounded-sm text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                      /&gt;
-                      &lt;span&gt;{st.title}&lt;/span&gt;
-                    &lt;/div&gt;
-                  &lt;/div&gt;
+                      />
+                      <span>{st.title}</span>
+                    </div>
+                  </div>
                 ))}
-              &lt;/div&gt;
-            &lt;/div&gt;
+              </div>
+            </div>
           )}
           {assignees.length > 0 && (
             <div className="flex -space-x-2">
