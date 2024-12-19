@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Workspace, Repository, WorkspaceSettings } from '../types/workspace';
+import { Workspace, Repository, WorkspaceSettings, Group } from '../types/workspace';
 
 const STORAGE_KEY = 'workspaces';
 
 export const useWorkspaces = () => {
-const [workspaces, setWorkspaces] = useState&lt;Workspace[]&gt;([]);
-  const [groups, setGroups] = useState&lt;Group[]&gt;([]);
+const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<string | null>(null);
 
 useEffect(() =>{
@@ -31,6 +31,7 @@ useEffect(() =>{
           createdAt: new Date(),
           updatedAt: new Date(),
           isDefault: true,
+          groups: [],
         };
         setWorkspaces([defaultWorkspace]);
         setCurrentWorkspace(defaultWorkspace.id);
@@ -50,6 +51,7 @@ useEffect(() =>{
         createdAt: new Date(),
         updatedAt: new Date(),
         isDefault: true,
+        groups: [],
       };
       setWorkspaces([defaultWorkspace]);
       setCurrentWorkspace(defaultWorkspace.id);
@@ -86,7 +88,7 @@ const getWorkspace = (workspaceId: string): Workspace | undefined =>{
   const updateGroup = (
     workspaceId: string,
     groupId: string,
-    updates: Partial&lt;Group&gt;
+    updates: Partial<Group>
   ) =>{
     setWorkspaces(
       workspaces.map((workspace) =>workspace.id === workspaceId
@@ -118,7 +120,7 @@ const getWorkspace = (workspaceId: string): Workspace | undefined =>{
   }, [workspaces]);
 
 const createWorkspace = (
-    workspace: Omit&lt;Workspace, "id" | "createdAt" | "updatedAt" | "groups"&gt;
+    workspace: Omit<Workspace, "id" | "createdAt" | "updatedAt" | "groups">
   ) =>{
     const newWorkspace: Workspace = {
       ...workspace,
@@ -172,7 +174,7 @@ const deleteWorkspace = (id: string) =>{
 
 const addRepository = (
     workspaceId: string,
-    repository: Omit&lt;Repository, "id" | "addedAt"&gt;,
+    repository: Omit<Repository, "id" | "addedAt">,
     groupId?: string
   ) =>{
     const workspace = getWorkspace(workspaceId);
