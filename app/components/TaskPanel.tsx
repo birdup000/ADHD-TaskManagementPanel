@@ -21,8 +21,9 @@ import AIAssistant from './AIAssistant';
 import ShortcutsDialog from './ShortcutsDialog';
 import { Task, TaskList } from '../types/task';
 import { StorageConfig } from '../types/storage';
+import CommentSection from './CommentSection';
 import { Comment } from './CommentSection';
-import { colors } from '../../tailwind.config';
+import { colors } from '../..//tailwind.config';
 import TaskStats from './TaskStats';
 import NotesEditor from './NotesEditor';
 import { WorkspacePanel } from './WorkspacePanel';
@@ -98,7 +99,7 @@ const TaskPanel: React.FC = () => {
     filteredAndSortedTasks
   } = useSearch(tasks);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
-  const [comments, setComments] = React.useState<Record<string, Comment[]>>({});
+  const [comments, setComments] = React.useState<Record<string, CommentSection.Comment[]>>({});
   const [currentView, setCurrentView] = React.useState<ViewType>('board');
   const [theme, setTheme] = React.useState<ThemeType>(colors.dark);
   const [showConfirmDelete, setShowConfirmDelete] = React.useState(false);
@@ -466,8 +467,8 @@ const TaskPanel: React.FC = () => {
                     <div className="relative group">
                       <button
                         onClick={async () => {
+                          setIsSyncing(true);
                           try {
-                            setIsSyncing(true);
                             const userId = storageConfig.userId || 'anonymous';
                             setStorageConfig(prev => ({ ...prev, userId }));
                             await sync();
@@ -596,7 +597,8 @@ const TaskPanel: React.FC = () => {
                               collaborators: [],
                               activityLog: [],
                               comments: [],
-                              version: 1
+                              version: 1,
+                              progress: 0
                             };
                             return task;
                           });
@@ -770,7 +772,8 @@ const TaskPanel: React.FC = () => {
                             collaborators: [],
                             activityLog: [],
                             comments: [],
-                            version: 1
+                            version: 1,
+                            progress: 0
                           };
                           addTask(newTask);
                           
@@ -814,7 +817,6 @@ const TaskPanel: React.FC = () => {
                   )}
                 </div>
                 <select
-                  value={currentLayout}
                   onChange={(e) => setCurrentLayout(e.target.value as LayoutType)}
                   className="px-3 py-1.5 rounded text-sm bg-[#2A2A2A] text-white hover:bg-[#333333] transition-colors"
                 >

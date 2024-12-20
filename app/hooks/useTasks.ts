@@ -72,10 +72,11 @@ export const useTasks = (storageConfig: StorageConfig) => {
         ]);
       } catch (err) {
         console.error('Error syncing data:', err);
+        setError(err instanceof Error ? err : new Error('Failed to sync data'));
       }
     };
 
-    if (!isLoading) {
+    if (!isLoading && storage) {
       syncData();
     }
   }, [tasks, lists, storage, isLoading]);
@@ -85,7 +86,7 @@ export const useTasks = (storageConfig: StorageConfig) => {
       console.error("Task must have a listId:", task);
       return;
     }
-setTasks((prev) =>[...prev, task]);
+setTasks((prev) => [...prev, task]);
       };
 
       const loadTaskCheckpoint = async (

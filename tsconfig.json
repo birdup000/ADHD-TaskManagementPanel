@@ -19,7 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "*": ["./*"]
     },
     "types": ["node", "@playwright/test"]
   },

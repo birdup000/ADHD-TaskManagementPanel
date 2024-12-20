@@ -21,14 +21,14 @@ export const login = async (username: string, password: string): Promise<AuthRes
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         username,
         password
       } as LoginRequest),
     });
 
     const data = await response.json();
-    
+
     if (response.ok) {
       return {
         success: true,
@@ -43,6 +43,7 @@ export const login = async (username: string, password: string): Promise<AuthRes
       message: data.detail || 'Login failed',
     };
   } catch (error) {
+    console.error("Login error:", error);
     return {
       success: false,
       message: 'An error occurred during login.',
@@ -54,21 +55,38 @@ export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [username, setUsername] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const storedToken = localStorage.getItem('authToken');
     const storedUsername = localStorage.getItem('username');
-    setIsAuthenticated(!!token);
+    setIsAuthenticated(!!storedToken);
     setUsername(storedUsername);
+    setToken(storedToken);
     setLoading(false);
   }, []);
+
+  const loginUser = async (username: string, password: string) => {
+    setLoading(true);
+    const response = await login(username, password);
+    if (response.success && response.token) {
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('username', username);
+      setIsAuthenticated(true);
+      setUsername(username);
+      setToken(response.token);
+    }
+    setLoading(false);
+    return response;
+  };
 
   const logout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('username');
     setIsAuthenticated(false);
     setUsername(null);
+    setToken(null);
   };
 
-  return { isAuthenticated, loading, logout, username };
+  return { isAuthenticated, loading, logout, username, token, loginUser };
 };

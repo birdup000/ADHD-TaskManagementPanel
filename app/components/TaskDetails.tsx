@@ -17,16 +17,14 @@ interface TaskDetailsProps {
   comments: Comment[];
   onAddComment: (taskId: string, comment: Omit<Comment, 'id' | 'createdAt'>) => void;
 }
-
-const [loadingCheckpoint, setLoadingCheckpoint] = useState<string | null>(null);
-
 const TaskDetails: React.FC<TaskDetailsProps> = ({
-  task,
-  onClose,
-  onUpdateTask,
+task,
+onClose,
+onUpdateTask,
   comments,
   onAddComment,
 }) => {
+  const [loadingCheckpoint, setLoadingCheckpoint] = useState<string | null>(null);
   // Use the collaboration hook to manage permissions and actions
   const {
     isCollaborator,
@@ -133,7 +131,7 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
             )}
           </div>
 
-            {task.checkpoints?.length > 0 && (
+            {(task.checkpoints ?? []).length > 0 && (
               <div>
                 <h4 className="text-white font-medium">
                   Checkpoints:
@@ -329,8 +327,8 @@ const TaskDetails: React.FC<TaskDetailsProps> = ({
           />
         </div>
       </div>
-    </div>
-  );
+    );
 };
+
 
 export default TaskDetails;

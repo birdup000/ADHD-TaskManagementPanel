@@ -2,13 +2,18 @@
 
 import TaskPanel from './components/TaskPanel';
 import LoginForm from './components/LoginForm';
-import useLocalStorage from './hooks/useLocalStorage';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const [token, setToken] = useLocalStorage('authToken', null);
-  const [noAuth, setNoAuth] = useLocalStorage('noAuth', null);
+  const [token, setToken] = useState(() => typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
+  const [noAuth, setNoAuth] = useState<boolean | null>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const storedNoAuth = localStorage.getItem('noAuth');
+      return storedNoAuth === 'true' ? true : storedNoAuth === 'false' ? false : null;
+    }
+    return null;
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -16,18 +21,33 @@ export default function Home() {
     const tokenFromUrl = urlParams.get('token');
 
     if (tokenFromUrl) {
+      localStorage.setItem('authToken', tokenFromUrl);
       setToken(tokenFromUrl);
       console.log('Token set from URL:', tokenFromUrl);
       // Remove token from URL
       window.history.replaceState({}, document.title, window.location.pathname);
       router.replace('/'); // Force re-render
     }
-  }, [setToken, router]);
+  }, [router]);
 
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setToken(localStorage.getItem('authToken'));
+      const storedNoAuth = localStorage.getItem('noAuth');
+      setNoAuth(storedNoAuth === 'true' ? true : storedNoAuth === 'false' ? false : null);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    handleStorageChange(); // Initial check
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   return (
     <main className="min-h-screen font-[family-name:var(--font-geist-sans)]">
-      {token || noAuth ? <TaskPanel /> : <LoginForm />}
+      {token ? <TaskPanel /> : noAuth ? <TaskPanel /> : <LoginForm />}
     </main>
   );
 }

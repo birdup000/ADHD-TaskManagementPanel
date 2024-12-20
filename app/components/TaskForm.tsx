@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import RichTextEditor from './RichTextEditor';
-import { TaskList } from '../types/task';
+import { TaskList, Task } from '../types/task';
 import { Collaborator } from '../types/collaboration';
 
 interface TaskFormProps {
@@ -31,7 +31,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [checkpointTitle, setCheckpointTitle] = useState('');
   const [checkpointDescription, setCheckpointDescription] = useState('');
-  const [checkpoints, setCheckpoints] = useState<Task['checkpoints']>([]);
+  const [checkpoints, setCheckpoints] = useState<Task['checkpoints']>([] as any);
 
     useEffect(() => {
         if (lists.length > 0) {
@@ -57,7 +57,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
       priority,
       status: 'todo',
       checkpoints,
-      progress: 0,
       dueDate: dueDate ? new Date(dueDate) : undefined,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
       assignees,
@@ -74,12 +73,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
         timestamp: new Date(),
       }],
 
-    progress: 0,
-
-      comments: [],
-
-    progress: 0,
-
+    
+        
       version: 1,
     });
   };
@@ -312,11 +307,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
               placeholder="Description (optional)"
             />
             <button
-              type="button"
-              onClick={() => {
-                if (checkpointTitle) {
-                  setCheckpoints([...checkpoints, {
-                    id: Date.now().toString(),
+            type="button"
+            onClick={() => {
+              if (checkpointTitle) {
+                setCheckpoints([...(checkpoints || []), {
+                  id: Date.now().toString(),
                     title: checkpointTitle,
                     description: checkpointDescription,
                     completed: false,
@@ -332,7 +327,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
             </button>
           </div>
           <div className="flex flex-col gap-2 mt-2">
-            {checkpoints.map((checkpoint, index) => (
+            {checkpoints?.map((checkpoint, index) => (
               <div
                 key={checkpoint.id}
                 className="px-3 py-2 bg-[#444444] rounded-md text-sm flex items-center justify-between"
