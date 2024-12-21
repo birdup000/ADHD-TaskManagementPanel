@@ -38,7 +38,7 @@ const LoginForm = () => {
   };
 
   return (
-    <Card className="w-[350px]">
+    <Card className="w-[350px] border border-gray-700">
       <CardHeader>
         <CardTitle>Login</CardTitle>
         <CardDescription>Enter your username and password to login</CardDescription>
@@ -66,11 +66,11 @@ const LoginForm = () => {
             />
           </div>
           <div className="space-y-2">
-            <Button type="submit" className="w-full">Login</Button>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">Login</Button>
             <Button 
               type="button" 
               variant="outline" 
-              className="w-full"
+              className="w-full border-gray-700 hover:bg-gray-800"
               onClick={handleSkipAuth}
             >
               Continue without Login
