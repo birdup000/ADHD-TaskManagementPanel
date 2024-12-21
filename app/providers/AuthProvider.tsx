@@ -7,7 +7,13 @@ export const AuthContext = React.createContext<ReturnType<typeof useAuth> | null
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const auth = useAuth();
-  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
+  // Key changes when auth state changes, forcing a re-render
+  const authKey = `${auth.isAuthenticated}-${auth.noAuth}`;
+  return (
+    <AuthContext.Provider value={auth}>
+      <div key={authKey}>{children}</div>
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuthContext = () => {

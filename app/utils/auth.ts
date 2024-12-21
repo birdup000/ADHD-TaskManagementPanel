@@ -93,6 +93,25 @@ export const useAuth = () => {
     }
   };
 
+  const continueWithoutAuth = async (): Promise<AuthResponse> => {
+    if (typeof window === 'undefined') {
+      return { success: false, message: 'Cannot continue without auth in non-browser environment' };
+    }
+    
+    // Update state first
+    setNoAuth(true);
+    setIsAuthenticated(false);
+    setToken(null);
+    setUsername(null);
+      
+    // Update localStorage
+    localStorage.setItem('noAuth', 'true');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('username');
+    
+    return { success: true, message: 'Continuing without authentication' };
+  };
+
   const logout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
@@ -125,6 +144,7 @@ export const useAuth = () => {
     token, 
     loginUser,
     noAuth,
-    setNoAuth: updateNoAuth
+    setNoAuth: updateNoAuth,
+    continueWithoutAuth
   };
 };

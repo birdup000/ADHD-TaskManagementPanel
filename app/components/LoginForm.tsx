@@ -15,7 +15,7 @@ import {
 const LoginForm = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { loginUser, setNoAuth } = useAuthContext();
+  const { loginUser, continueWithoutAuth } = useAuthContext();
   const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -30,10 +30,10 @@ const LoginForm = () => {
     }
   };
 
-  const handleSkipAuth = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('noAuth', 'true');
-      window.location.href = '/';
+  const handleSkipAuth = async () => {
+    const result = await continueWithoutAuth();
+    if (result.success) {
+      router.push('/');
     }
   };
 
