@@ -31,8 +31,10 @@ const LoginForm = () => {
   };
 
   const handleSkipAuth = () => {
-    setNoAuth(true);
-    router.push('/');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('noAuth', 'true');
+      window.location.href = '/';
+    }
   };
 
   return (

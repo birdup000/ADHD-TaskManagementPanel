@@ -8,8 +8,14 @@ export default function Home() {
   const { token, noAuth } = useAuthContext();
 
   return (
-    <main className="min-h-screen font-[family-name:var(--font-geist-sans)]">
-      {token ? <TaskPanel /> : noAuth ? <TaskPanel /> : <LoginForm />}
+    <main className="min-h-screen font-[family-name:var(--font-geist-sans)] bg-[#111111]">
+      {(token || noAuth) ? (
+        <TaskPanel />
+      ) : (
+        <div className="flex items-center justify-center h-screen">
+          <LoginForm />
+        </div>
+      )}
     </main>
   );
 }

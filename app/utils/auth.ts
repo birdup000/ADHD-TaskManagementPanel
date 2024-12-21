@@ -53,50 +53,68 @@ export const login = async (username: string, password: string): Promise<AuthRes
 
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
   const [username, setUsername] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [noAuth, setNoAuth] = useState<boolean>(() => {
-    if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem('noAuth') === 'true';
-    }
-    return false;
-  });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [noAuth, setNoAuth] = useState<boolean>(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const storedToken = localStorage.getItem('authToken');
     const storedUsername = localStorage.getItem('username');
+    const storedNoAuth = localStorage.getItem('noAuth') === 'true';
+    
     setIsAuthenticated(!!storedToken);
     setUsername(storedUsername);
     setToken(storedToken);
-    setLoading(false);
+    setNoAuth(storedNoAuth);
   }, []);
 
   const loginUser = async (username: string, password: string) => {
     setLoading(true);
-    const response = await login(username, password);
-    if (response.success && response.token) {
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('username', username);
-      setIsAuthenticated(true);
-      setUsername(username);
-      setToken(response.token);
+    try {
+      const response = await login(username, password);
+      if (response.success && response.token && typeof window !== 'undefined') {
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('username', username);
+        setIsAuthenticated(true);
+        setUsername(username);
+        setToken(response.token);
+      }
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, message: 'An error occurred during login.' };
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    return response;
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('username');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('username');
+      localStorage.removeItem('noAuth');
+    }
     setIsAuthenticated(false);
     setUsername(null);
     setToken(null);
+    setNoAuth(false);
   };
 
   const updateNoAuth = (value: boolean) => {
-    setNoAuth(value);
-    localStorage.setItem('noAuth', value.toString());
+    if (typeof window !== 'undefined') {
+      if (value) {
+        localStorage.setItem('noAuth', 'true');
+        setNoAuth(true);
+      } else {
+        localStorage.removeItem('noAuth');
+        setNoAuth(false);
+      }
+    }
   };
 
   return { 

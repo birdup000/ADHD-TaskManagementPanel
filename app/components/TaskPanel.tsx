@@ -308,7 +308,7 @@ const TaskPanel: React.FC = () => {
 
   return (
     <ThemeProvider value={{ theme, setTheme }}>
-      <div style={{ backgroundColor: theme.primary }} className="min-h-screen text-white">
+      <div style={{ backgroundColor: theme.background }} className="min-h-screen text-white">
         <div className="container mx-auto p-4">
           <header className="flex flex-col gap-4 mb-8">
             <div className="flex justify-between items-center">
@@ -1095,7 +1095,6 @@ const TaskPanel: React.FC = () => {
             </div>
           )}
 
-          {showLogin && <LoginForm />}
           {showAI && (
             <AIAssistant 
               onClose={() => setShowAI(false)}
