@@ -56,6 +56,12 @@ export const useAuth = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [username, setUsername] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [noAuth, setNoAuth] = useState<boolean>(() => {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem('noAuth') === 'true';
+    }
+    return false;
+  });
 
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
@@ -88,5 +94,19 @@ export const useAuth = () => {
     setToken(null);
   };
 
-  return { isAuthenticated, loading, logout, username, token, loginUser };
+  const updateNoAuth = (value: boolean) => {
+    setNoAuth(value);
+    localStorage.setItem('noAuth', value.toString());
+  };
+
+  return { 
+    isAuthenticated, 
+    loading, 
+    logout, 
+    username, 
+    token, 
+    loginUser,
+    noAuth,
+    setNoAuth: updateNoAuth
+  };
 };

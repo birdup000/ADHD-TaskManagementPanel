@@ -1,38 +1,21 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss';
+import { colors } from './app/config/colors';
 
-export const colors = {
-  dark: {
-    primary: '#212121',
-    secondary: '#2A2A2A',
-    tertiary: '#333333',
-    hover: '#383838',
-    accent: {
-      indigo: '#4F46E5',
-      purple: '#7C3AED',
-      blue: '#2563EB',
-      green: '#059669',
-      red: '#DC2626',
-    },
-    text: {
-      primary: '#FFFFFF',
-      secondary: '#A3A3A3',
-    }
-  }
-};
-
-export default {
+const config: Config = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+      colors,
+      fontFamily: {
+        sans: ['var(--font-geist-sans)'],
       },
     },
   },
   plugins: [],
-} satisfies Config;
+};
+
+export default config;

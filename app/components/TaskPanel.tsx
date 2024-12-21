@@ -21,9 +21,8 @@ import AIAssistant from './AIAssistant';
 import ShortcutsDialog from './ShortcutsDialog';
 import { Task, TaskList } from '../types/task';
 import { StorageConfig } from '../types/storage';
-import CommentSection from './CommentSection';
-import { Comment } from './CommentSection';
-import { colors } from '../..//tailwind.config';
+import CommentSection, { Comment } from './CommentSection';
+import { colors } from '../config/colors';
 import TaskStats from './TaskStats';
 import NotesEditor from './NotesEditor';
 import { WorkspacePanel } from './WorkspacePanel';
@@ -33,7 +32,14 @@ import { useRouter } from 'next/navigation';
 import { initializeAGiXT, getAgents, handleGenerateSubtasks, handleRunChain, updateConversationLog } from '../utils/agixt';
 import AGiXTConfig from './AGiXTConfig';
 
-type ThemeType = typeof colors.dark;
+import { ThemeType } from '../hooks/useTheme';
+
+const defaultTheme: ThemeType = {
+  primary: colors.primary.DEFAULT,
+  background: colors.background,
+  foreground: colors.foreground,
+  gray: colors.gray
+};
 
 interface Agent {
   name: string;
@@ -99,9 +105,9 @@ const TaskPanel: React.FC = () => {
     filteredAndSortedTasks
   } = useSearch(tasks);
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
-  const [comments, setComments] = React.useState<Record<string, CommentSection.Comment[]>>({});
+  const [comments, setComments] = React.useState<Record<string, Comment[]>>({});
   const [currentView, setCurrentView] = React.useState<ViewType>('board');
-  const [theme, setTheme] = React.useState<ThemeType>(colors.dark);
+  const [theme, setTheme] = React.useState<ThemeType>(defaultTheme);
   const [showConfirmDelete, setShowConfirmDelete] = React.useState(false);
   const [taskToDelete, setTaskToDelete] = React.useState<Task | null>(null);
   const [currentList, setCurrentList] = React.useState<string>('default');

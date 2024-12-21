@@ -1,13 +1,27 @@
 import { createContext, useContext } from 'react';
-import { colors } from '../../tailwind.config';
+import { colors } from '../config/colors';
 
-type ThemeType = typeof colors.dark;
+export type ThemeType = {
+  primary: string;
+  background: string;
+  foreground: string;
+  gray: {
+    [key: string]: string;
+  };
+};
+
+const defaultTheme: ThemeType = {
+  primary: colors.primary.DEFAULT,
+  background: colors.background,
+  foreground: colors.foreground,
+  gray: colors.gray
+};
 
 const ThemeContext = createContext<{
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
 }>({
-  theme: colors.dark,
+  theme: defaultTheme,
   setTheme: () => {},
 });
 

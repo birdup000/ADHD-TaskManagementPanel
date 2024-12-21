@@ -86,10 +86,10 @@ export const useTasks = (storageConfig: StorageConfig) => {
       console.error("Task must have a listId:", task);
       return;
     }
-setTasks((prev) => [...prev, task]);
-      };
+    setTasks((prev) => [...prev, task]);
+  };
 
-      const loadTaskCheckpoint = async (
+  const loadTaskCheckpoint = async (
         taskId: string,
         checkpointId: string
       ) => {
@@ -111,7 +111,7 @@ setTasks((prev) => [...prev, task]);
         }
       };
 
-    const updateTask = (updatedTask: Task) => {
+  const updateTask = (updatedTask: Task) => {
       // Get the old version of the task
       const oldTask = tasks.find((t) => t.id === updatedTask.id);
       if (!oldTask) return;
@@ -161,12 +161,12 @@ setTasks((prev) => [...prev, task]);
   };
 
   const importTasks = (importedTasks: Task[], listId: string) => {
-      const tasksWithListId = importedTasks.map(task => ({
-        ...task,
-        listId: listId,
-      }));
-      setTasks(prev => [...prev, ...tasksWithListId]);
-    };
+    const tasksWithListId = importedTasks.map(task => ({
+      ...task,
+      listId: listId,
+    }));
+    setTasks(prev => [...prev, ...tasksWithListId]);
+  };
 
   const addList = (list: TaskList) => {
     setLists(prev => [...prev, list]);

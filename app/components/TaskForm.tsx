@@ -23,8 +23,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
   const [tags, setTags] = useState<string[]>([]);
   const [subtask, setSubtask] = useState('');
   const [subtasks, setSubtasks] = useState<{ title: string; completed: boolean }[]>([]);
-    const [editingSubtaskIndex, setEditingSubtaskIndex] = useState<number | null>(null);
-    const [editedSubtaskTitle, setEditedSubtaskTitle] = useState('');
+  const [editingSubtaskIndex, setEditingSubtaskIndex] = useState<number | null>(null);
+  const [editedSubtaskTitle, setEditedSubtaskTitle] = useState('');
   const [selectedListId, setSelectedListId] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [collaboratorEmail, setCollaboratorEmail] = useState('');
@@ -33,14 +33,14 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
   const [checkpointDescription, setCheckpointDescription] = useState('');
   const [checkpoints, setCheckpoints] = useState<Task['checkpoints']>([] as any);
 
-    useEffect(() => {
-        if (lists.length > 0) {
-            setSelectedListId(lists[0].id);
-            setErrorMessage('');
-        } else {
-            setErrorMessage('Please create a task list before creating a task.');
-        }
-    }, [lists]);
+  useEffect(() => {
+    if (lists.length > 0) {
+      setSelectedListId(lists[0].id);
+      setErrorMessage('');
+    } else {
+      setErrorMessage('Please create a task list before creating a task.');
+    }
+  }, [lists]);
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,9 +72,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
         action: 'created',
         timestamp: new Date(),
       }],
-
-    
-        
       version: 1,
     });
   };

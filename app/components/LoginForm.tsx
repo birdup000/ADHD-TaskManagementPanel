@@ -1,31 +1,38 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../utils/auth';
-import { Button } from './button';
-import { Input } from './input';
-import { Label } from './label';
+import { useAuthContext } from '../providers/AuthProvider';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from './card';
+} from './ui/card';
 
 const LoginForm = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { loginUser, setNoAuth } = useAuthContext();
   const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      await login(username, password);
-      router.push('/app');
+      const response = await loginUser(username, password);
+      if (response.success) {
+        router.push('/');
+      }
     } catch (error: any) {
       console.error('Login failed', error);
     }
+  };
+
+  const handleSkipAuth = () => {
+    setNoAuth(true);
+    router.push('/');
   };
 
   return (
@@ -42,7 +49,7 @@ const LoginForm = () => {
               id="username"
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
               required
             />
           </div>
@@ -52,11 +59,21 @@ const LoginForm = () => {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               required
             />
           </div>
-          <Button type="submit">Login</Button>
+          <div className="space-y-2">
+            <Button type="submit" className="w-full">Login</Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full"
+              onClick={handleSkipAuth}
+            >
+              Continue without Login
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>
