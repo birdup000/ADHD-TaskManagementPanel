@@ -1,5 +1,31 @@
 import { Collaborator, ActivityLog, Comment } from './collaboration';
 
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  uploadedAt: Date;
+  uploadedBy: string;
+}
+
+export interface TimeEntry {
+  id: string;
+  startTime: Date;
+  endTime?: Date;
+  duration: number;
+  description?: string;
+}
+
+export interface Reminder {
+  id: string;
+  time: Date;
+  message: string;
+  type: 'due_date' | 'milestone' | 'custom';
+  isEnabled: boolean;
+}
+
 export interface Checkpoint {
   id: string;
   title: string;
@@ -34,6 +60,9 @@ export interface Task {
     completed: boolean;
     createdAt: Date;
   }[];
+  attachments?: Attachment[];
+  timeEntries?: TimeEntry[];
+  reminders?: Reminder[];
   completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;

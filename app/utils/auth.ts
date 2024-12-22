@@ -51,45 +51,77 @@ export const login = async (username: string, password: string): Promise<AuthRes
   }
 };
 
+interface AuthState {
+  isAuthenticated: boolean;
+  username: string | null;
+  token: string | null;
+  loading: boolean;
+  noAuth: boolean;
+}
+
 export const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [username, setUsername] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [noAuth, setNoAuth] = useState<boolean>(false);
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    username: null,
+    token: null,
+    loading: true,
+    noAuth: false
+  });
 
+  // Initialize auth state from localStorage
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+    const initializeAuth = () => {
+      if (typeof window !== 'undefined') {
+        const storedToken = localStorage.getItem('authToken');
+        const storedUsername = localStorage.getItem('username');
+        const storedNoAuth = localStorage.getItem('noAuth') === 'true';
 
-    const storedToken = localStorage.getItem('authToken');
-    const storedUsername = localStorage.getItem('username');
-    const storedNoAuth = localStorage.getItem('noAuth') === 'true';
-    
-    setIsAuthenticated(!!storedToken);
-    setUsername(storedUsername);
-    setToken(storedToken);
-    setNoAuth(storedNoAuth);
+        setAuthState({
+          isAuthenticated: !!storedToken,
+          username: storedUsername,
+          token: storedToken,
+          loading: false,
+          noAuth: storedNoAuth
+        });
+
+        console.log('Auth state initialized:', {
+          isAuthenticated: !!storedToken,
+          username: storedUsername,
+          token: storedToken,
+          noAuth: storedNoAuth,
+          loading: false
+        });
+      }
+    };
+
+    initializeAuth();
   }, []);
 
   const loginUser = async (username: string, password: string) => {
-    setLoading(true);
+    setAuthState(prev => ({ ...prev, loading: true }));
     try {
       const response = await login(username, password);
       if (response.success && response.token && typeof window !== 'undefined') {
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('username', username);
-        setIsAuthenticated(true);
-        setUsername(username);
-        setToken(response.token);
+        localStorage.removeItem('noAuth');
+        
+        setAuthState({
+          isAuthenticated: true,
+          username,
+          token: response.token,
+          loading: false,
+          noAuth: false
+        });
+        console.log('loginUser success:', authState);
+      } else {
+        console.log('loginUser failed:', response);
       }
       return response;
     } catch (error) {
       console.error('Login error:', error);
+      setAuthState(prev => ({ ...prev, loading: false }));
       return { success: false, message: 'An error occurred during login.' };
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -98,18 +130,35 @@ export const useAuth = () => {
       return { success: false, message: 'Cannot continue without auth in non-browser environment' };
     }
     
-    // Update state first
-    setNoAuth(true);
-    setIsAuthenticated(false);
-    setToken(null);
-    setUsername(null);
+    try {
+      setAuthState(prev => ({ ...prev, loading: true }));
       
-    // Update localStorage
-    localStorage.setItem('noAuth', 'true');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('username');
-    
-    return { success: true, message: 'Continuing without authentication' };
+      // Set noAuth flag in localStorage
+      localStorage.setItem('noAuth', 'true');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('username');
+      
+      // Update state immediately
+      setAuthState({
+        isAuthenticated: false,
+        username: null,
+        token: null,
+        loading: false,
+        noAuth: true
+      });
+      console.log('continueWithoutAuth success:', authState);
+      
+      return { success: true, message: 'Continuing without authentication' };
+    } catch (error) {
+      console.error('Error in continueWithoutAuth:', error);
+      localStorage.removeItem('noAuth');
+      setAuthState(prev => ({
+        ...prev,
+        noAuth: false,
+        loading: false
+      }));
+      return { success: false, message: 'An error occurred while continuing without auth' };
+    }
   };
 
   const logout = () => {
@@ -117,34 +166,21 @@ export const useAuth = () => {
       localStorage.removeItem('authToken');
       localStorage.removeItem('username');
       localStorage.removeItem('noAuth');
-    }
-    setIsAuthenticated(false);
-    setUsername(null);
-    setToken(null);
-    setNoAuth(false);
-  };
-
-  const updateNoAuth = (value: boolean) => {
-    if (typeof window !== 'undefined') {
-      if (value) {
-        localStorage.setItem('noAuth', 'true');
-        setNoAuth(true);
-      } else {
-        localStorage.removeItem('noAuth');
-        setNoAuth(false);
-      }
+      
+      setAuthState({
+        isAuthenticated: false,
+        username: null,
+        token: null,
+        loading: false,
+        noAuth: false
+      });
     }
   };
 
-  return { 
-    isAuthenticated, 
-    loading, 
-    logout, 
-    username, 
-    token, 
+  return {
+    ...authState,
     loginUser,
-    noAuth,
-    setNoAuth: updateNoAuth,
+    logout,
     continueWithoutAuth
   };
 };
