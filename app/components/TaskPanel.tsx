@@ -69,8 +69,8 @@ const TaskPanel: React.FC = () => {
     filteredAndSortedTasks
   } = useSearch(tasks);
 
-  useEffect(() => {
-    const initializePanel = async () => {
+useEffect(() =>{
+    const initializePanel = async () =>{
       try {
         setMounted(true);
         console.log('TaskPanel: Initializing with auth state:', { token, noAuth });
@@ -81,7 +81,14 @@ const TaskPanel: React.FC = () => {
           return;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Immediately initialize if noAuth is true
+        if (noAuth) {
+          setIsInitialized(true);
+          console.log('TaskPanel: Initialization complete (noAuth)');
+          return;
+        }
+
+        await new Promise(resolve =>setTimeout(resolve, 100));
         setIsInitialized(true);
         console.log('TaskPanel: Initialization complete');
       } catch (err) {
