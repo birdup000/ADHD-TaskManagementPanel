@@ -15,6 +15,11 @@ export const useTasks = (storageConfig: StorageConfig) => {
   const [error, setError] = useState<Error | null>(null);
   const storage = useMemo(() => createStorageManager(storageConfig), [storageConfig]);
 
+  const defaultList = { id: 'default', name: 'General Task List' };
+  const initialLists = useMemo(() => {
+    return lists.length > 0 ? lists : [defaultList];
+  }, [lists]);
+
   // Load tasks and lists from storage
   useEffect(() => {
     const loadData = async () => {
@@ -25,10 +30,8 @@ export const useTasks = (storageConfig: StorageConfig) => {
           storage.getLists()
         ]);
 
-        const defaultList = { id: 'default', name: 'General Task List' };
-        const initialLists = storedLists.length > 0 ? storedLists : [defaultList];
-        if (JSON.stringify(initialLists) !== JSON.stringify(lists)) {
-          setLists(initialLists);
+        if (JSON.stringify(storedLists) !== JSON.stringify(initialLists)) {
+          setLists(storedLists);
         }
 
         if (storedTasks.length === 0 && initialLists.length > 0) {

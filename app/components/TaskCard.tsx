@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import TaskActions from './TaskActions';
 import { Task } from '../types/task';
@@ -16,6 +16,8 @@ export interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, onDelete, onUpdateTask }) => {
+  const [agixtError, setAgixtError] = useState<string | null>(null);
+
   if (!task) {
     return null;
   }
@@ -71,7 +73,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
         onUpdateTask?.(updatedTask);
       }
     } else {
-      console.error("AGiXT API URI, API Key, or agent not set.");
+      setAgixtError("AGiXT API URI, API Key, or agent not set.");
     }
   };
 
@@ -168,6 +170,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
               >
                 ✨
               </button>
+              {agixtError && (
+                <span className="text-red-500 text-xs ml-2">{agixtError}</span>
+              )}
             </div>
             {onDelete && (
               <button
