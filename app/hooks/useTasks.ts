@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Task, TaskList } from '../types/task';
 import { ActivityLog } from '../types/collaboration';
 import { findChanges, mergeTaskChanges } from '../utils/collaboration';
@@ -13,7 +13,7 @@ export const useTasks = (storageConfig: StorageConfig) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const storage = createStorageManager(storageConfig);
+  const storage = useMemo(() => createStorageManager(storageConfig), [storageConfig]);
 
   // Load tasks and lists from storage
   useEffect(() => {
@@ -27,7 +27,9 @@ export const useTasks = (storageConfig: StorageConfig) => {
 
         const defaultList = { id: 'default', name: 'General Task List' };
         const initialLists = storedLists.length > 0 ? storedLists : [defaultList];
-        setLists(initialLists);
+        if (JSON.stringify(initialLists) !== JSON.stringify(lists)) {
+          setLists(initialLists);
+        }
 
         if (storedTasks.length === 0 && initialLists.length > 0) {
           const defaultTask: Task = {
@@ -49,7 +51,7 @@ export const useTasks = (storageConfig: StorageConfig) => {
           };
           setTasks([defaultTask]);
           await storage.saveTasks([defaultTask]);
-        } else {
+        } else if (JSON.stringify(storedTasks) !== JSON.stringify(tasks)) {
           setTasks(storedTasks);
         }
       } catch (err) {
@@ -60,7 +62,7 @@ export const useTasks = (storageConfig: StorageConfig) => {
     };
 
     loadData();
-  }, [storage]);
+  }, []);
 
   // Sync with storage when tasks or lists change
   useEffect(() => {

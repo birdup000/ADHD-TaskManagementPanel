@@ -98,7 +98,7 @@ useEffect(() =>{
     };
 
     initializePanel();
-  }, [token, noAuth, router]);
+  }, [token, noAuth]);
 
   useKeyboardShortcuts({
     onNewTask: () => setIsEditorOpen(true),

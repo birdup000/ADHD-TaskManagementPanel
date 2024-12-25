@@ -31,6 +31,16 @@ export const useKeyboardShortcuts = ({ onNewTask, onSearch, onToggleView, onDele
         event.preventDefault();
         onToggleView();
       }
+       // Command/Ctrl + Delete - Delete task
+      else if ((event.metaKey || event.ctrlKey) && event.key === 'Delete' && onDelete) {
+        event.preventDefault();
+        onDelete();
+      }
+      // Command/Ctrl + Shift + Delete - Delete task
+      else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'Delete' && onDeleteTask) {
+        event.preventDefault();
+        onDeleteTask();
+      }
     };
 
     window.addEventListener('keydown', handleKeyPress);

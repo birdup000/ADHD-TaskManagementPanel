@@ -139,13 +139,15 @@ export const useAuth = () => {
       localStorage.removeItem('username');
       
       // Update state immediately
-      setAuthState({
+      setAuthState(prev => ({
+        ...prev,
         isAuthenticated: false,
         username: null,
         token: null,
-        loading: false,
         noAuth: true
-      });
+      }));
+      
+      setAuthState(prev => ({ ...prev, loading: false }));
       console.log('continueWithoutAuth success:', authState);
       
       return { success: true, message: 'Continuing without authentication' };
@@ -178,7 +180,11 @@ export const useAuth = () => {
   };
 
   return {
-    ...authState,
+    isAuthenticated: authState.isAuthenticated,
+    username: authState.username,
+    token: authState.token,
+    loading: authState.loading,
+    noAuth: authState.noAuth,
     loginUser,
     logout,
     continueWithoutAuth
