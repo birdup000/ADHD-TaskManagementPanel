@@ -1,5 +1,10 @@
 # ADHD-Focused Task Management Panel
 
+> [!WARNING]  
+> Unstable Development Phase
+Task Panel is currently undergoing significant changes, which may impact its stability. Expect potential issues until our scheduled stabilization milestone in early 2025 , where we will release more reliable versions. 
+
+
 Welcome to the ADHD-Focused Task Management Panel! This application is specifically designed to cater to the unique needs of individuals with ADHD, helping them stay organized, focused, and productive. By leveraging the power of AI through AGiXT integration, alongside an intuitive and user-friendly interface, this tool aims to transform the way you manage tasks.
 
 ## Key Features
