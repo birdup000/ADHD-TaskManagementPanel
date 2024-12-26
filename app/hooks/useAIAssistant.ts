@@ -30,12 +30,10 @@ export const useAIAssistant = ({ backendUrl, authToken }: UseAIAssistantProps) =
       - priority: "low", "medium", or "high"
       - estimatedTime: Estimated time to complete in minutes`;
 
-      const result = await agixt.runChain(
+        const result = await agixt.runChain(
         'Task Suggestions',
         prompt,
         selectedAgent,
-        false,
-        1,
         { conversation_name: `task_suggestions_${Date.now()}` }
       );
 
@@ -68,12 +66,10 @@ export const useAIAssistant = ({ backendUrl, authToken }: UseAIAssistantProps) =
 
       Format your response as a JSON array of task IDs in the optimal order.`;
 
-      const result = await agixt.runChain(
+        const result = await agixt.runChain(
         'Task Optimization',
         prompt,
         selectedAgent,
-        false,
-        1,
         { conversation_name: `task_optimization_${Date.now()}` }
       );
 
@@ -113,12 +109,10 @@ export const useAIAssistant = ({ backendUrl, authToken }: UseAIAssistantProps) =
       - recommendations: Array of recommendations to move forward
       - estimatedTimeToCompletion: Number of minutes estimated to complete`;
 
-      const result = await agixt.runChain(
+        const result = await agixt.runChain(
         'Task Analysis',
         prompt,
         selectedAgent,
-        false,
-        1,
         { conversation_name: `task_analysis_${Date.now()}` }
       );
 
