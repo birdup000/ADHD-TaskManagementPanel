@@ -2,7 +2,7 @@
 
 import { Draggable } from '@hello-pangea/dnd';
 import { Task } from '../types/task';
-import TaskCard from './TaskCard';
+import { TaskCard } from './TaskCard';
 
 interface DraggableTaskProps {
   task: Task;
