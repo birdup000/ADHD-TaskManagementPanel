@@ -260,9 +260,10 @@ Example format:
       .replace('{priority}', task.priority || '')
       .replace('{additionalContext}', '');
 
-    const result = await agixt.prompt(
+  const result = await agixt.prompt(
       selectedAgent,
       userInput,
+      {},
       conversationName
     );
 
