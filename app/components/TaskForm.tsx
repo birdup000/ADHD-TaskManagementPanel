@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import RichTextEditor from './RichTextEditor';
 import { TaskList, Task } from '../types/task';
@@ -496,3 +498,40 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel, lists }) => {
 };
 
 export default TaskForm;
+
+import { useAIAssistant } from '../hooks/useAIAssistant';
+
+const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+      const { generateTaskSuggestions } = useAIAssistant({
+        backendUrl: typeof window !== 'undefined' ? localStorage.getItem('agixtapi') || '' : '',
+        authToken: typeof window !== 'undefined' ? localStorage.getItem('agixtkey') || '' : '',
+      });
+
+      const handleAutoSchedule = async () =>{
+        setIsAutoScheduling(true);
+        const suggestions = await generateTaskSuggestions(`Create a task with title: ${title}, description: ${description}`);
+        if (suggestions &amp;&amp; suggestions.length &gt; 0) {
+          const suggestion = suggestions[0];
+          setTitle(suggestion.title);
+          setDescription(suggestion.description);
+          if (suggestion.priority) {
+            setPriority(suggestion.priority);
+          }
+          if (suggestion.dueDate) {
+            setDueDate(suggestion.dueDate);
+          }
+        }
+        setIsAutoScheduling(false);
+      };
+
+      {isAutoScheduling &amp;&amp; (
+          &lt;span className="text-gray-400 text-sm"&gt;AI thinking...&lt;/span&gt;
+        )}
+        &lt;button
+          type="button"
+          onClick={handleAutoSchedule}
+          disabled={isAutoScheduling}
+          className="px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 transition-colors disabled:bg-gray-500"
+        &gt;
+          AI Schedule
+        &lt;/button&gt;
