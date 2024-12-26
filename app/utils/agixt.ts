@@ -123,7 +123,7 @@ const parseSubtasks = (result: string): Task[] => {
   }
 };
 
-const handleRunChain = async (task: any, selectedAgent: string, backendUrl: string, authToken: string) => {
+const handleRunChain = async (task: any, selectedAgent: string, backendUrl: string, authToken: string) =>{
   if (!selectedAgent) {
     return;
   }
@@ -143,8 +143,6 @@ const handleRunChain = async (task: any, selectedAgent: string, backendUrl: stri
       'Task Management',
       task.text,
       selectedAgent,
-      false,
-      1,
       {
         conversation_name: conversationName,
       }
@@ -260,9 +258,10 @@ Example format:
       .replace('{priority}', task.priority || '')
       .replace('{additionalContext}', '');
 
-    const result = await agixt.prompt(
+  const result = await agixt.prompt(
       selectedAgent,
       userInput,
+      {},
       conversationName
     );
 
