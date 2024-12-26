@@ -17,6 +17,9 @@ import TaskAutomation from './TaskAutomation';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import ExportMenu from './ExportMenu';
+import React, { useEffect, useState } from 'react';
+import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import ExportMenu from './ExportMenu';
 import { TaskList as TaskListComponent } from './TaskList';
 import { ThemeProvider, useTheme, ThemeType } from '../hooks/useTheme';
 import { useTasks } from '../hooks/useTasks';
@@ -191,6 +194,79 @@ useEffect(() =>{
 
   if (error) {
     return (<div className="flex items-center justify-center h-screen bg-[#111111] text-white"><div className="text-center"><div className="text-lg mb-2 text-red-500">Error Loading Task Panel</div><div className="text-sm text-gray-400">{error}</div></div></div>);
+  }
+
+  return (<ThemeProvider value={{ theme, setTheme }}><div className="min-h-screen bg-[#111111] text-white p-4"><div className="flex"><div className="flex-1 max-w-7xl mx-auto"><header className="mb-8"><div className="flex justify-between items-center mb-4"><h1 className="text-2xl font-bold">Task Panel</h1><div className="flex items-center space-x-4"><ThemeSelector currentTheme={theme} onThemeChange={setTheme} /><button
+                    onClick={() =>setIsAGiXTConfigOpen(true)}
+                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+                  >AGiXT Config</button><button
+                    onClick={() =>setIsEditorOpen(true)}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                  >New Task</button></div></div>{isAGiXTConfigOpen && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl mx-4"><AGiXTConfig
+                      onClose={() =>setIsAGiXTConfigOpen(false)}
+                      onSave={(config) =>{
+                        setAgixtConfig(config);
+                        setIsAGiXTConfigOpen(false);
+                      }}
+                    /></div></div>)}<SearchBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                filterPriority={filterPriority}
+                onFilterChange={setFilterPriority}
+              /></header><WorkspacePanel /><div className="space-y-6 mb-8"><div className="grid grid-cols-1 md:grid-cols-2 gap-6"><TaskAnalytics tasks={tasks} /><TaskAutomation tasks={tasks} onUpdateTask={updateTask} /></div><TaskDependencyGraph
+                tasks={tasks}
+                onTaskClick={setSelectedTask}
+              /></div><DragDropContext onDragEnd={onDragEnd}><main className="grid grid-cols-1 md:grid-cols-3 gap-6"><div className="bg-gray-800 rounded-lg p-4"><h2 className="text-xl font-semibold mb-4">To Do</h2><TaskListComponent
+                    droppableId="todo"
+                    tasks={filteredAndSortedTasks().filter(task =>task.status === 'todo')}
+                    onUpdateTask={updateTask}
+                    onTaskClick={(task) =>setSelectedTask(task)}
+                    onDeleteTask={(task) =>deleteTask(task.id)}
+                    onReorderTasks={reorderTasks}
+                    listId="default"
+                  /></div><div className="bg-gray-800 rounded-lg p-4"><h2 className="text-xl font-semibold mb-4">In Progress</h2><TaskListComponent
+                    droppableId="in-progress"
+                    tasks={filteredAndSortedTasks().filter(task =>task.status === 'in-progress')}
+                    onUpdateTask={updateTask}
+                    onTaskClick={(task) =>setSelectedTask(task)}
+                    onDeleteTask={(task) =>deleteTask(task.id)}
+                    onReorderTasks={reorderTasks}
+                    listId="default"
+                  /></div><div className="bg-gray-800 rounded-lg p-4"><h2 className="text-xl font-semibold mb-4">Done</h2><TaskListComponent
+                    droppableId="done"
+                    tasks={filteredAndSortedTasks().filter(task =>task.status === 'done')}
+                    onUpdateTask={updateTask}
+                    onTaskClick={(task) =>setSelectedTask(task)}
+                    onDeleteTask={(task) =>deleteTask(task.id)}
+                    onReorderTasks={reorderTasks}
+                    listId="default"
+                  /></div></main></DragDropContext>{isEditorOpen && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"><div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl mx-4"><TaskForm
+                    onSubmit={(task) =>{
+                      addTask(task);
+                      setIsEditorOpen(false);
+                    }}
+                    onCancel={() =>setIsEditorOpen(false)}
+                    lists={lists}
+                  /></div></div>)}</div><div className="flex flex-col">{agixtConfig.backendUrl && agixtConfig.authToken && (<AIAssistantPanel
+                backendUrl={agixtConfig.backendUrl}
+                authToken={agixtConfig.authToken}
+                onTaskSuggestion={handleTaskSuggestion}
+                onTaskOptimization={handleTaskOptimization}
+                tasks={tasks}
+                selectedTask={selectedTask}
+                className="ml-4"
+              />)}{selectedTask && (<TaskDetailsPanel
+                task={selectedTask}
+                onClose={() =>setSelectedTask(null)}
+                onUpdateTask={updateTask}
+                allTasks={tasks}
+                className="ml-4 mt-4"
+              />)}</div></div></div></ThemeProvider>);
+};
+
+export default TaskPanel;
   }
 
   return (<ThemeProvider value={{ theme, setTheme }}><div className="min-h-screen bg-[#111111] text-white p-4"><div className="flex"><div className="flex-1 max-w-7xl mx-auto"><header className="mb-8"><div className="flex justify-between items-center mb-4"><h1 className="text-2xl font-bold">Task Panel</h1><div className="flex items-center space-x-4"><ThemeSelector currentTheme={theme} onThemeChange={setTheme} /><button
