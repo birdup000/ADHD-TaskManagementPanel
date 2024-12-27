@@ -36,7 +36,56 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isAGiXTConfigOpen, setIsAGiXTConfigOpen] = useState(false);
   const [agixtConfig, setAgixtConfig] = useState({ backendUrl: '', authToken: '' });
-  const [currentView, setCurrentView] = useState<'board' | 'matrix'>('board');
+    const [layoutSettings, setLayoutSettings] = useState&lt;LayoutSettings&gt;({
+        selectedLayout: 'board',
+        columnVisibility: {
+          title: true,
+          description: true,
+          dueDate: true,
+          priority: true,
+          tags: true,
+          assignees: true,
+          subtasks: true,
+          status: true,
+        },
+      });
+      const [groupingSettings, setGroupingSettings] = useState&lt;GroupingSettings&gt;({
+        groupBy: 'none',
+      });
+  const [layoutSettings, setLayoutSettings] = useState&lt;LayoutSettings&gt;({
+      selectedLayout: 'board',
+      columnVisibility: {
+        title: true,
+        description: true,
+        dueDate: true,
+        priority: true,
+        tags: true,
+        assignees: true,
+        subtasks: true,
+        status: true,
+      },
+    });
+    const [groupingSettings, setGroupingSettings] = useState&lt;GroupingSettings&gt;({
+      groupBy: 'none',
+    });
+    const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
+    const [isGroupingSettingsOpen, setIsGroupingSettingsOpen] = useState(false);
+    const [layoutSettings, setLayoutSettings] = useState&lt;LayoutSettings&gt;({
+        selectedLayout: 'board',
+        columnVisibility: {
+          title: true,
+          description: true,
+          dueDate: true,
+          priority: true,
+          tags: true,
+          assignees: true,
+          subtasks: true,
+          status: true,
+        },
+      });
+      const [groupingSettings, setGroupingSettings] = useState&lt;GroupingSettings&gt;({
+        groupBy: 'none',
+      });
 
   // Search and filter functionality
   const {
@@ -109,9 +158,25 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
+        &lt;button
+            onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          &gt;
+            &lt;span&gt;{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}&lt;/span&gt;
+          &lt;/button&gt;
+          &lt;button
+            onClick={() =>setIsLayoutSettingsOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          &gt;
+            &lt;span&gt;⚙️ Layout Settings&lt;/span&gt;
+          &lt;/button&gt;
+          &lt;button
+            onClick={() =>setIsGroupingSettingsOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          &gt;
+            &lt;span&gt;🔀 Grouping Settings&lt;/span&gt;
+          &lt;/button&gt;
+          &lt;button
           >
             <span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span>
           </button>
@@ -159,14 +224,14 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                         <span>To Do</span>
                       </h2>
                       <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
-                        {filteredAndSortedTasks().filter(task => task.status === 'todo').length} tasks
+                      tasks={getGroupedTasks('todo')}
                       </span>
                     </div>
                   </div>
                   <div className="p-4">
                     <TaskList
                       droppableId="todo"
-                      tasks={filteredAndSortedTasks().filter(task => task.status === 'todo')}
+                      tasks={getGroupedTasks('todo')}
                       onUpdateTask={onUpdateTask}
                       onTaskClick={setSelectedTask}
                       onDeleteTask={onDeleteTask}
@@ -185,14 +250,14 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                         <span>In Progress</span>
                       </h2>
                       <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
-                        {filteredAndSortedTasks().filter(task => task.status === 'in-progress').length} tasks
+                      tasks={getGroupedTasks('in-progress')}
                       </span>
                     </div>
                   </div>
                   <div className="p-4">
                     <TaskList
                       droppableId="in-progress"
-                      tasks={filteredAndSortedTasks().filter(task => task.status === 'in-progress')}
+                      tasks={getGroupedTasks('in-progress')}
                       onUpdateTask={onUpdateTask}
                       onTaskClick={setSelectedTask}
                       onDeleteTask={onDeleteTask}
@@ -211,14 +276,14 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                         <span>Done</span>
                       </h2>
                       <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
-                        {filteredAndSortedTasks().filter(task => task.status === 'done').length} tasks
+                      tasks={getGroupedTasks('done')}
                       </span>
                     </div>
                   </div>
                   <div className="p-4">
                     <TaskList
                       droppableId="done"
-                      tasks={filteredAndSortedTasks().filter(task => task.status === 'done')}
+                      tasks={getGroupedTasks('done')}
                       onUpdateTask={onUpdateTask}
                       onTaskClick={setSelectedTask}
                       onDeleteTask={onDeleteTask}
@@ -230,11 +295,112 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
               </div>
             </DragDropContext>
           ) : (
-            <TaskPriorityMatrix
+          &lt;TaskPriorityMatrix
               tasks={filteredAndSortedTasks()}
               onTaskClick={setSelectedTask}
               onUpdateTask={onUpdateTask}
-            />
+            /&gt;
+          )}
+        &lt;/div&gt;
+
+        {/* Right Sidebar */}
+        &lt;div className="w-80 space-y-6"&gt;
+          {agixtConfig.backendUrl &amp;&amp; agixtConfig.authToken &amp;&amp; (
+            &lt;AIAssistantPanel
+              backendUrl={agixtConfig.backendUrl}
+              authToken={agixtConfig.authToken}
+              onTaskSuggestion={(suggestion) =&gt; {
+                const newTask: Task = {
+                  id: Date.now().toString(),
+                  title: suggestion.title || '',
+                  description: suggestion.description || '',
+                  priority: suggestion.priority || 'medium',
+                  status: 'todo',
+                  progress: 0,
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  owner: 'current-user',
+                  collaborators: [],
+                  activityLog: [],
+                  comments: [],
+                  version: 1,
+                  listId: lists[0]?.id || 'default',
+                };
+                onAddTask(newTask);
+              }}
+              onTaskOptimization={(taskIds) =&gt; {
+                const optimizedTasks = taskIds
+                  .map(id =&gt; tasks.find(t =&gt; t.id === id))
+                  .filter(Boolean) as Task[];
+                onReorderTasks(optimizedTasks);
+              }}
+              tasks={tasks}
+              selectedTask={selectedTask}
+            /&gt;
+          )}
+        &lt;/div&gt;
+      &lt;/div&gt;
+
+      {/* Modals */}
+      {isLayoutSettingsOpen &amp;&amp; (
+        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+          &lt;LayoutSettingsPanel
+            layoutSettings={layoutSettings}
+            onSave={(newSettings) =&gt; {
+              setLayoutSettings(newSettings);
+              setIsLayoutSettingsOpen(false);
+            }}
+            onClose={() =&gt; setIsLayoutSettingsOpen(false)}
+          /&gt;
+        &lt;/div&gt;
+      )}
+
+      {isGroupingSettingsOpen &amp;&amp; (
+        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+          &lt;GroupingSettingsPanel
+            groupingSettings={groupingSettings}
+            onSave={(newSettings) =&gt; {
+              setGroupingSettings(newSettings);
+              setIsGroupingSettingsOpen(false);
+            }}
+            onClose={() =&gt; setIsGroupingSettingsOpen(false)}
+          /&gt;
+        &lt;/div&gt;
+      )}
+
+      {isAGiXTConfigOpen &amp;&amp; (
+        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+          &lt;AGiXTConfig
+            onClose={() =&gt; setIsAGiXTConfigOpen(false)}
+            onSave={(config) =&gt; {
+              setAgixtConfig(config);
+              setIsAGiXTConfigOpen(false);
+            }}
+          /&gt;
+        &lt;/div&gt;
+      )}
+
+      {isEditorOpen &amp;&amp; (
+        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+          &lt;TaskForm
+            onSubmit={(task) =&gt; {
+              onAddTask(task);
+              setIsEditorOpen(false);
+            }}
+            onCancel={() =&gt; setIsEditorOpen(false)}
+            lists={lists}
+          /&gt;
+        &lt;/div&gt;
+      )}
+
+      {selectedTask &amp;&amp; (
+        &lt;TaskDetailsPanel
+          task={selectedTask}
+          onClose={() =&gt; setSelectedTask(null)}
+          onUpdateTask={onUpdateTask}
+          allTasks={tasks}
+          className="fixed inset-y-0 right-0 w-[32rem] shadow-xl"
+        /&gt;
           )}
         </div>
 
@@ -316,3 +482,261 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
 };
 
 export default ModernTaskPanel;
+interface ColumnVisibility {
+      [key: string]: boolean;
+    }
+
+    interface LayoutSettings {
+      selectedLayout: 'board' | 'matrix' | 'list' | 'calendar';
+      columnVisibility: ColumnVisibility;
+    }
+
+    interface GroupingSettings {
+      groupBy: 'list' | 'tag' | 'project' | 'none';
+    }
+
+    onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
+          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+        &gt;
+          &lt;span&gt;{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}&lt;/span&gt;
+        &lt;/button&gt;
+        &lt;button
+          onClick={() =>setIsLayoutSettingsOpen(true)}
+          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+        &gt;
+          &lt;span&gt;⚙️ Layout Settings&lt;/span&gt;
+        &lt;/button&gt;
+        &lt;button
+          onClick={() =>setIsGroupingSettingsOpen(true)}
+          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+        &gt;
+          &lt;span&gt;🔀 Grouping Settings&lt;/span&gt;
+        &lt;/button&gt;
+        &lt;button
+
+        {isLayoutSettingsOpen &amp;&amp; (
+        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+          &lt;LayoutSettingsPanel
+            layoutSettings={layoutSettings}
+            onSave={(newSettings) =>{
+              setLayoutSettings(newSettings);
+              setIsLayoutSettingsOpen(false);
+            }}
+            onClose={() =>setIsLayoutSettingsOpen(false)}
+          /&gt;
+        &lt;/div&gt;
+      )}
+
+      {isGroupingSettingsOpen &amp;&amp; (
+        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+          &lt;GroupingSettingsPanel
+            groupingSettings={groupingSettings}
+            onSave={(newSettings) =>{
+              setGroupingSettings(newSettings);
+              setIsGroupingSettingsOpen(false);
+            }}
+            onClose={() =>setIsGroupingSettingsOpen(false)}
+          /&gt;
+        &lt;/div&gt;
+      )}
+
+      const getGroupedTasks = (status: 'todo' | 'in-progress' | 'done') =>{
+      const filteredTasks = filteredAndSortedTasks().filter(task =>task.status === status);
+
+      if (groupingSettings.groupBy === 'none') {
+        return filteredTasks;
+      }
+
+      const grouped: { [key: string]: Task[] } = {};
+      filteredTasks.forEach(task =>{
+        const groupKey = task[groupingSettings.groupBy] || 'Other';
+        if (!grouped[groupKey]) {
+          grouped[groupKey] = [];
+        }
+        grouped[groupKey].push(task);
+      });
+
+      if (groupingSettings.groupBy === 'list') {
+        // Sort groups by list order
+        return Object.entries(grouped)
+          .sort(([keyA], [keyB]) =>{
+            const indexA = lists.findIndex(list =>list.id === keyA);
+            const indexB = lists.findIndex(list =>list.id === keyB);
+            return indexA - indexB;
+          })
+          .flatMap(([, tasks]) =>tasks);
+      }
+
+      return Object.values(grouped).flat();
+    };
+
+    return (
+      &lt;div className="min-h-screen bg-[#111111] text-white p-6"&gt;
+        {/* Top Bar */}
+        &lt;div className="flex items-center justify-between mb-8 bg-gray-900 p-6 rounded-lg shadow-lg"&gt;
+          &lt;div className="flex items-center space-x-4"&gt;
+            &lt;h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"&gt;Task Dashboard&lt;/h1&gt;
+            &lt;div className="flex items-center space-x-2 ml-8"&gt;
+              &lt;div className="px-3 py-1 bg-gray-800 rounded-lg"&gt;
+                &lt;span className="text-gray-400 text-sm"&gt;Total Tasks: &lt;/span&gt;
+                &lt;span className="text-white font-medium"&gt;{tasks.length}&lt;/span&gt;
+              &lt;/div&gt;
+              &lt;div className="px-3 py-1 bg-gray-800 rounded-lg"&gt;
+                &lt;span className="text-gray-400 text-sm"&gt;Active: &lt;/span&gt;
+                &lt;span className="text-white font-medium"&gt;{tasks.filter(t =&gt; t.status === 'in-progress').length}&lt;/span&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div className="flex items-center space-x-4"&gt;
+            &lt;button
+
+            interface ColumnVisibility {
+        [key: string]: boolean;
+      }
+
+      interface LayoutSettings {
+        selectedLayout: 'board' | 'matrix' | 'list' | 'calendar';
+        columnVisibility: ColumnVisibility;
+      }
+
+      interface GroupingSettings {
+        groupBy: 'list' | 'tag' | 'project' | 'none';
+      }
+
+      onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          &gt;
+            &lt;span&gt;{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}&lt;/span&gt;
+          &lt;/button&gt;
+          &lt;button
+            onClick={() =>setIsLayoutSettingsOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          &gt;
+            &lt;span&gt;⚙️ Layout Settings&lt;/span&gt;
+          &lt;/button&gt;
+          &lt;button
+            onClick={() =>setIsGroupingSettingsOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          &gt;
+            &lt;span&gt;🔀 Grouping Settings&lt;/span&gt;
+          &lt;/button&gt;
+          &lt;button
+
+          {isLayoutSettingsOpen &amp;&amp; (
+          &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+            &lt;LayoutSettingsPanel
+              layoutSettings={layoutSettings}
+              onSave={(newSettings) =>{
+                setLayoutSettings(newSettings);
+                setIsLayoutSettingsOpen(false);
+              }}
+              onClose={() =>setIsLayoutSettingsOpen(false)}
+            /&gt;
+          &lt;/div&gt;
+        )}
+
+        {isGroupingSettingsOpen &amp;&amp; (
+          &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
+            &lt;GroupingSettingsPanel
+              groupingSettings={groupingSettings}
+              onSave={(newSettings) =>{
+                setGroupingSettings(newSettings);
+                setIsGroupingSettingsOpen(false);
+              }}
+              onClose={() =>setIsGroupingSettingsOpen(false)}
+            /&gt;
+          &lt;/div&gt;
+        )}
+
+        const getGroupedTasks = (status: 'todo' | 'in-progress' | 'done') =>{
+        const filteredTasks = filteredAndSortedTasks().filter(task =>task.status === status);
+
+        if (groupingSettings.groupBy === 'none') {
+          return filteredTasks;
+        }
+
+        const grouped: { [key: string]: Task[] } = {};
+        filteredTasks.forEach(task =>{
+          const groupKey = task[groupingSettings.groupBy] || 'Other';
+          if (!grouped[groupKey]) {
+            grouped[groupKey] = [];
+          }
+          grouped[groupKey].push(task);
+        });
+
+        if (groupingSettings.groupBy === 'list') {
+          // Sort groups by list order
+          return Object.entries(grouped)
+            .sort(([keyA], [keyB]) =>{
+              const indexA = lists.findIndex(list =>list.id === keyA);
+              const indexB = lists.findIndex(list =>list.id === keyB);
+              return indexA - indexB;
+            })
+            .flatMap(([, tasks]) =>tasks);
+        }
+
+        return Object.values(grouped).flat();
+      };
+
+      return (
+        &lt;div className="min-h-screen bg-[#111111] text-white p-6"&gt;
+          {/* Top Bar */}
+          &lt;div className="flex items-center justify-between mb-8 bg-gray-900 p-6 rounded-lg shadow-lg"&gt;
+            &lt;div className="flex items-center space-x-4"&gt;
+              &lt;h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"&gt;Task Dashboard&lt;/h1&gt;
+              &lt;div className="flex items-center space-x-2 ml-8"&gt;
+                &lt;div className="px-3 py-1 bg-gray-800 rounded-lg"&gt;
+                  &lt;span className="text-gray-400 text-sm"&gt;Total Tasks: &lt;/span&gt;
+                  &lt;span className="text-white font-medium"&gt;{tasks.length}&lt;/span&gt;
+                &lt;/div&gt;
+                &lt;div className="px-3 py-1 bg-gray-800 rounded-lg"&gt;
+                  &lt;span className="text-gray-400 text-sm"&gt;Active: &lt;/span&gt;
+                  &lt;span className="text-white font-medium"&gt;{tasks.filter(t =&gt; t.status === 'in-progress').length}&lt;/span&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div className="flex items-center space-x-4"&gt;
+              &lt;button
+
+              interface ColumnVisibility {
+        [key: string]: boolean;
+      }
+
+      interface LayoutSettings {
+        selectedLayout: 'board' | 'matrix' | 'list' | 'calendar';
+        columnVisibility: ColumnVisibility;
+      }
+
+      interface GroupingSettings {
+        groupBy: 'list' | 'tag' | 'project' | 'none';
+      }
+
+      const getGroupedTasks = (status: 'todo' | 'in-progress' | 'done') =&gt; {
+      const filteredTasks = filteredAndSortedTasks().filter(task =&gt; task.status === status);
+
+      if (groupingSettings.groupBy === 'none') {
+        return filteredTasks;
+      }
+
+      const grouped: { [key: string]: Task[] } = {};
+      filteredTasks.forEach(task =&gt; {
+        const groupKey = task[groupingSettings.groupBy] || 'Other';
+        if (!grouped[groupKey]) {
+          grouped[groupKey] = [];
+        }
+        grouped[groupKey].push(task);
+      });
+
+      if (groupingSettings.groupBy === 'list') {
+        // Sort groups by list order
+        return Object.entries(grouped)
+          .sort(([keyA], [keyB]) =&gt; {
+            const indexA = lists.findIndex(list =&gt; list.id === keyA);
+            const indexB = lists.findIndex(list =&gt; list.id === keyB);
+            return indexA - indexB;
+          })
+          .flatMap(([, tasks]) =&gt; tasks);
+      }
+
+      return Object.values(grouped).flat();
+    };
