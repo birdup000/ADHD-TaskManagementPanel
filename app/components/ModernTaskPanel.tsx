@@ -158,28 +158,19 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
           </div>
         </div>
         <div className="flex items-center space-x-4">
-        &lt;button
+        <button
             onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          &gt;
-            &lt;span&gt;{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}&lt;/span&gt;
-          &lt;/button&gt;
-          &lt;button
+          ><span>{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button><button
             onClick={() =>setIsLayoutSettingsOpen(true)}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          &gt;
-            &lt;span&gt;⚙️ Layout Settings&lt;/span&gt;
-          &lt;/button&gt;
-          &lt;button
+          ><span>⚙️ Layout Settings</span></button><button
             onClick={() =>setIsGroupingSettingsOpen(true)}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          &gt;
-            &lt;span&gt;🔀 Grouping Settings&lt;/span&gt;
-          &lt;/button&gt;
-          &lt;button
-          >
-            <span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span>
-          </button>
+          ><span>🔀 Grouping Settings</span></button><button
+            onClick={() =>setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          ><span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button>
           <button
             onClick={() => setIsAGiXTConfigOpen(true)}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
@@ -301,15 +292,10 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
               onUpdateTask={onUpdateTask}
             /&gt;
           )}
-        &lt;/div&gt;
-
-        {/* Right Sidebar */}
-        &lt;div className="w-80 space-y-6"&gt;
-          {agixtConfig.backendUrl &amp;&amp; agixtConfig.authToken &amp;&amp; (
-            &lt;AIAssistantPanel
+          </div>{/* Right Sidebar */}<div className="w-80 space-y-6">{agixtConfig.backendUrl && agixtConfig.authToken && (<AIAssistantPanel
               backendUrl={agixtConfig.backendUrl}
               authToken={agixtConfig.authToken}
-              onTaskSuggestion={(suggestion) =&gt; {
+              onTaskSuggestion={(suggestion) =>{
                 const newTask: Task = {
                   id: Date.now().toString(),
                   title: suggestion.title || '',
@@ -328,79 +314,57 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                 };
                 onAddTask(newTask);
               }}
-              onTaskOptimization={(taskIds) =&gt; {
+              onTaskOptimization={(taskIds) =>{
                 const optimizedTasks = taskIds
-                  .map(id =&gt; tasks.find(t =&gt; t.id === id))
+                  .map(id =>tasks.find(t =>t.id === id))
                   .filter(Boolean) as Task[];
                 onReorderTasks(optimizedTasks);
               }}
               tasks={tasks}
               selectedTask={selectedTask}
-            /&gt;
-          )}
-        &lt;/div&gt;
-      &lt;/div&gt;
-
-      {/* Modals */}
-      {isLayoutSettingsOpen &amp;&amp; (
-        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
-          &lt;LayoutSettingsPanel
+            />)}</div></div>{/* Modals */}
+      {isLayoutSettingsOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><LayoutSettingsPanel
             layoutSettings={layoutSettings}
-            onSave={(newSettings) =&gt; {
+            onSave={(newSettings) =>{
               setLayoutSettings(newSettings);
               setIsLayoutSettingsOpen(false);
             }}
-            onClose={() =&gt; setIsLayoutSettingsOpen(false)}
-          /&gt;
-        &lt;/div&gt;
-      )}
+            onClose={() =>setIsLayoutSettingsOpen(false)}
+          /></div>)}
 
-      {isGroupingSettingsOpen &amp;&amp; (
-        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
-          &lt;GroupingSettingsPanel
+      {isGroupingSettingsOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><GroupingSettingsPanel
             groupingSettings={groupingSettings}
-            onSave={(newSettings) =&gt; {
+            onSave={(newSettings) =>{
               setGroupingSettings(newSettings);
               setIsGroupingSettingsOpen(false);
             }}
-            onClose={() =&gt; setIsGroupingSettingsOpen(false)}
-          /&gt;
-        &lt;/div&gt;
-      )}
+            onClose={() =>setIsGroupingSettingsOpen(false)}
+          /></div>)}
 
-      {isAGiXTConfigOpen &amp;&amp; (
-        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
-          &lt;AGiXTConfig
-            onClose={() =&gt; setIsAGiXTConfigOpen(false)}
-            onSave={(config) =&gt; {
+      {isAGiXTConfigOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><AGiXTConfig
+            onClose={() =>setIsAGiXTConfigOpen(false)}
+            onSave={(config) =>{
               setAgixtConfig(config);
               setIsAGiXTConfigOpen(false);
             }}
-          /&gt;
-        &lt;/div&gt;
-      )}
+          /></div>)}
 
-      {isEditorOpen &amp;&amp; (
-        &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
-          &lt;TaskForm
-            onSubmit={(task) =&gt; {
+      {isEditorOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><TaskForm
+            onSubmit={(task) =>{
               onAddTask(task);
               setIsEditorOpen(false);
             }}
-            onCancel={() =&gt; setIsEditorOpen(false)}
+            onCancel={() =>setIsEditorOpen(false)}
             lists={lists}
-          /&gt;
-        &lt;/div&gt;
-      )}
+          /></div>)}
 
-      {selectedTask &amp;&amp; (
-        &lt;TaskDetailsPanel
+      {selectedTask && (<TaskDetailsPanel
           task={selectedTask}
-          onClose={() =&gt; setSelectedTask(null)}
+          onClose={() =>setSelectedTask(null)}
           onUpdateTask={onUpdateTask}
           allTasks={tasks}
           className="fixed inset-y-0 right-0 w-[32rem] shadow-xl"
-        /&gt;
+        />)}
           )}
         </div>
 
