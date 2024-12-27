@@ -268,31 +268,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                       </h2>
                       <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
                       tasks={getGroupedTasks('done')}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <TaskList
-                      droppableId="done"
-                      tasks={getGroupedTasks('done')}
-                      onUpdateTask={onUpdateTask}
-                      onTaskClick={setSelectedTask}
-                      onDeleteTask={onDeleteTask}
-                      onReorderTasks={onReorderTasks}
-                      listId="default"
-                    />
-                  </div>
-                </div>
-              </div>
-            </DragDropContext>
-          ) : (
-          &lt;TaskPriorityMatrix
-              tasks={filteredAndSortedTasks()}
-              onTaskClick={setSelectedTask}
-              onUpdateTask={onUpdateTask}
-            /&gt;
-          )}
-          </div>{/* Right Sidebar */}<div className="w-80 space-y-6">{agixtConfig.backendUrl && agixtConfig.authToken && (<AIAssistantPanel
+                      </div>{/* Right Sidebar */}<div className="w-80 space-y-6">{agixtConfig.backendUrl && agixtConfig.authToken && (<AIAssistantPanel
               backendUrl={agixtConfig.backendUrl}
               authToken={agixtConfig.authToken}
               onTaskSuggestion={(suggestion) =>{
@@ -365,9 +341,6 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
           allTasks={tasks}
           className="fixed inset-y-0 right-0 w-[32rem] shadow-xl"
         />)}
-          )}
-        </div>
-
         {/* Right Sidebar */}
         <div className="w-80 space-y-6">
           {agixtConfig.backendUrl && agixtConfig.authToken && (
@@ -457,28 +430,19 @@ interface ColumnVisibility {
 
     interface GroupingSettings {
       groupBy: 'list' | 'tag' | 'project' | 'none';
-    }
-
-    onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-        &gt;
-          &lt;span&gt;{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}&lt;/span&gt;
-        &lt;/button&gt;
-        &lt;button
-          onClick={() =>setIsLayoutSettingsOpen(true)}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-        &gt;
-          &lt;span&gt;⚙️ Layout Settings&lt;/span&gt;
-        &lt;/button&gt;
-        &lt;button
-          onClick={() =>setIsGroupingSettingsOpen(true)}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-        &gt;
-          &lt;span&gt;🔀 Grouping Settings&lt;/span&gt;
-        &lt;/button&gt;
-        &lt;button
-
-        {isLayoutSettingsOpen &amp;&amp; (
+      <button
+            onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          ><span>{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button><button
+            onClick={() =>setIsLayoutSettingsOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          ><span>⚙️ Layout Settings</span></button><button
+            onClick={() =>setIsGroupingSettingsOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          ><span>🔀 Grouping Settings</span></button><button
+            onClick={() =>setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          ><span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button>
         &lt;div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"&gt;
           &lt;LayoutSettingsPanel
             layoutSettings={layoutSettings}
