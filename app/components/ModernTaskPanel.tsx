@@ -94,26 +94,38 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
   return (
     <div className="min-h-screen bg-[#111111] text-white p-6">
       {/* Top Bar */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Task Dashboard</h1>
+      <div className="flex items-center justify-between mb-8 bg-gray-900 p-6 rounded-lg shadow-lg">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">Task Dashboard</h1>
+          <div className="flex items-center space-x-2 ml-8">
+            <div className="px-3 py-1 bg-gray-800 rounded-lg">
+              <span className="text-gray-400 text-sm">Total Tasks: </span>
+              <span className="text-white font-medium">{tasks.length}</span>
+            </div>
+            <div className="px-3 py-1 bg-gray-800 rounded-lg">
+              <span className="text-gray-400 text-sm">Active: </span>
+              <span className="text-white font-medium">{tasks.filter(t => t.status === 'in-progress').length}</span>
+            </div>
+          </div>
+        </div>
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => setIsAGiXTConfigOpen(true)}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            onClick={() => setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
           >
-            AGiXT Config
+            <span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span>
           </button>
           <button
-            onClick={() => setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            onClick={() => setIsAGiXTConfigOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
           >
-            {currentView === 'board' ? 'Show Matrix' : 'Show Board'}
+            <span>⚙️ AGiXT Config</span>
           </button>
           <button
             onClick={() => setIsEditorOpen(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg transition-colors flex items-center space-x-2 shadow-lg"
           >
-            New Task
+            <span>➕ New Task</span>
           </button>
         </div>
       </div>
@@ -139,45 +151,81 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
             <DragDropContext onDragEnd={onDragEnd}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Todo Column */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h2 className="text-xl font-semibold mb-4">To Do</h2>
-                  <TaskList
-                    droppableId="todo"
-                    tasks={filteredAndSortedTasks().filter(task => task.status === 'todo')}
-                    onUpdateTask={onUpdateTask}
-                    onTaskClick={setSelectedTask}
-                    onDeleteTask={onDeleteTask}
-                    onReorderTasks={onReorderTasks}
-                    listId="default"
-                  />
+                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl">
+                  <div className="p-4 border-b border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-semibold flex items-center space-x-2">
+                        <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+                        <span>To Do</span>
+                      </h2>
+                      <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
+                        {filteredAndSortedTasks().filter(task => task.status === 'todo').length} tasks
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <TaskList
+                      droppableId="todo"
+                      tasks={filteredAndSortedTasks().filter(task => task.status === 'todo')}
+                      onUpdateTask={onUpdateTask}
+                      onTaskClick={setSelectedTask}
+                      onDeleteTask={onDeleteTask}
+                      onReorderTasks={onReorderTasks}
+                      listId="default"
+                    />
+                  </div>
                 </div>
 
                 {/* In Progress Column */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h2 className="text-xl font-semibold mb-4">In Progress</h2>
-                  <TaskList
-                    droppableId="in-progress"
-                    tasks={filteredAndSortedTasks().filter(task => task.status === 'in-progress')}
-                    onUpdateTask={onUpdateTask}
-                    onTaskClick={setSelectedTask}
-                    onDeleteTask={onDeleteTask}
-                    onReorderTasks={onReorderTasks}
-                    listId="default"
-                  />
+                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl">
+                  <div className="p-4 border-b border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-semibold flex items-center space-x-2">
+                        <span className="w-3 h-3 bg-blue-400 rounded-full"></span>
+                        <span>In Progress</span>
+                      </h2>
+                      <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
+                        {filteredAndSortedTasks().filter(task => task.status === 'in-progress').length} tasks
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <TaskList
+                      droppableId="in-progress"
+                      tasks={filteredAndSortedTasks().filter(task => task.status === 'in-progress')}
+                      onUpdateTask={onUpdateTask}
+                      onTaskClick={setSelectedTask}
+                      onDeleteTask={onDeleteTask}
+                      onReorderTasks={onReorderTasks}
+                      listId="default"
+                    />
+                  </div>
                 </div>
 
                 {/* Done Column */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h2 className="text-xl font-semibold mb-4">Done</h2>
-                  <TaskList
-                    droppableId="done"
-                    tasks={filteredAndSortedTasks().filter(task => task.status === 'done')}
-                    onUpdateTask={onUpdateTask}
-                    onTaskClick={setSelectedTask}
-                    onDeleteTask={onDeleteTask}
-                    onReorderTasks={onReorderTasks}
-                    listId="default"
-                  />
+                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl">
+                  <div className="p-4 border-b border-gray-700">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xl font-semibold flex items-center space-x-2">
+                        <span className="w-3 h-3 bg-green-400 rounded-full"></span>
+                        <span>Done</span>
+                      </h2>
+                      <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
+                        {filteredAndSortedTasks().filter(task => task.status === 'done').length} tasks
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <TaskList
+                      droppableId="done"
+                      tasks={filteredAndSortedTasks().filter(task => task.status === 'done')}
+                      onUpdateTask={onUpdateTask}
+                      onTaskClick={setSelectedTask}
+                      onDeleteTask={onDeleteTask}
+                      onReorderTasks={onReorderTasks}
+                      listId="default"
+                    />
+                  </div>
                 </div>
               </div>
             </DragDropContext>
