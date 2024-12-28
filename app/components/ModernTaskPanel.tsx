@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Modal from './ui/Modal';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Task } from '../types/task';
 import TaskPriorityMatrix from './TaskPriorityMatrix';
@@ -17,6 +18,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import LayoutSettingsPanel from './LayoutSettingsPanel';
 import GroupingSettingsPanel from './GroupingSettingsPanel';
 import GeminiConfig from './GeminiConfig';
+import useLocalStorage from '../hooks/useLocalStorage';
 
 interface ModernTaskPanelProps {
   tasks: Task[];
@@ -54,12 +56,13 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
   lists,
 }) => {
   // State management
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null | undefined>(undefined);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isAGiXTConfigOpen, setIsAGiXTConfigOpen] = useState(false);
-  const [agixtConfig, setAgixtConfig] = useState({ backendUrl: '', authToken: '' });
+  const [agixtConfig, setAgixtConfig] = useLocalStorage<{ backendUrl: string; authToken: string }>('agixtConfig', { backendUrl: '', authToken: '' });
   const [geminiConfig, setGeminiConfig] = useState({ apiKey: '', model: 'gemini-pro' });
   const [isGeminiConfigOpen, setIsGeminiConfigOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'board' | 'matrix'>('board');
   const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>({
     selectedLayout: 'board',
@@ -112,18 +115,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
 
     if (source.droppableId === destination.droppableId) {
       // Reorder within same status
-      const statusTasks = tasks.filter(t => t.status === source.droppableId);
-      const [movedTask] = statusTasks.splice(source.index, 1);
-      statusTasks.splice(destination.index, 0, movedTask);
-
-      const updatedTasks = tasks.map(t => {
-        if (t.status === source.droppableId) {
-          const reorderedTask = statusTasks.find(rt => rt.id === t.id);
-          return reorderedTask || t;
-        }
-        return t;
-      });
-
+      const updatedTasks = reorderTasksWithinStatus(tasks, source, destination);
       onReorderTasks(updatedTasks);
     } else {
       // Move to different status
@@ -132,6 +124,20 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
         status: destination.droppableId as Task['status'],
       });
     }
+  };
+
+  const reorderTasksWithinStatus = (tasks: Task[], source: any, destination: any): Task[] => {
+    const statusTasks = [...tasks.filter(t => t.status === source.droppableId)];
+    const [movedTask] = statusTasks.splice(source.index, 1);
+    statusTasks.splice(destination.index, 0, movedTask);
+
+    return tasks.map(t => {
+      if (t.status === source.droppableId) {
+        const reorderedTask = statusTasks.find(rt => rt.id === t.id);
+        return reorderedTask || t;
+      }
+      return t;
+    });
   };
 
   // Helper function to get grouped tasks
@@ -268,6 +274,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                       onDeleteTask={onDeleteTask}
                       onReorderTasks={onReorderTasks}
                       listId="default"
+                      agixtConfig={agixtConfig}
                     />
                   </div>
                 </div>
@@ -294,6 +301,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                       onDeleteTask={onDeleteTask}
                       onReorderTasks={onReorderTasks}
                       listId="default"
+                      agixtConfig={agixtConfig}
                     />
                   </div>
                 </div>
@@ -320,6 +328,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                       onDeleteTask={onDeleteTask}
                       onReorderTasks={onReorderTasks}
                       listId="default"
+                      agixtConfig={agixtConfig}
                     />
                   </div>
                 </div>
@@ -341,7 +350,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
               onTaskUpdate={onUpdateTask}
               onNewTask={onAddTask}
               geminiApiKey={geminiConfig.apiKey}
-              selectedTask={selectedTask}
+              selectedTask={selectedTask ?? undefined}
               agixtConfig={agixtConfig}
             />
           )}
@@ -351,7 +360,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
               authToken={agixtConfig.authToken}
               onTaskSuggestion={(suggestion) => {
                 const newTask: Task = {
-                  id: Date.now().toString(),
+                  id: crypto.randomUUID(),
                   title: suggestion.title || '',
                   description: suggestion.description || '',
                   priority: suggestion.priority || 'medium',
@@ -365,7 +374,14 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                   comments: [],
                   version: 1,
                   listId: lists[0]?.id || 'default',
+                  dueDate: suggestion.dueDate,
+                  tags: suggestion.tags,
                 };
+                
+                if (lists && lists.length > 0) {
+                  newTask.listId = lists[0].id;
+                }
+                
                 onAddTask(newTask);
               }}
               onTaskOptimization={(taskIds) => {
@@ -375,7 +391,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                 onReorderTasks(optimizedTasks);
               }}
               tasks={tasks}
-              selectedTask={selectedTask}
+              selectedTask={selectedTask ?? null}
             />
           )}
         </div>
@@ -384,7 +400,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
 
       {/* Modals */}
       {isLayoutSettingsOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <Modal onClose={() => setIsLayoutSettingsOpen(false)}>
           <LayoutSettingsPanel
             layoutSettings={layoutSettings}
             onSave={(newSettings: LayoutSettings) => {
@@ -393,11 +409,11 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
             }}
             onClose={() => setIsLayoutSettingsOpen(false)}
           />
-        </div>
+        </Modal>
       )}
 
       {isGroupingSettingsOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <Modal onClose={() => setIsGroupingSettingsOpen(false)}>
           <GroupingSettingsPanel
             groupingSettings={groupingSettings}
             onSave={(newSettings: GroupingSettings) => {
@@ -406,23 +422,23 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
             }}
             onClose={() => setIsGroupingSettingsOpen(false)}
           />
-        </div>
+        </Modal>
       )}
 
       {isAGiXTConfigOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <Modal onClose={() => setIsAGiXTConfigOpen(false)}>
           <AGiXTConfig
             onClose={() => setIsAGiXTConfigOpen(false)}
-            onSave={(config) => {
+            onSave={(config: { backendUrl: string; authToken: string }) => {
               setAgixtConfig(config);
               setIsAGiXTConfigOpen(false);
             }}
           />
-        </div>
+        </Modal>
       )}
 
       {isGeminiConfigOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <Modal onClose={() => setIsGeminiConfigOpen(false)}>
           <GeminiConfig
             onClose={() => setIsGeminiConfigOpen(false)}
             onSave={(config) => {
@@ -430,11 +446,11 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
               setIsGeminiConfigOpen(false);
             }}
           />
-        </div>
+        </Modal>
       )}
 
       {isEditorOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <Modal onClose={() => setIsEditorOpen(false)}>
           <TaskForm
             onSubmit={(task) => {
               onAddTask(task);
@@ -443,7 +459,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
             onCancel={() => setIsEditorOpen(false)}
             lists={lists}
           />
-        </div>
+        </Modal>
       )}
 
       {selectedTask && (
@@ -453,6 +469,9 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
           onUpdateTask={onUpdateTask}
           allTasks={tasks}
           className="fixed inset-y-0 right-0 w-[32rem] shadow-xl"
+          geminiConfig={geminiConfig}
+          agixtConfig={agixtConfig}
+          onAddTask={onAddTask}
         />
       )}
     </div>

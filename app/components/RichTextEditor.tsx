@@ -3,7 +3,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { createEditor, Descendant, Editor, Element as SlateElement, Text, Node as SlateNode } from 'slate';
 import { Slate, Editable, withReact, RenderElementProps, RenderLeafProps } from 'slate-react';
-import { CustomEditor, initialValue as defaultInitialValue, HOTKEYS } from './EditorConfig';
+import { CustomEditor, HOTKEYS } from './EditorConfig';
 import isHotkey from 'is-hotkey';
 
 interface RichTextEditorProps {

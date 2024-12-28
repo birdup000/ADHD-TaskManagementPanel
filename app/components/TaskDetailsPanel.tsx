@@ -3,7 +3,6 @@
 import React from 'react';
 import { Task } from '../types/task';
 import NotesEditor from './NotesEditor';
-import TaskProgress from './TaskProgress';
 import TaskComments from './TaskComments';
 import TaskAttachments from './TaskAttachments';
 import TaskTimer from './TaskTimer';
@@ -19,9 +18,11 @@ interface TaskDetailsPanelProps {
   task: Task | null;
   onClose: () => void;
   onUpdateTask: (task: Task) => void;
-  onAddTask?: (task: Task) => void;
+  onAddTask: (task: Task) => void;
   allTasks: Task[];
   className?: string;
+  geminiConfig: { apiKey: string; model: string };
+  agixtConfig: { backendUrl: string; authToken: string };
 }
 
 const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({
@@ -30,6 +31,9 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({
   onUpdateTask,
   allTasks,
   className = '',
+  geminiConfig,
+  agixtConfig,
+  onAddTask,
 }) => {
   if (!task) return null;
 
@@ -386,57 +390,12 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({
           <VoiceTaskAssistant
             onTaskUpdate={onUpdateTask}
             selectedTask={task}
+            geminiApiKey={geminiConfig.apiKey}
+            agixtConfig={agixtConfig}
+            onNewTask={onAddTask}
           />
         </div>
 
-        <div className="border-t border-gray-700 pt-4">
-          <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Notes
-          </h4>
-          <div className="space-y-4">
-            <NotesEditor
-              initialNotes={task.notes || []}
-              tasks={allTasks}
-              onLinkTask={(noteId, taskId) => {
-                const updatedNotes = task.notes?.map(note =>
-                  note.id === noteId
-                    ? { ...note, linkedTaskIds: [...(note.linkedTaskIds || []), taskId] }
-                    : note
-                );
-                onUpdateTask({
-                  ...task,
-                  notes: updatedNotes,
-                  activityLog: [
-                    ...task.activityLog,
-                    {
-                      id: Date.now().toString(),
-                      taskId: task.id,
-                      userId: 'current-user',
-                      action: 'linked_note',
-                      timestamp: new Date(),
-                    },
-                  ],
-                });
-              }}
-            />
-            <AIEnhancedRichTextEditor
-              initialContent={task.description}
-              onChange={(content) => onUpdateTask({
-                ...task,
-                description: content,
-                updatedAt: new Date(),
-              })}
-              onCreateTask={(title, description) => {
-                // Handle task creation from AI suggestions
-                // This would typically be handled by the parent component
-                console.log('AI suggested new task:', { title, description });
-              }}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

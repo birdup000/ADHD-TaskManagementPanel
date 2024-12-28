@@ -14,6 +14,7 @@ interface TaskListProps {
   onDeleteTask: (task: Task) => void;
   onReorderTasks: (tasks: Task[]) => void;
   listId: string;
+  agixtConfig?: { backendUrl: string; authToken: string };
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
@@ -23,7 +24,8 @@ export const TaskList: React.FC<TaskListProps> = ({
   onTaskClick,
   onDeleteTask,
   onReorderTasks,
-  listId
+  listId,
+  agixtConfig
 }) => {
   return (
     <div>
@@ -42,6 +44,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                 onUpdateTask={onUpdateTask}
                 onClick={() => onTaskClick(task)}
                 onDelete={() => onDeleteTask(task)}
+                agixtConfig={agixtConfig ? agixtConfig : undefined}
               />
             ))}
             {provided.placeholder}

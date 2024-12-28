@@ -1,29 +1,29 @@
 import { useState, useEffect } from 'react';
 
-function useLocalStorage(key: string, initialValue: string | null): [string | null, (value: string | null) => void] {
+function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
   // Always initialize with initialValue to avoid hydration mismatch
-  const [storedValue, setStoredValue] = useState<string | null>(initialValue);
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
 
   // After hydration, sync with localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const item = window.localStorage.getItem(key);
-        if (item !== storedValue) {
-          setStoredValue(item ? item : initialValue);
+        if (item) {
+          setStoredValue(JSON.parse(item));
         }
       } catch (error) {
         console.error(error);
       }
     }
-  }, []);
+  }, [key]);
 
-  const setValue = (value: string | null) => {
+  const setValue = (value: T) => {
     try {
       setStoredValue(value);
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, value || '');
-        window.dispatchEvent(new StorageEvent('storage', { key: key, newValue: value || '' }));
+        window.localStorage.setItem(key, JSON.stringify(value));
+        window.dispatchEvent(new StorageEvent('storage', { key: key, newValue: JSON.stringify(value) }));
       }
     } catch (error) {
       console.error(error);
@@ -35,7 +35,9 @@ function useLocalStorage(key: string, initialValue: string | null): [string | nu
       if (typeof window !== 'undefined') {
         try {
           const item = window.localStorage.getItem(key);
-          setStoredValue(item ? item : initialValue);
+          if (item) {
+            setStoredValue(JSON.parse(item));
+          }
         } catch (error) {
           console.error(error);
         }
@@ -48,7 +50,7 @@ function useLocalStorage(key: string, initialValue: string | null): [string | nu
         window.removeEventListener('storage', handleStorageChange);
       };
     }
-  }, [key, initialValue]);
+  }, [key]);
 
   return [storedValue, setValue];
 }

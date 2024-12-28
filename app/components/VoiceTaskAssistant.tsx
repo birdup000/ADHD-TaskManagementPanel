@@ -3,13 +3,13 @@ import { Task } from '../types/task';
 import { TranscriptionResult, VoiceCommand, ScreenCaptureData } from '../types/recognition';
 import AudioPulse from './audio-pulse/AudioPulse';
 import { MultimodalLiveClient } from '../lib/multimodal-live-client';
-import AGiXT from 'agixt';
+import { AGiXT as AGiXTSDK } from '../utils/agixt';
 
 interface VoiceTaskAssistantProps {
   onTaskUpdate: (task: Task) => void;
   onNewTask: (task: Task) => void;
   geminiApiKey: string;
-  selectedTask?: Task;
+  selectedTask: Task | undefined;
   agixtConfig: {
     backendUrl: string;
     authToken: string;
@@ -23,8 +23,8 @@ const VoiceTaskAssistant: React.FC<VoiceTaskAssistantProps> = ({
   selectedTask,
   agixtConfig
 }) => {
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const agixtClientRef = useRef<AGiXT | null>(null);
+  const recognitionRef = useRef<any | null>(null);
+  const agixtClientRef = useRef<AGiXTSDK | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [volume, setVolume] = useState(0);
   const [transcription, setTranscription] = useState('');
@@ -40,19 +40,19 @@ const VoiceTaskAssistant: React.FC<VoiceTaskAssistantProps> = ({
         apiKey: geminiApiKey
       });
 
-      agixtClientRef.current = new AGiXT({
-        baseUrl: agixtConfig.backendUrl,
-        authToken: agixtConfig.authToken
+      agixtClientRef.current = new AGiXTSDK({
+        baseUri: agixtConfig.backendUrl,
+        apiKey: agixtConfig.authToken
       });
 
       // Initialize Web Speech API recognition
       if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
         
-        recognitionRef.current.onresult = (event) => {
+        recognitionRef.current.onresult = (event: any) => {
           const result = event.results[event.results.length - 1];
           const transcriptionResult: TranscriptionResult = {
             text: result[0].transcript,
@@ -122,7 +122,7 @@ const VoiceTaskAssistant: React.FC<VoiceTaskAssistantProps> = ({
           isScreenSharing,
           confidence: transcription.confidence
         }
-      });
+      } as any);
 
       // Handle the AGiXT response
       if (response.action === 'CREATE_TASK') {
@@ -134,7 +134,13 @@ const VoiceTaskAssistant: React.FC<VoiceTaskAssistantProps> = ({
           status: 'todo',
           createdAt: new Date(),
           updatedAt: new Date(),
-          listId: 'default'
+          listId: 'default',
+          progress: 0,
+          owner: 'current-user',
+          collaborators: [],
+          activityLog: [],
+          comments: [],
+          version: 1,
         });
       } else if (response.action === 'UPDATE_TASK' && selectedTask) {
         onTaskUpdate({
@@ -163,7 +169,7 @@ const VoiceTaskAssistant: React.FC<VoiceTaskAssistantProps> = ({
       
       // Process screen capture
       const videoTrack = stream.getVideoTracks()[0];
-      const imageCapture = new ImageCapture(videoTrack);
+      const imageCapture = new (window as any).ImageCapture(videoTrack);
       
       // Periodically capture and process screens
       const captureInterval = setInterval(async () => {
@@ -191,7 +197,7 @@ const VoiceTaskAssistant: React.FC<VoiceTaskAssistantProps> = ({
             const contextResponse = await agixtClientRef.current.analyzeScreen({
               image: imageData,
               taskContext: selectedTask
-            });
+            } as any);
 
             if (contextResponse.needsUpdate) {
               onTaskUpdate({

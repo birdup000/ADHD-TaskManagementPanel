@@ -34,7 +34,7 @@ const createCheckpoint = async (
     }
 
     // Assuming AGiXT has a method to store custom data
-    await agixt.createTaskCheckpoint(taskId, checkpointData);
+    await agixt.create_checkpoint(taskId, checkpointData);
 
     const checkpoint = {
       id: crypto.randomUUID(),
@@ -71,7 +71,7 @@ const loadCheckpoint = async (
     }
 
     // Assuming AGiXT has a method to retrieve custom data
-    const checkpointData = await agixt.getTaskCheckpoint(
+    const checkpointData = await agixt.get_checkpoint(
       taskId,
       checkpointId
     );
@@ -260,7 +260,7 @@ Example format:
       .replace('{priority}', task.priority || '')
       .replace('{additionalContext}', '');
 
-    const result = await agixt.prompt(
+    const result = await agixt.chat(
       selectedAgent,
       userInput,
       conversationName
@@ -309,4 +309,4 @@ const updateConversationLog = (
   return updatedTask;
 };
 
-export { initializeAGiXT, getAgents, handleGenerateSubtasks, handleRunChain, updateConversationLog, parseSubtasks, createCheckpoint, loadCheckpoint };
+export { initializeAGiXT, getAgents, handleGenerateSubtasks, handleRunChain, updateConversationLog, parseSubtasks, createCheckpoint, loadCheckpoint, AGiXT };

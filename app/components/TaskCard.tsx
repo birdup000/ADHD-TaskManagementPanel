@@ -13,9 +13,10 @@ export interface TaskCardProps {
   onClick?: () => void;
   onDelete?: () => void;
   onUpdateTask?: (task: Task) => void;
+  agixtConfig?: { backendUrl: string; authToken: string };
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, onDelete, onUpdateTask }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, onDelete, onUpdateTask, agixtConfig }) => {
   const [agixtError, setAgixtError] = useState<string | null>(null);
 
   if (!task) {
@@ -64,15 +65,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index = 0, onClick, on
 
   const handleGenerateSubtasksClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    const agixtApiUri = localStorage.getItem('agixtapi') || '';
-    const agixtApiKey = localStorage.getItem('agixtkey') || '';
-    const selectedAgent = localStorage.getItem('selectedAgent') || 'OpenAI';
-    if (agixtApiUri && agixtApiKey && selectedAgent && task) {
-      const updatedTask = await handleGenerateSubtasks(task, selectedAgent, agixtApiUri, agixtApiKey);
-      if (updatedTask) {
-        onUpdateTask?.(updatedTask);
+    if (task && onUpdateTask && agixtConfig && agixtConfig.backendUrl && agixtConfig.authToken) {
+      const selectedAgent = localStorage.getItem('selectedAgent') || 'OpenAI';
+      if (selectedAgent) {
+        const updatedTask = await handleGenerateSubtasks(task, selectedAgent, agixtConfig.backendUrl, agixtConfig.authToken);
+        if (updatedTask) {
+          onUpdateTask(updatedTask);
+        }
+      } else {
+        setAgixtError("AGiXT API URI, API Key, or agent not set.");
       }
-    } else {
+    } else if (task && onUpdateTask) {
       setAgixtError("AGiXT API URI, API Key, or agent not set.");
     }
   };

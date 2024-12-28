@@ -81,4 +81,5 @@ export interface Task {
 export interface TaskList {
   id: string;
   name: string;
+  tasks: Task[];
 }

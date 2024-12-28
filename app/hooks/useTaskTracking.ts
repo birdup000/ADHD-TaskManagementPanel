@@ -161,6 +161,7 @@ export const useTaskTracking = ({ task, onUpdateTask }: UseTaskTrackingProps) =>
     error,
     startTracking,
     stopTracking,
-    checkPermissions
+    checkPermissions,
+    setError
   };
 };

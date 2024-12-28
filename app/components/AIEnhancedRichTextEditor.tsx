@@ -9,7 +9,6 @@ import isHotkey from 'is-hotkey';
 import { initializeAGiXT } from '../utils/agixt';
 import { FormatButton } from './FormatButton';
 import { toggleMark } from './editorUtils';
-import AGiXT from 'agixt';
 
 interface AIEnhancedRichTextEditorProps {
   placeholder?: string;

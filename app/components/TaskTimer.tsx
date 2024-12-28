@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import Modal from './ui/Modal';
 import { Task, TimeEntry } from '../types/task';
 import { ActivityLog } from '../types/collaboration';
 import { useTaskTracking } from '../hooks/useTaskTracking';
@@ -23,7 +24,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   const startTimeRef = useRef<Date | null>(null);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   
-  const { isTracking, hasPermission, error, startTracking, stopTracking, checkPermissions } = useTaskTracking({
+  const { isTracking, hasPermission, error, startTracking, stopTracking, checkPermissions, setError } = useTaskTracking({
     task,
     onUpdateTask,
   });
@@ -153,28 +154,26 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   return (
     <div className={`space-y-4 ${className}`}>
       {showPermissionDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg max-w-md mx-4">
-            <h3 className="text-lg font-medium text-white mb-4">Microphone Permission Required</h3>
-            <p className="text-gray-300 mb-6">
-              To enable task tracking features, we need access to your microphone. Please allow access when prompted.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowPermissionDialog(false)}
-                className="px-4 py-2 text-gray-300 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={checkPermissions}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
-              >
-                Allow Access
-              </button>
-            </div>
+        <Modal onClose={() => setShowPermissionDialog(false)}>
+          <h3 className="text-lg font-medium text-white mb-4">Microphone Permission Required</h3>
+          <p className="text-gray-300 mb-6">
+            To enable task tracking features, we need access to your microphone. Please allow access when prompted.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setShowPermissionDialog(false)}
+              className="px-4 py-2 text-gray-300 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={checkPermissions}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
+            >
+              Allow Access
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
       
       {error && (
