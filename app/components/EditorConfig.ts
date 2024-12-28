@@ -35,6 +35,11 @@ declare module 'slate' {
     Element: CustomElement;
     Text: CustomText;
   }
+
+  interface SlateElement {
+    type: string;
+    children: CustomText[];
+  }
 }
 
 // Editor configuration

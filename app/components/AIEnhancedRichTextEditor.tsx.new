@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { createEditor, Descendant, Editor, Element as SlateElement, Node as SlateNode, Text } from 'slate';
-import { Slate, Editable, withReact, ReactEditor, RenderElementProps, RenderLeafProps } from 'slate-react';
-// Using the same type from EditorConfig
-import { CustomEditor } from './EditorConfig';
+import { createEditor, Descendant, Editor, Element as SlateElement, Node as SlateNode } from 'slate';
+import { Slate, Editable, withReact, RenderElementProps, RenderLeafProps } from 'slate-react';
 import isHotkey from 'is-hotkey';
 import AGiXT from '../utils/agixt';
 import { FormatButton } from './FormatButton';
@@ -63,7 +61,7 @@ const AIEnhancedRichTextEditor: React.FC<AIEnhancedRichTextEditorProps> = ({
   onChange,
   onCreateTask,
 }) => {
-  const editor = useMemo(() => withReact(createEditor()), []) as CustomEditor;
+  const editor = useMemo(() => withReact(createEditor()), []);
   const [editorValue, setEditorValue] = useState<Descendant[]>(() => 
     deserialize(initialContent)
   );
@@ -152,28 +150,28 @@ const AIEnhancedRichTextEditor: React.FC<AIEnhancedRichTextEditorProps> = ({
 
   return (
     <div className="bg-[#2A2A2A] rounded-lg p-4">
+      <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-700 pb-2">
+        <FormatButton format={MARK_TYPES.bold} icon="B" />
+        <FormatButton format={MARK_TYPES.italic} icon="I" />
+        <FormatButton format={MARK_TYPES.underline} icon="U" />
+        <FormatButton format={MARK_TYPES.code} icon="<>" />
+        <FormatButton format={MARK_TYPES.strikethrough} icon="S" />
+        <div className="border-l border-gray-700 mx-2" />
+        <FormatButton format={ELEMENT_TYPES.heading1} icon="H1" isBlock />
+        <FormatButton format={ELEMENT_TYPES.heading2} icon="H2" isBlock />
+        <FormatButton format={ELEMENT_TYPES.heading3} icon="H3" isBlock />
+        <div className="border-l border-gray-700 mx-2" />
+        <FormatButton format={ELEMENT_TYPES.bulletList} icon="•" isBlock />
+        <FormatButton format={ELEMENT_TYPES.numberList} icon="1." isBlock />
+        <FormatButton format={ELEMENT_TYPES.blockquote} icon=""" isBlock />
+        <FormatButton format={ELEMENT_TYPES.codeBlock} icon="⌘" isBlock />
+      </div>
+
       <Slate
         editor={editor}
-        initialValue={editorValue}
+        value={editorValue}
         onChange={handleChange}
       >
-        <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-700 pb-2">
-          <FormatButton format={MARK_TYPES.bold} icon="B" />
-          <FormatButton format={MARK_TYPES.italic} icon="I" />
-          <FormatButton format={MARK_TYPES.underline} icon="U" />
-          <FormatButton format={MARK_TYPES.code} icon="<>" />
-          <FormatButton format={MARK_TYPES.strikethrough} icon="S" />
-          <div className="border-l border-gray-700 mx-2" />
-          <FormatButton format={ELEMENT_TYPES.heading1} icon="H1" isBlock />
-          <FormatButton format={ELEMENT_TYPES.heading2} icon="H2" isBlock />
-          <FormatButton format={ELEMENT_TYPES.heading3} icon="H3" isBlock />
-          <div className="border-l border-gray-700 mx-2" />
-          <FormatButton format={ELEMENT_TYPES.bulletList} icon="•" isBlock />
-          <FormatButton format={ELEMENT_TYPES.numberList} icon="1." isBlock />
-          <FormatButton format={ELEMENT_TYPES.blockquote} icon=""" isBlock />
-          <FormatButton format={ELEMENT_TYPES.codeBlock} icon="⌘" isBlock />
-        </div>
-
         <Editable
           className="min-h-[200px] text-gray-200 focus:outline-none"
           placeholder={placeholder}
@@ -181,29 +179,29 @@ const AIEnhancedRichTextEditor: React.FC<AIEnhancedRichTextEditorProps> = ({
           renderLeaf={renderLeaf}
           onKeyDown={handleKeyDown}
         />
-
-        {aiSuggestions.length > 0 && (
-          <div className="mt-4 border-t border-gray-700 pt-4">
-            <h4 className="text-sm font-medium text-gray-300 mb-2">AI Suggestions</h4>
-            <div className="space-y-2">
-              {aiSuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-gray-800/50 p-2 rounded"
-                >
-                  <span className="text-sm text-gray-300">{suggestion}</span>
-                  <button
-                    onClick={() => onCreateTask?.(suggestion, '')}
-                    className="text-xs bg-indigo-600/50 hover:bg-indigo-600 px-2 py-1 rounded transition-colors"
-                  >
-                    Create Task
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </Slate>
+
+      {aiSuggestions.length > 0 && (
+        <div className="mt-4 border-t border-gray-700 pt-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-2">AI Suggestions</h4>
+          <div className="space-y-2">
+            {aiSuggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between bg-gray-800/50 p-2 rounded"
+              >
+                <span className="text-sm text-gray-300">{suggestion}</span>
+                <button
+                  onClick={() => onCreateTask?.(suggestion, '')}
+                  className="text-xs bg-indigo-600/50 hover:bg-indigo-600 px-2 py-1 rounded transition-colors"
+                >
+                  Create Task
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Task } from '../types/task';
+import NotesEditor from './NotesEditor';
 import TaskProgress from './TaskProgress';
 import TaskComments from './TaskComments';
 import TaskAttachments from './TaskAttachments';
@@ -11,11 +12,14 @@ import TaskRecurrence from './TaskRecurrence';
 import TaskHistory from './TaskHistory';
 import TaskLabels from './TaskLabels';
 import TaskDependencies from './TaskDependencies';
+import AIEnhancedRichTextEditor from './AIEnhancedRichTextEditor';
+import VoiceTaskAssistant from './VoiceTaskAssistant';
 
 interface TaskDetailsPanelProps {
   task: Task | null;
   onClose: () => void;
   onUpdateTask: (task: Task) => void;
+  onAddTask?: (task: Task) => void;
   allTasks: Task[];
   className?: string;
 }
@@ -352,11 +356,86 @@ const TaskDetailsPanel: React.FC<TaskDetailsPanelProps> = ({
         </div>
 
         <div className="border-t border-gray-700 pt-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Recurrence
+          </h4>
+          <TaskRecurrence
+            task={task}
+            onUpdateTask={onUpdateTask}
+          />
+        </div>
+
+        <div className="border-t border-gray-700 pt-4">
           <TaskComments task={task} onUpdateTask={onUpdateTask} />
         </div>
 
         <div className="border-t border-gray-700 pt-4">
           <TaskHistory task={task} />
+        </div>
+
+        <div className="border-t border-gray-700 pt-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            Voice Assistant
+          </h4>
+          <VoiceTaskAssistant
+            onTaskUpdate={onUpdateTask}
+            selectedTask={task}
+          />
+        </div>
+
+        <div className="border-t border-gray-700 pt-4">
+          <h4 className="text-sm font-medium text-gray-300 mb-4 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Notes
+          </h4>
+          <div className="space-y-4">
+            <NotesEditor
+              initialNotes={task.notes || []}
+              tasks={allTasks}
+              onLinkTask={(noteId, taskId) => {
+                const updatedNotes = task.notes?.map(note =>
+                  note.id === noteId
+                    ? { ...note, linkedTaskIds: [...(note.linkedTaskIds || []), taskId] }
+                    : note
+                );
+                onUpdateTask({
+                  ...task,
+                  notes: updatedNotes,
+                  activityLog: [
+                    ...task.activityLog,
+                    {
+                      id: Date.now().toString(),
+                      taskId: task.id,
+                      userId: 'current-user',
+                      action: 'linked_note',
+                      timestamp: new Date(),
+                    },
+                  ],
+                });
+              }}
+            />
+            <AIEnhancedRichTextEditor
+              initialContent={task.description}
+              onChange={(content) => onUpdateTask({
+                ...task,
+                description: content,
+                updatedAt: new Date(),
+              })}
+              onCreateTask={(title, description) => {
+                // Handle task creation from AI suggestions
+                // This would typically be handled by the parent component
+                console.log('AI suggested new task:', { title, description });
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
