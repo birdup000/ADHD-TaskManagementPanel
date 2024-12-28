@@ -15,10 +15,7 @@ export const useTasks = (storageConfig: StorageConfig) => {
   const [error, setError] = useState<Error | null>(null);
   const storage = useMemo(() => createStorageManager(storageConfig), [storageConfig]);
 
-  const defaultList = { id: 'default', name: 'General Task List' };
-  const initialLists = useMemo(() => {
-    return lists.length > 0 ? lists : [defaultList];
-  }, [lists]);
+  // No default list - users must create their own lists
 
   // Load tasks and lists from storage
   useEffect(() => {
@@ -30,33 +27,8 @@ export const useTasks = (storageConfig: StorageConfig) => {
           storage.getLists()
         ]);
 
-        if (JSON.stringify(storedLists) !== JSON.stringify(initialLists)) {
-          setLists(storedLists);
-        }
-
-        if (storedTasks.length === 0 && initialLists.length > 0) {
-          const defaultTask: Task = {
-            id: 'default-task',
-            title: 'Example Task',
-            listId: initialLists[0].id,
-            description: 'This is an example task.',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            completedAt: undefined,
-            priority: 'medium',
-            status: 'todo',
-            owner: storageConfig.userId || 'anonymous',
-            collaborators: [],
-            activityLog: [],
-            comments: [],
-            version: 1,
-            progress: 0
-          };
-          setTasks([defaultTask]);
-          await storage.saveTasks([defaultTask]);
-        } else if (JSON.stringify(storedTasks) !== JSON.stringify(tasks)) {
-          setTasks(storedTasks);
-        }
+        setLists(storedLists);
+        setTasks(storedTasks);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to load data'));
       } finally {
@@ -86,131 +58,160 @@ export const useTasks = (storageConfig: StorageConfig) => {
     }
   }, [tasks, lists, storage, isLoading]);
 
+  const updateTask = (updatedTask: Task) => {
+    // Get the old version of the task
+    const oldTask = tasks.find((t) => t.id === updatedTask.id);
+    if (!oldTask) return;
+
+    if (!updatedTask.listId) {
+      console.error("Task must have a listId:", updatedTask);
+      return;
+    }
+
+    const targetList = lists.find(list => list.id === updatedTask.listId);
+    if (!targetList) {
+      console.error("Target list not found:", updatedTask.listId);
+      return;
+    }
+
+    // Track changes for activity log
+    const changes = findChanges(oldTask, updatedTask);
+    const newActivityLogs: ActivityLog[] = changes.map((change) => ({
+      id: Date.now().toString(),
+      taskId: updatedTask.id,
+      userId: storageConfig.userId || "anonymous",
+      action: "updated",
+      timestamp: new Date(),
+      details: {
+        field: change.field,
+        oldValue: change.oldValue,
+        newValue: change.newValue,
+      },
+    }));
+
+    // Prepare the updated task with new version and activity logs
+    const taskWithUpdates = {
+      ...updatedTask,
+      version: (oldTask.version || 0) + 1,
+      activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
+      lastViewed: {
+        ...(oldTask.lastViewed || {}),
+        [storageConfig.userId || "anonymous"]: new Date(),
+      },
+    };
+
+    // Update checkpoints if present
+    if (oldTask.checkpoints) {
+      taskWithUpdates.checkpoints = oldTask.checkpoints;
+    }
+
+    setTasks(prev => 
+      prev.map(task => task.id === updatedTask.id ? taskWithUpdates : task)
+    );
+    setLists(prev => 
+      prev.map(list => {
+        if (list.id === updatedTask.listId) {
+          return {
+            ...list,
+            tasks: list.tasks.map(task => 
+              task.id === updatedTask.id ? taskWithUpdates : task
+            )
+          };
+        }
+        return list;
+      })
+    );
+  };
+
+  const deleteTask = (taskId: string) => {
+    const taskToDelete = tasks.find(task => task.id === taskId);
+    if (!taskToDelete) return;
+
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+    setLists(prev => 
+      prev.map(list => {
+        if (list.id === taskToDelete.listId) {
+          return {
+            ...list,
+            tasks: list.tasks.filter(task => task.id !== taskId)
+          };
+        }
+        return list;
+      })
+    );
+  };
+
   const addTask = (task: Task) => {
     if (!task.listId) {
       console.error("Task must have a listId:", task);
       return;
     }
-    setTasks((prev) => [...prev, task]);
+
+    const targetList = lists.find(list => list.id === task.listId);
+    if (!targetList) {
+      console.error("Target list not found:", task.listId);
+      return;
+    }
+
+    setTasks(prev => [...prev, task]);
+    setLists(prev => prev.map(list => 
+      list.id === task.listId 
+        ? { ...list, tasks: [...list.tasks, task] }
+        : list
+    ));
   };
 
-  const loadTaskCheckpoint = async (
-        taskId: string,
-        checkpointId: string
-      ) => {
-        const task = tasks.find((t) => t.id === taskId);
-        if (!task) {
-          throw new Error(`Task not found: ${taskId}`);
-        }
-
-        const checkpoint = task.checkpoints?.find((cp) => cp.id === checkpointId);
-        if (!checkpoint) {
-          throw new Error(`Checkpoint not found: ${checkpointId}`);
-        }
-
-        if (checkpoint.state) {
-          // Assuming the state can be directly applied to update the task
-          updateTask({ ...task, ...checkpoint.state });
-        } else {
-          throw new Error("Checkpoint state is undefined");
-        }
-      };
-
-  const updateTask = (updatedTask: Task) => {
-      // Get the old version of the task
-      const oldTask = tasks.find((t) => t.id === updatedTask.id);
-      if (!oldTask) return;
-
-      // Track changes for activity log
-      const changes = findChanges(oldTask, updatedTask);
-      const newActivityLogs: ActivityLog[] = changes.map((change) => ({
-        id: Date.now().toString(),
-        taskId: updatedTask.id,
-        userId: storageConfig.userId || "anonymous",
-        action: "updated",
-        timestamp: new Date(),
-        details: {
-          field: change.field,
-          oldValue: change.oldValue,
-          newValue: change.newValue,
-        },
-      }));
-
-      // Prepare the updated task with new version and activity logs
-      const taskWithUpdates = {
-        ...updatedTask,
-        version: (oldTask.version || 0) + 1,
-        activityLog: [...(oldTask.activityLog || []), ...newActivityLogs],
-        lastViewed: {
-          ...(oldTask.lastViewed || {}),
-          [storageConfig.userId || "anonymous"]: new Date(),
-        },
-      };
-
-      // Update checkpoints if present
-      if (updatedTask.checkpoints) {
-        taskWithUpdates.checkpoints = updatedTask.checkpoints;
-      }
-
-      setTasks((prev) =>
-        prev.map((t) => (t.id === updatedTask.id ? taskWithUpdates : t))
-      );
-    };
-
-  const deleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
-  };
-
-  const reorderTasks = (reorderedTasks: Task[]) => {
-    setTasks(reorderedTasks);
-  };
-
-  const importTasks = (importedTasks: Task[], listId: string) => {
-    const tasksWithListId = importedTasks.map(task => ({
-      ...task,
-      listId: listId,
-    }));
-    setTasks(prev => [...prev, ...tasksWithListId]);
-  };
-
-  const addList = (list: TaskList) => {
+  const createList = (list: TaskList) => {
     setLists(prev => [...prev, list]);
   };
 
   const updateList = (updatedList: TaskList) => {
-    setLists(prev => prev.map(l => l.id === updatedList.id ? updatedList : l));
+    setLists(prev =>
+      prev.map(list =>
+        list.id === updatedList.id ? updatedList : list
+      )
+    );
   };
 
   const deleteList = (listId: string) => {
-    setLists(prev => prev.filter(l => l.id !== listId));
-    // Remove tasks associated with the deleted list
-    setTasks(prev => prev.filter(t => t.listId !== listId));
+    setLists(prev => prev.filter(list => list.id !== listId));
+    // Also delete all tasks in the list
+    setTasks(prev => prev.filter(task => task.listId !== listId));
   };
 
-  const sync = async () => {
-    try {
-      await Promise.all([
-        storage.saveTasks(tasks),
-        storage.saveLists(lists)
-      ]);
-    } catch (err) {
-      console.error('Error syncing data:', err);
+  const loadTaskCheckpoint = async (
+    taskId: string,
+    checkpointId: string
+  ) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+
+    const checkpoint = task.checkpoints?.find((cp) => cp.id === checkpointId);
+    if (!checkpoint) {
+      throw new Error(`Checkpoint not found: ${checkpointId}`);
+    }
+
+    if (checkpoint.state) {
+      // Assuming the state can be directly applied to update the task
+      updateTask({ ...task, ...checkpoint.state });
+    } else {
+      throw new Error("Checkpoint state is undefined");
     }
   };
 
   return {
     tasks,
     lists,
-    addTask,
-    updateTask,
-    deleteTask,
-    reorderTasks,
-    importTasks,
-    addList,
-    updateList,
-    deleteList,
-    sync,
     isLoading,
     error,
+    updateTask,
+    deleteTask,
+    addTask,
+    createList,
+    updateList,
+    deleteList,
+    loadTaskCheckpoint
   };
 };
