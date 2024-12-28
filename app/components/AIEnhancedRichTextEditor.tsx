@@ -6,9 +6,10 @@ import { Slate, Editable, withReact, ReactEditor, RenderElementProps, RenderLeaf
 // Using the same type from EditorConfig
 import { CustomEditor } from './EditorConfig';
 import isHotkey from 'is-hotkey';
-import AGiXT from '../utils/agixt';
+import { initializeAGiXT } from '../utils/agixt';
 import { FormatButton } from './FormatButton';
 import { toggleMark } from './editorUtils';
+import AGiXT from 'agixt';
 
 interface AIEnhancedRichTextEditorProps {
   placeholder?: string;
@@ -19,14 +20,14 @@ interface AIEnhancedRichTextEditorProps {
 
 const ELEMENT_TYPES = {
   paragraph: 'paragraph',
-  heading1: 'heading1',
-  heading2: 'heading2',
-  heading3: 'heading3',
-  bulletList: 'bullet-list',
-  numberList: 'number-list',
-  listItem: 'list-item',
-  blockquote: 'blockquote',
-  codeBlock: 'code-block',
+  heading1: 'heading',
+  heading2: 'heading',
+  heading3: 'heading',
+  bulletList: 'paragraph',
+  numberList: 'paragraph',
+  listItem: 'paragraph',
+  blockquote: 'paragraph',
+  codeBlock: 'paragraph',
 } as const;
 
 const MARK_TYPES = {
@@ -57,6 +58,31 @@ const deserialize = (text: string): Descendant[] => {
   }));
 };
 
+interface FormattedText extends Text {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  code?: boolean;
+  strikethrough?: boolean;
+}
+
+interface AGiXTSDK {
+  runChain: (
+    chainName: string,
+    taskText: string,
+    selectedAgent: string,
+    isNewConversation: boolean,
+    steps: number,
+    options: any
+  ) => Promise<any>;
+  prompt: (
+    selectedAgent: string,
+    prompt: string,
+    conversationName: string
+  ) => Promise<any>;
+}
+
+
 const AIEnhancedRichTextEditor: React.FC<AIEnhancedRichTextEditorProps> = ({
   placeholder = 'Start typing...',
   initialContent = '',
@@ -73,18 +99,38 @@ const AIEnhancedRichTextEditor: React.FC<AIEnhancedRichTextEditorProps> = ({
   const generateSuggestions = async (content: string) => {
     setIsProcessing(true);
     try {
-      const agixt = new AGiXT();
-      const response = await agixt.generate({
-        prompt: `Analyze the following note content and suggest relevant tasks, tags, or related information:\n\n${content}`,
-        commands: ['suggest_tasks', 'suggest_tags'],
-      });
-      setAiSuggestions(response.suggestions || []);
+      const backendUrl = 'http://localhost:7437';
+      const authToken = '';
+      const agixt = await initializeAGiXT(backendUrl, authToken) as unknown as AGiXTSDK;
+      if (agixt) {
+        if (typeof agixt.prompt === 'function') {
+          const response = await agixt.runChain(
+            'Task Management',
+            `Analyze the following note content and suggest relevant tasks, tags, or related information:\n\n${content}`,
+            'default',
+            false,
+            1,
+            {}
+          );
+
+          try {
+            const parsedResponse = JSON.parse(response);
+            if (Array.isArray(parsedResponse)) {
+              setAiSuggestions(parsedResponse);
+            } else if (parsedResponse && parsedResponse.suggestions) {
+              setAiSuggestions(parsedResponse.suggestions);
+            }
+          } catch (e) {
+            console.error("Error parsing AI response", e);
+            setAiSuggestions([response]);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error generating AI suggestions:', error);
     } finally {
       setIsProcessing(false);
-    }
-  };
+    };
 
   const renderElement = useCallback((props: RenderElementProps) => {
     switch (props.element.type) {
@@ -170,7 +216,7 @@ const AIEnhancedRichTextEditor: React.FC<AIEnhancedRichTextEditorProps> = ({
           <div className="border-l border-gray-700 mx-2" />
           <FormatButton format={ELEMENT_TYPES.bulletList} icon="•" isBlock />
           <FormatButton format={ELEMENT_TYPES.numberList} icon="1." isBlock />
-          <FormatButton format={ELEMENT_TYPES.blockquote} icon=""" isBlock />
+          <FormatButton format={ELEMENT_TYPES.blockquote} icon="\" isBlock />
           <FormatButton format={ELEMENT_TYPES.codeBlock} icon="⌘" isBlock />
         </div>
 
@@ -207,5 +253,6 @@ const AIEnhancedRichTextEditor: React.FC<AIEnhancedRichTextEditorProps> = ({
     </div>
   );
 };
+}
 
 export default React.memo(AIEnhancedRichTextEditor);
