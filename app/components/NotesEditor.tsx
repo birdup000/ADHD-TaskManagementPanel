@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import IntegrationButton from './IntegrationButton';
-import RichTextEditor from './RichTextEditor';
+import AIEnhancedRichTextEditor from './AIEnhancedRichTextEditor';
 import SubNotesList from './SubNotesList';
 import TaskSelectDialog from './TaskSelectDialog';
 import { Task } from '../types/task';
@@ -406,7 +406,7 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
             </div>
           </div>
 
-          <RichTextEditor
+          <AIEnhancedRichTextEditor
             initialContent={selectedNote.content}
             onChange={(content) =>
               updateNote({
@@ -415,6 +415,36 @@ const NotesEditor: React.FC<NotesEditorProps> = ({ initialNotes = [], tasks = []
                 updatedAt: new Date(),
               })
             }
+            onCreateTask={(title, description) => {
+              // Create a new task from the suggestion
+              const newTask = {
+                id: crypto.randomUUID(),
+                title,
+                description,
+                status: 'todo',
+                priority: 'medium',
+                progress: 0,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                linkedNoteIds: [selectedNote.id],
+                activityLog: [{
+                  id: Date.now().toString(),
+                  taskId: null, // Will be set after task creation
+                  userId: 'current-user',
+                  action: 'created',
+                  timestamp: new Date(),
+                }],
+              };
+              
+              // Update the note with the new task link
+              const updatedNote = {
+                ...selectedNote,
+                linkedTaskIds: [...(selectedNote.linkedTaskIds || []), newTask.id],
+                updatedAt: new Date(),
+              };
+              
+              updateNote(updatedNote);
+            }}
           />
         </div>
       ) : (
