@@ -20,7 +20,7 @@ interface ModernTaskPanelProps {
   tasks: Task[];
   onUpdateTask: (task: Task) => void;
   onAddTask: (task: Task) => void;
-  onDeleteTask: (taskId: string) => void;
+  onDeleteTask: (task: Task) => void; // Updated type
   onReorderTasks: (tasks: Task[]) => void;
   lists: any[];
 }
@@ -92,8 +92,8 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
     onNewTask: () => setIsEditorOpen(true),
     onSearch: () => document.getElementById('search-input')?.focus(),
     onToggleView: () => setCurrentView(currentView === 'board' ? 'matrix' : 'board'),
-    onDelete: () => {},
-    onDeleteTask: () => {}
+    onDelete: () => selectedTask && onDeleteTask(selectedTask),
+    onDeleteTask: () => selectedTask && onDeleteTask(selectedTask)
   });
 
   // Drag and drop handling
@@ -102,8 +102,9 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
 
     const { source, destination, draggableId } = result;
     const task = tasks.find(t => t.id === draggableId);
-    
-    if (!task) return;
+    if (!task || !destination) {
+      return;
+    }
 
     if (source.droppableId === destination.droppableId) {
       // Reorder within same status
@@ -138,8 +139,9 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
     }
 
     const grouped: { [key: string]: Task[] } = {};
+    const groupByKey = groupingSettings.groupBy as keyof Task;
     filteredTasks.forEach(task => {
-      const groupKey = task[groupingSettings.groupBy as keyof Task] || 'Other';
+      const groupKey = (task[groupByKey] as string) || 'Other';
       if (!grouped[groupKey]) {
         grouped[groupKey] = [];
       }
@@ -162,10 +164,13 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
 
   return (
     <div className="min-h-screen bg-[#111111] text-white p-6">
-      {/* Top Bar */}
+      <div className="flex flex-col h-full">
+        {/* Top Bar */}
       <div className="flex items-center justify-between mb-8 bg-gray-900 p-6 rounded-lg shadow-lg">
         <div className="flex items-center space-x-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">Task Dashboard</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+            Task Dashboard
+          </h1>
           <div className="flex items-center space-x-2 ml-8">
             <div className="px-3 py-1 bg-gray-800 rounded-lg">
               <span className="text-gray-400 text-sm">Total Tasks: </span>
@@ -356,13 +361,14 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
           )}
         </div>
       </div>
+      </div>
 
       {/* Modals */}
       {isLayoutSettingsOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <LayoutSettingsPanel
             layoutSettings={layoutSettings}
-            onSave={(newSettings) => {
+            onSave={(newSettings: LayoutSettings) => {
               setLayoutSettings(newSettings);
               setIsLayoutSettingsOpen(false);
             }}
@@ -375,7 +381,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <GroupingSettingsPanel
             groupingSettings={groupingSettings}
-            onSave={(newSettings) => {
+            onSave={(newSettings: GroupingSettings) => {
               setGroupingSettings(newSettings);
               setIsGroupingSettingsOpen(false);
             }}
