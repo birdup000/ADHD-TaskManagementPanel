@@ -13,6 +13,8 @@ import AGiXTConfig from './AGiXTConfig';
 import AIAssistantPanel from './AIAssistantPanel';
 import { useSearch } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import LayoutSettingsPanel from './LayoutSettingsPanel';
+import GroupingSettingsPanel from './GroupingSettingsPanel';
 
 interface ModernTaskPanelProps {
   tasks: Task[];
@@ -21,6 +23,24 @@ interface ModernTaskPanelProps {
   onDeleteTask: (taskId: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
   lists: any[];
+}
+
+interface LayoutSettings {
+  selectedLayout: 'board' | 'matrix' | 'list' | 'calendar';
+  columnVisibility: {
+    title: boolean;
+    description: boolean;
+    dueDate: boolean;
+    priority: boolean;
+    tags: boolean;
+    assignees: boolean;
+    subtasks: boolean;
+    status: boolean;
+  };
+}
+
+interface GroupingSettings {
+  groupBy: 'list' | 'tag' | 'project' | 'none';
 }
 
 const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
@@ -36,58 +56,25 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isAGiXTConfigOpen, setIsAGiXTConfigOpen] = useState(false);
   const [agixtConfig, setAgixtConfig] = useState({ backendUrl: '', authToken: '' });
-    const [layoutSettings, setLayoutSettings] = useState&lt;LayoutSettings&gt;({
-        selectedLayout: 'board',
-        columnVisibility: {
-          title: true,
-          description: true,
-          dueDate: true,
-          priority: true,
-          tags: true,
-          assignees: true,
-          subtasks: true,
-          status: true,
-        },
-      });
-      const [groupingSettings, setGroupingSettings] = useState&lt;GroupingSettings&gt;({
-        groupBy: 'none',
-      });
-      const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
-      const [isGroupingSettingsOpen, setIsGroupingSettingsOpen] = useState(false);
-      const [layoutSettings, setLayoutSettings] = useState&lt;LayoutSettings&gt;({
-        selectedLayout: 'board',
-        columnVisibility: {
-          title: true,
-          description: true,
-          dueDate: true,
-          priority: true,
-          tags: true,
-          assignees: true,
-          subtasks: true,
-          status: true,
-        },
-      });
-      const [groupingSettings, setGroupingSettings] = useState&lt;GroupingSettings&gt;({
-        groupBy: 'none',
-      });
-    const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
-    const [isGroupingSettingsOpen, setIsGroupingSettingsOpen] = useState(false);
-    const [layoutSettings, setLayoutSettings] = useState&lt;LayoutSettings&gt;({
-        selectedLayout: 'board',
-        columnVisibility: {
-          title: true,
-          description: true,
-          dueDate: true,
-          priority: true,
-          tags: true,
-          assignees: true,
-          subtasks: true,
-          status: true,
-        },
-      });
-      const [groupingSettings, setGroupingSettings] = useState&lt;GroupingSettings&gt;({
-        groupBy: 'none',
-      });
+  const [currentView, setCurrentView] = useState<'board' | 'matrix'>('board');
+  const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>({
+    selectedLayout: 'board',
+    columnVisibility: {
+      title: true,
+      description: true,
+      dueDate: true,
+      priority: true,
+      tags: true,
+      assignees: true,
+      subtasks: true,
+      status: true,
+    },
+  });
+  const [groupingSettings, setGroupingSettings] = useState<GroupingSettings>({
+    groupBy: 'none',
+  });
+  const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
+  const [isGroupingSettingsOpen, setIsGroupingSettingsOpen] = useState(false);
 
   // Search and filter functionality
   const {
@@ -142,6 +129,37 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
     }
   };
 
+  // Helper function to get grouped tasks
+  const getGroupedTasks = (status: 'todo' | 'in-progress' | 'done') => {
+    const filteredTasks = filteredAndSortedTasks().filter(task => task.status === status);
+
+    if (groupingSettings.groupBy === 'none') {
+      return filteredTasks;
+    }
+
+    const grouped: { [key: string]: Task[] } = {};
+    filteredTasks.forEach(task => {
+      const groupKey = task[groupingSettings.groupBy as keyof Task] || 'Other';
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = [];
+      }
+      grouped[groupKey].push(task);
+    });
+
+    if (groupingSettings.groupBy === 'list') {
+      // Sort groups by list order
+      return Object.entries(grouped)
+        .sort(([keyA], [keyB]) => {
+          const indexA = lists.findIndex(list => list.id === keyA);
+          const indexB = lists.findIndex(list => list.id === keyB);
+          return indexA - indexB;
+        })
+        .flatMap(([, tasks]) => tasks);
+    }
+
+    return Object.values(grouped).flat();
+  };
+
   return (
     <div className="min-h-screen bg-[#111111] text-white p-6">
       {/* Top Bar */}
@@ -160,19 +178,24 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
           </div>
         </div>
         <div className="flex items-center space-x-4">
-        <button
-            onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
+          <button
+            onClick={() => setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button><button
-            onClick={() =>setIsLayoutSettingsOpen(true)}
+          >
+            <span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span>
+          </button>
+          <button
+            onClick={() => setIsLayoutSettingsOpen(true)}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>⚙️ Layout Settings</span></button><button
-            onClick={() =>setIsGroupingSettingsOpen(true)}
+          >
+            <span>⚙️ Layout Settings</span>
+          </button>
+          <button
+            onClick={() => setIsGroupingSettingsOpen(true)}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>🔀 Grouping Settings</span></button><button
-            onClick={() =>setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button>
+          >
+            <span>🔀 Grouping Settings</span>
+          </button>
           <button
             onClick={() => setIsAGiXTConfigOpen(true)}
             className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
@@ -217,7 +240,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                         <span>To Do</span>
                       </h2>
                       <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
-                      tasks={getGroupedTasks('todo')}
+                        {getGroupedTasks('todo').length} tasks
                       </span>
                     </div>
                   </div>
@@ -243,7 +266,7 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                         <span>In Progress</span>
                       </h2>
                       <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
-                      tasks={getGroupedTasks('in-progress')}
+                        {getGroupedTasks('in-progress').length} tasks
                       </span>
                     </div>
                   </div>
@@ -269,80 +292,33 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
                         <span>Done</span>
                       </h2>
                       <span className="text-gray-400 text-sm px-2 py-1 bg-gray-700 rounded-lg">
+                        {getGroupedTasks('done').length} tasks
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <TaskList
+                      droppableId="done"
                       tasks={getGroupedTasks('done')}
-                      </div>{/* Right Sidebar */}<div className="w-80 space-y-6">{agixtConfig.backendUrl && agixtConfig.authToken && (<AIAssistantPanel
-              backendUrl={agixtConfig.backendUrl}
-              authToken={agixtConfig.authToken}
-              onTaskSuggestion={(suggestion) =>{
-                const newTask: Task = {
-                  id: Date.now().toString(),
-                  title: suggestion.title || '',
-                  description: suggestion.description || '',
-                  priority: suggestion.priority || 'medium',
-                  status: 'todo',
-                  progress: 0,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                  owner: 'current-user',
-                  collaborators: [],
-                  activityLog: [],
-                  comments: [],
-                  version: 1,
-                  listId: lists[0]?.id || 'default',
-                };
-                onAddTask(newTask);
-              }}
-              onTaskOptimization={(taskIds) =>{
-                const optimizedTasks = taskIds
-                  .map(id =>tasks.find(t =>t.id === id))
-                  .filter(Boolean) as Task[];
-                onReorderTasks(optimizedTasks);
-              }}
-              tasks={tasks}
-              selectedTask={selectedTask}
-            />)}</div></div>{/* Modals */}
-      {isLayoutSettingsOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><LayoutSettingsPanel
-            layoutSettings={layoutSettings}
-            onSave={(newSettings) =>{
-              setLayoutSettings(newSettings);
-              setIsLayoutSettingsOpen(false);
-            }}
-            onClose={() =>setIsLayoutSettingsOpen(false)}
-          /></div>)}
+                      onUpdateTask={onUpdateTask}
+                      onTaskClick={setSelectedTask}
+                      onDeleteTask={onDeleteTask}
+                      onReorderTasks={onReorderTasks}
+                      listId="default"
+                    />
+                  </div>
+                </div>
+              </div>
+            </DragDropContext>
+          ) : (
+            <TaskPriorityMatrix
+              tasks={filteredAndSortedTasks()}
+              onTaskClick={setSelectedTask}
+              onUpdateTask={onUpdateTask}
+            />
+          )}
+        </div>
 
-      {isGroupingSettingsOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><GroupingSettingsPanel
-            groupingSettings={groupingSettings}
-            onSave={(newSettings) =>{
-              setGroupingSettings(newSettings);
-              setIsGroupingSettingsOpen(false);
-            }}
-            onClose={() =>setIsGroupingSettingsOpen(false)}
-          /></div>)}
-
-      {isAGiXTConfigOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><AGiXTConfig
-            onClose={() =>setIsAGiXTConfigOpen(false)}
-            onSave={(config) =>{
-              setAgixtConfig(config);
-              setIsAGiXTConfigOpen(false);
-            }}
-          /></div>)}
-
-      {isEditorOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><TaskForm
-            onSubmit={(task) =>{
-              onAddTask(task);
-              setIsEditorOpen(false);
-            }}
-            onCancel={() =>setIsEditorOpen(false)}
-            lists={lists}
-          /></div>)}
-
-      {selectedTask && (<TaskDetailsPanel
-          task={selectedTask}
-          onClose={() =>setSelectedTask(null)}
-          onUpdateTask={onUpdateTask}
-          allTasks={tasks}
-          className="fixed inset-y-0 right-0 w-[32rem] shadow-xl"
-        />)}
         {/* Right Sidebar */}
         <div className="w-80 space-y-6">
           {agixtConfig.backendUrl && agixtConfig.authToken && (
@@ -382,6 +358,32 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
       </div>
 
       {/* Modals */}
+      {isLayoutSettingsOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <LayoutSettingsPanel
+            layoutSettings={layoutSettings}
+            onSave={(newSettings) => {
+              setLayoutSettings(newSettings);
+              setIsLayoutSettingsOpen(false);
+            }}
+            onClose={() => setIsLayoutSettingsOpen(false)}
+          />
+        </div>
+      )}
+
+      {isGroupingSettingsOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <GroupingSettingsPanel
+            groupingSettings={groupingSettings}
+            onSave={(newSettings) => {
+              setGroupingSettings(newSettings);
+              setIsGroupingSettingsOpen(false);
+            }}
+            onClose={() => setIsGroupingSettingsOpen(false)}
+          />
+        </div>
+      )}
+
       {isAGiXTConfigOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <AGiXTConfig
@@ -421,193 +423,3 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
 };
 
 export default ModernTaskPanel;
-interface ColumnVisibility {
-      [key: string]: boolean;
-    }
-
-    interface LayoutSettings {
-      selectedLayout: 'board' | 'matrix' | 'list' | 'calendar';
-      columnVisibility: ColumnVisibility;
-    }
-
-    interface GroupingSettings {
-      groupBy: 'list' | 'tag' | 'project' | 'none';
-      <button
-            onClick={() =>setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button><button
-            onClick={() =>setIsLayoutSettingsOpen(true)}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>⚙️ Layout Settings</span></button><button
-            onClick={() =>setIsGroupingSettingsOpen(true)}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>🔀 Grouping Settings</span></button><button
-            onClick={() =>setCurrentView(currentView === 'board' ? 'matrix' : 'board')}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>{currentView === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button>
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><LayoutSettingsPanel
-            layoutSettings={layoutSettings}
-            onSave={(newSettings) =&gt;{
-              setLayoutSettings(newSettings);
-              setIsLayoutSettingsOpen(false);
-            }}
-            onClose={() =&gt; setIsLayoutSettingsOpen(false)}
-          /></div>
-      )}
-
-      {isGroupingSettingsOpen &amp;&amp; (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><GroupingSettingsPanel
-            groupingSettings={groupingSettings}
-            onSave={(newSettings) =&gt;{
-              setGroupingSettings(newSettings);
-              setIsGroupingSettingsOpen(false);
-            }}
-            onClose={() =&gt; setIsGroupingSettingsOpen(false)}
-          /></div>
-      )}
-
-      const getGroupedTasks = (status: 'todo' | 'in-progress' | 'done') =>{
-      const filteredTasks = filteredAndSortedTasks().filter(task =>task.status === status);
-
-      if (groupingSettings.groupBy === 'none') {
-        return filteredTasks;
-      }
-
-      const grouped: { [key: string]: Task[] } = {};
-      filteredTasks.forEach(task =>{
-        const groupKey = task[groupingSettings.groupBy] || 'Other';
-        if (!grouped[groupKey]) {
-          grouped[groupKey] = [];
-        }
-        grouped[groupKey].push(task);
-      });
-
-      if (groupingSettings.groupBy === 'list') {
-        // Sort groups by list order
-        return Object.entries(grouped)
-          .sort(([keyA], [keyB]) =>{
-            const indexA = lists.findIndex(list =>list.id === keyA);
-            const indexB = lists.findIndex(list =>list.id === keyB);
-            return indexA - indexB;
-          })
-          .flatMap(([, tasks]) =>tasks);
-      }
-
-      return Object.values(grouped).flat();
-    };
-
-          return (<div className="min-h-screen bg-[#111111] text-white p-6">{/* Top Bar */}<div className="flex items-center justify-between mb-8 bg-gray-900 p-6 rounded-lg shadow-lg"><div className="flex items-center space-x-4"><h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">Task Dashboard</h1><div className="flex items-center space-x-2 ml-8"><div className="px-3 py-1 bg-gray-800 rounded-lg"><span className="text-gray-400 text-sm">Total Tasks:</span><span className="text-white font-medium">{tasks.length}</span></div><div className="px-3 py-1 bg-gray-800 rounded-lg"><span className="text-gray-400 text-sm">Active:</span><span className="text-white font-medium">{tasks.filter(t =>t.status === 'in-progress').length}</span></div></div></div><div className="flex items-center space-x-4"><button
-
-
-        onClick={() =&gt; setLayoutSettings({ ...layoutSettings, selectedLayout: layoutSettings.selectedLayout === 'board' ? 'matrix' : 'board' })}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          &gt;<span>{layoutSettings.selectedLayout === 'board' ? '📊 Matrix View' : '📋 Board View'}</span></button><button
-            onClick={() =&gt; setIsLayoutSettingsOpen(true)}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>⚙️ Layout Settings</span></button><button
-            onClick={() =&gt; setIsGroupingSettingsOpen(true)}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
-          ><span>🔀 Grouping Settings</span></button><button
-
-          {isLayoutSettingsOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><LayoutSettingsPanel
-              layoutSettings={layoutSettings}
-              onSave={(newSettings) =>{
-                setLayoutSettings(newSettings);
-                setIsLayoutSettingsOpen(false);
-              }}
-              onClose={() =>setIsLayoutSettingsOpen(false)}
-            /></div>)}
-
-        {isGroupingSettingsOpen && (<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><GroupingSettingsPanel
-              groupingSettings={groupingSettings}
-              onSave={(newSettings) =>{
-                setGroupingSettings(newSettings);
-                setIsGroupingSettingsOpen(false);
-              }}
-              onClose={() =>setIsGroupingSettingsOpen(false)}
-            /></div>)}
-
-        const getGroupedTasks = (status: 'todo' | 'in-progress' | 'done') =>{
-        const filteredTasks = filteredAndSortedTasks().filter(task =>task.status === status);
-
-        if (groupingSettings.groupBy === 'none') {
-          return filteredTasks;
-        }
-
-        const grouped: { [key: string]: Task[] } = {};
-        filteredTasks.forEach(task =>{
-          const groupKey = task[groupingSettings.groupBy] || 'Other';
-          if (!grouped[groupKey]) {
-            grouped[groupKey] = [];
-          }
-          grouped[groupKey].push(task);
-        });
-
-        if (groupingSettings.groupBy === 'list') {
-          // Sort groups by list order
-          return Object.entries(grouped)
-            .sort(([keyA], [keyB]) =>{
-              const indexA = lists.findIndex(list =>list.id === keyA);
-              const indexB = lists.findIndex(list =>list.id === keyB);
-              return indexA - indexB;
-            })
-            .flatMap(([, tasks]) =>tasks);
-        }
-
-        return Object.values(grouped).flat();
-      };
-
-      return (
-        &lt;div className="min-h-screen bg-[#111111] text-white p-6"&gt;
-          {/* Top Bar */}
-          &lt;div className="flex items-center justify-between mb-8 bg-gray-900 p-6 rounded-lg shadow-lg"&gt;
-            &lt;div className="flex items-center space-x-4"&gt;
-              &lt;h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent"&gt;Task Dashboard&lt;/h1&gt;
-              &lt;div className="flex items-center space-x-2 ml-8"&gt;
-                &lt;div className="px-3 py-1 bg-gray-800 rounded-lg"&gt;
-                  &lt;span className="text-gray-400 text-sm"&gt;Total Tasks: &lt;/span&gt;
-                  &lt;span className="text-white font-medium"&gt;{tasks.length}&lt;/span&gt;
-                &lt;/div&gt;
-                &lt;div className="px-3 py-1 bg-gray-800 rounded-lg"&gt;
-                  &lt;span className="text-gray-400 text-sm"&gt;Active: &lt;/span&gt;
-                  &lt;span className="text-white font-medium"&gt;{tasks.filter(t =&gt; t.status === 'in-progress').length}&lt;/span&gt;
-                &lt;/div&gt;
-              &lt;/div&gt;
-            &lt;/div&gt;
-            &lt;div className="flex items-center space-x-4"&gt;
-              &lt;button
-
-
-      const getGroupedTasks = (status: 'todo' | 'in-progress' | 'done') =&gt; {
-      const filteredTasks = filteredAndSortedTasks().filter(task =&gt; task.status === status);
-
-        if (groupingSettings.groupBy === 'none') {
-          return filteredTasks;
-        }
-
-        const grouped: { [key: string]: Task[] } = {};
-        filteredTasks.forEach(task =&gt; {
-          const groupKey = task[groupingSettings.groupBy as keyof Task] || 'Other';
-          if (!grouped[groupKey]) {
-            grouped[groupKey] = [];
-          }
-          grouped[groupKey].push(task);
-        });
-
-      if (groupingSettings.groupBy === 'list') {
-        // Sort groups by list order
-        return Object.entries(grouped)
-          .sort(([keyA], [keyB]) =&gt; {
-          const indexA = lists.findIndex(list =&gt; list.id === keyA);
-            const indexB = lists.findIndex(list =&gt; list.id === keyB);
-            return indexA - indexB;
-          })
-          .flatMap(([, tasks]) =&gt; tasks);
-      }
-
-      return Object.values(grouped).flat();
-    };
-
-    import LayoutSettingsPanel from './LayoutSettingsPanel';
-    import GroupingSettingsPanel from './GroupingSettingsPanel';
-
