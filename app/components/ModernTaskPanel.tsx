@@ -16,6 +16,7 @@ import { useSearch } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import LayoutSettingsPanel from './LayoutSettingsPanel';
 import GroupingSettingsPanel from './GroupingSettingsPanel';
+import GeminiConfig from './GeminiConfig';
 
 interface ModernTaskPanelProps {
   tasks: Task[];

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Task, TimeEntry } from '../types/task';
 import { ActivityLog } from '../types/collaboration';
+import { useTaskTracking } from '../hooks/useTaskTracking';
 
 interface TaskTimerProps {
   task: Task;
@@ -20,6 +21,12 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   const [description, setDescription] = useState<string>('');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  
+  const { isTracking, hasPermission, error, startTracking, stopTracking, checkPermissions } = useTaskTracking({
+    task,
+    onUpdateTask,
+  });
 
   useEffect(() => {
     return () => {
@@ -51,18 +58,47 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
     });
   };
 
-  const startTimer = () => {
-    if (!isRunning) {
+  const startTimer = async () => {
+    if (isRunning) return;
+    
+    if (!hasPermission) {
+      setShowPermissionDialog(true);
+      try {
+        await checkPermissions();
+        // Re-check permission state after permissions check
+        const permissions = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        if (permissions.state !== 'granted') {
+          console.error('Microphone permission was not granted');
+          setError && setError('Microphone permission required');
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to get microphone permission:', err);
+        setError('Failed to get microphone permission');
+        return;
+      } finally {
+        setShowPermissionDialog(false);
+      }
+    }
+
+    try {
+      console.log('Starting timer and tracking...');
       const now = new Date();
       startTimeRef.current = now;
+      
+      await startTracking();
+      
       setIsRunning(true);
       timerRef.current = setInterval(() => {
         setCurrentTime(prev => prev + 1);
       }, 1000);
+      console.log('Timer started successfully');
+    } catch (err) {
+      console.error('Failed to start timer:', err);
     }
-  };
+  }
 
-  const stopTimer = () => {
+  const stopTimer = async () => {
     const startTime = startTimeRef.current;
     if (isRunning && startTime) {
       setIsRunning(false);
@@ -70,6 +106,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      await stopTracking();
 
       const endTime = new Date();
       const timeEntry: TimeEntry = {
@@ -115,6 +152,46 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
+      {showPermissionDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg max-w-md mx-4">
+            <h3 className="text-lg font-medium text-white mb-4">Microphone Permission Required</h3>
+            <p className="text-gray-300 mb-6">
+              To enable task tracking features, we need access to your microphone. Please allow access when prompted.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowPermissionDialog(false)}
+                className="px-4 py-2 text-gray-300 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={checkPermissions}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"
+              >
+                Allow Access
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-sm font-medium text-gray-300">Time Tracking</h4>
         <span className="text-xs text-gray-400">
