@@ -11,6 +11,7 @@ import TaskDetailsPanel from './TaskDetailsPanel';
 import TaskForm from './TaskForm';
 import AGiXTConfig from './AGiXTConfig';
 import AIAssistantPanel from './AIAssistantPanel';
+import VoiceTaskAssistant from './VoiceTaskAssistant';
 import { useSearch } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import LayoutSettingsPanel from './LayoutSettingsPanel';
@@ -56,6 +57,8 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isAGiXTConfigOpen, setIsAGiXTConfigOpen] = useState(false);
   const [agixtConfig, setAgixtConfig] = useState({ backendUrl: '', authToken: '' });
+  const [geminiConfig, setGeminiConfig] = useState({ apiKey: '', model: 'gemini-pro' });
+  const [isGeminiConfigOpen, setIsGeminiConfigOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'board' | 'matrix'>('board');
   const [layoutSettings, setLayoutSettings] = useState<LayoutSettings>({
     selectedLayout: 'board',
@@ -208,6 +211,12 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
             <span>⚙️ AGiXT Config</span>
           </button>
           <button
+            onClick={() => setIsGeminiConfigOpen(true)}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <span>🤖 Gemini Config</span>
+          </button>
+          <button
             onClick={() => setIsEditorOpen(true)}
             className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg transition-colors flex items-center space-x-2 shadow-lg"
           >
@@ -326,6 +335,15 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
 
         {/* Right Sidebar */}
         <div className="w-80 space-y-6">
+          {geminiConfig.apiKey && agixtConfig.backendUrl && agixtConfig.authToken && (
+            <VoiceTaskAssistant
+              onTaskUpdate={onUpdateTask}
+              onNewTask={onAddTask}
+              geminiApiKey={geminiConfig.apiKey}
+              selectedTask={selectedTask}
+              agixtConfig={agixtConfig}
+            />
+          )}
           {agixtConfig.backendUrl && agixtConfig.authToken && (
             <AIAssistantPanel
               backendUrl={agixtConfig.backendUrl}
@@ -397,6 +415,18 @@ const ModernTaskPanel: React.FC<ModernTaskPanelProps> = ({
             onSave={(config) => {
               setAgixtConfig(config);
               setIsAGiXTConfigOpen(false);
+            }}
+          />
+        </div>
+      )}
+
+      {isGeminiConfigOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <GeminiConfig
+            onClose={() => setIsGeminiConfigOpen(false)}
+            onSave={(config) => {
+              setGeminiConfig(config);
+              setIsGeminiConfigOpen(false);
             }}
           />
         </div>

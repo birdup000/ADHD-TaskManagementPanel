@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import TaskPanel from '../components/TaskPanel';
+import TaskPanel from '../components/ModernTaskPanel';
 
 export default function TasksPage() {
   const router = useRouter();
