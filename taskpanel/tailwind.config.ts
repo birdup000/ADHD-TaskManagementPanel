@@ -20,10 +20,10 @@ export default {
         warning: "var(--warning)",
         muted: "var(--muted)",
         border: "var(--border)",
-        cozyOrange: "var(--cozy-orange)",
-        warmBrown: "var(--warm-brown)",
-        softPink: "var(--soft-pink)",
-        cream: "var(--cream)",
+        yodaGreen: "var(--yoda-green)",
+        deepBlue: "var(--deep-blue)",
+        softWhite: "var(--soft-white)",
+        warmGray: "var(--warm-gray)",
       },
       borderRadius: {
         DEFAULT: "var(--radius)",
@@ -51,6 +51,15 @@ export default {
       },
       transitionDuration: {
         DEFAULT: "var(--transition)",
+      },
+      animation: {
+        'gentle-pulse': 'gentle-pulse 3s ease-in-out infinite',
+      },
+      keyframes: {
+        'gentle-pulse': {
+          '0%, 100%': { opacity: '0.8' },
+          '50%': { opacity: '1' },
+        },
       },
     },
   },
