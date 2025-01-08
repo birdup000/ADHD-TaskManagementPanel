@@ -95,7 +95,7 @@ export default function TaskPanel() {
           { label: "In Progress", value: tasks.filter(t => !t.completed).length },
           { label: "Overdue", value: tasks.filter(t => t.dueDate && t.dueDate < new Date()).length }
         ].map((stat, i) => (
-          <div key={i} className="bg-primary dark:bg-primary rounded-lg p-4 hover:bg-primary/80 transition-colors animate-gentle-glow">
+          <div key={i} className="bg-primary/50 backdrop-blur-sm rounded-lg p-4 border border-border/20 hover:border-accent/30 transition-all glow-effect hover:glow-effect-hover">
             <div className="text-sm text-muted-foreground mb-1">{stat.label}</div>
             <div className="text-2xl font-semibold">{stat.value}</div>
           </div>
@@ -185,9 +185,9 @@ export default function TaskPanel() {
         {tasks.map((task) => (
           <div
             key={task.id}
-            className={`bg-primary dark:bg-primary rounded-lg p-6 group ${
-              task.completed ? "opacity-75 scale-95" : "hover:scale-[1.02]"
-            } transition-all animate-soft-bounce`}
+            className={`bg-gradient-to-br from-primary/50 to-secondary/50 backdrop-blur-sm rounded-lg p-6 border border-border/20 group ${
+              task.completed ? "opacity-75 scale-95" : "hover:scale-[1.02] hover:border-accent/30"
+            } transition-all glow-effect hover:glow-effect-hover`}
             draggable
           >
             <div className="flex flex-col gap-4">
@@ -221,9 +221,9 @@ export default function TaskPanel() {
                           )
                         )
                       }
-                      className={`bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-accent ${
+                      className={`bg-background/50 backdrop-blur-sm border border-border/20 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-accent/50 transition-all ${
                         priorityColors[task.priority]
-                      }`}
+                      } hover:border-accent/30 glow-effect`}
                     >
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
@@ -256,9 +256,9 @@ export default function TaskPanel() {
               
               {!task.completed && (
                 <div className="space-y-2">
-                  <div className="w-full bg-neutral-100 dark:bg-neutral-700 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-background/50 rounded-full h-2.5 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-2.5 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-accent/80 to-yodaGreen/80 h-2.5 rounded-full transition-all duration-300 glow-effect"
                       style={{ width: "30%" }} // TODO: Calculate actual progress
                     />
                   </div>
