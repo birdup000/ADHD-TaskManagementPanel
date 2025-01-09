@@ -76,17 +76,19 @@ export default function TaskPanel() {
 
   const handleAddTask = () => {
     if (newTask.title.trim()) {
+      const newTaskObject = {
+        id: Date.now().toString(),
+        title: newTask.title,
+        category: newTask.category,
+        priority: newTask.priority,
+        completed: false,
+        createdAt: new Date(),
+        dueDate: new Date(Date.now() + 86400000),
+        description: "", // Add a default description
+      };
       setTasks((prev) => [
         ...prev,
-        {
-          id: Date.now().toString(),
-          title: newTask.title,
-          category: newTask.category,
-          priority: newTask.priority,
-          completed: false,
-          createdAt: new Date(),
-          dueDate: new Date(Date.now() + 86400000)
-        },
+        newTaskObject,
       ]);
       setNewTask({ title: "", category: "work", priority: "medium" });
     }
