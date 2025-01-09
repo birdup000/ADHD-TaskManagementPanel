@@ -102,9 +102,9 @@ export default function TaskPanel() {
 
   return (
     <div className="container mx-auto p-6 dark:bg-background">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Header */}
-        <div className="col-span-12">
+        <div className="col-span-4">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold">Task Panel</h1>
             <div className="flex items-center gap-4">
@@ -191,8 +191,8 @@ export default function TaskPanel() {
         </div>
 
         {/* Task Statistics */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="col-span-2 md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Total Tasks", value: tasks.length },
               {
@@ -223,8 +223,8 @@ export default function TaskPanel() {
           </div>
         </div>
 
-        {/* Filter & Sort Controls */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-3">
+        {/* Filters & Sort Controls */}
+        <div className="col-span-2 md:col-span-2">
           <div className="bg-primary dark:bg-primary rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Filter & Sort</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -246,7 +246,7 @@ export default function TaskPanel() {
         </div>
 
         {/* AI Actions Sidebar */}
-        <div className="col-span-12 md:col-span-12 lg:col-span-3">
+        <div className="col-span-2 md:col-span-2">
           <div className="bg-background/95 backdrop-blur-sm border-l border-border/20 p-6 space-y-6 sticky top-0">
             <h2 className="text-lg font-semibold">AI Actions</h2>
 
@@ -336,7 +336,7 @@ export default function TaskPanel() {
         </div>
 
         {/* Task Grid */}
-        <div className="col-span-12 md:col-span-9 lg:col-span-6">
+        <div className="col-span-2 md:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tasks.map((task) => (
               <div
@@ -497,7 +497,7 @@ export default function TaskPanel() {
         </div>
 
         {/* New Task Form */}
-        <div className="col-span-12 md:col-span-9 lg:col-span-6">
+        <div className="col-span-2 md:col-span-2">
           <div className="bg-primary dark:bg-primary rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
             <div className="flex flex-col md:flex-row gap-4">
@@ -539,7 +539,7 @@ export default function TaskPanel() {
         </div>
 
         {/* Bottom Navigation */}
-        <div className="col-span-12 md:col-span-3 lg:col-span-3">
+        <div className="col-span-4 md:col-span-4">
           <div className="bg-background/95 backdrop-blur-sm border-t border-border/20 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export default function TaskPanel() {
         </div>
 
         {/* FocusTimer and Reminders */}
-        <div className="col-span-12 md:col-span-9 lg:col-span-6">
+        <div className="col-span-2 md:col-span-2">
           <FocusTimer
             activeTask={activeTaskId}
             onTaskComplete={() => {
