@@ -38,7 +38,7 @@ export default function TaskPanel() {
     processing: false,
   });
   const [generatedSubtasks, setGeneratedSubtasks] = useState<SubTask[]>([]);
-  const { generateSubtasks, identifyDependencies, loading, error, aiResponse } = useAISubtaskGenerator();
+  const { generateSubtasks, identifyDependencies, loading, error, subtasks } = useAISubtaskGenerator();
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -454,22 +454,22 @@ export default function TaskPanel() {
                 <div className="pt-6 border-t border-border/20">
                   <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
                   <div className="text-sm text-muted-foreground">
-                    {aiResponse ? (
-                      <div className="text-red-500">{aiResponse}</div>
-                    ) : aiStatus.active ? (
-                      aiStatus.processing ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                          Analyzing tasks...
-                          <br />
-                          This can also help debug as well if you are a dev of the program but it is cool to use if you are a user as well
-                        </div>
+                    {subtasks && subtasks.length === 0 ? (
+                      aiStatus.active ? (
+                        aiStatus.processing ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                            Analyzing tasks...
+                            <br />
+                            This can also help debug as well if you are a dev of the program but it is cool to use if you are a user as well
+                          </div>
+                        ) : (
+                          "No subtasks generated yet."
+                        )
                       ) : (
-                        "No suggestions available"
+                        "Enable AI for suggestions"
                       )
-                    ) : (
-                      "Enable AI for suggestions"
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>

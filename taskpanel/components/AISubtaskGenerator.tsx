@@ -13,7 +13,7 @@ export interface SubTask {
   completed: boolean;
 }
 
-const GENERATE_SUBTASKS_PROMPT = `
+const GENERATE_SINGLE_SUBTASK_PROMPT = `
 Given the following task details:
 Task Name: {taskName}
 Description: {taskDescription}
@@ -21,14 +21,24 @@ Due Date: {dueDate}
 Priority: {priority}
 Additional Context: {additionalContext}
 
-Generate a list of 3-5 subtasks that break down this main task into smaller, actionable items. Each subtask should be specific, measurable, and contribute to the completion of the main task. 
+Previous Subtasks:
+{previousSubtasks}
 
-Format the response as a JSON array of objects, where each object has the following properties:
-- id: A unique identifier (you can use numbers starting from 1)
-- title: The title of the subtask
-- description: The description of the subtask
-- estimatedTime: The estimated time to complete the subtask in minutes
-- completed: Boolean value (set to false for new subtasks)
+Generate the next subtask that breaks down this main task into smaller, actionable items. This subtask should be specific, measurable, and contribute to the completion of the main task.
+
+The response MUST be a valid JSON object conforming to the following schema:
+{
+ "type": "object",
+ "properties": {
+   "id": { "type": "number", "description": "A unique identifier (starting from 1)" },
+   "title": { "type": "string", "description": "The title of the subtask" },
+   "description": { "type": "string", "description": "The description of the subtask" },
+   "estimatedTime": { "type": "number", "description": "The estimated time to complete the subtask in minutes" },
+   "completed": { "type": "boolean", "description": "Boolean value (always false for new subtasks)" }
+ },
+ "required": ["id", "title", "description", "estimatedTime", "completed"],
+ "description": "The response MUST be a valid JSON object conforming to this schema. Do not include any additional text or formatting."
+}
 `;
 
 const IDENTIFY_DEPENDENCIES_PROMPT = `
@@ -44,7 +54,7 @@ Format the response as a string.
 export const useAISubtaskGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [subtasks, setSubtasks] = useState<SubTask[]>([]);
 
   const generateSubtasks = async (
     taskName: string,
@@ -56,49 +66,63 @@ export const useAISubtaskGenerator = () => {
     setLoading(true);
     setError(null);
 
+    let generatedSubtasks: SubTask[] = [];
+
     try {
       const puter = await loadPuter();
-      const prompt = GENERATE_SUBTASKS_PROMPT
-        .replace('{taskName}', taskName)
-        .replace('{taskDescription}', taskDescription)
-        .replace('{dueDate}', dueDate || 'N/A')
-        .replace('{priority}', priority || 'N/A')
-        .replace('{additionalContext}', additionalContext || 'N/A');
 
-      const response = await puter.ai.chat(prompt, {
-        model: "gpt-4o-mini",
-        stream: false,
-      });
-      console.log("AI Response:", response);
-      setAiResponse(response);
-      // Parse the JSON response
-      let subtasks: SubTask[];
-      try {
-        subtasks = JSON.parse(response) as SubTask[];
-      } catch (parseError) {
-        console.error("JSON Parse Error:", parseError);
-        setAiResponse("Invalid JSON format from AI.");
-        return [];
-      }
-      // Validate subtasks
-      if (subtasks) {
-        for (const subtask of subtasks) {
-          if (
-            typeof subtask.id !== 'number' ||
-            typeof subtask.title !== 'string' ||
-            typeof subtask.description !== 'string' ||
-            typeof subtask.estimatedTime !== 'number' ||
-            typeof subtask.completed !== 'boolean'
-          ) {
-            throw new Error('Invalid subtask format from AI.');
+      for (let i = 0; i < 5; i++) {
+        let retries = 0;
+        const previousSubtasksContext = generatedSubtasks
+          .map((subtask) => `- ${subtask.title}: ${subtask.description}`)
+          .join('\n');
+
+        const prompt = GENERATE_SINGLE_SUBTASK_PROMPT
+          .replace('{taskName}', taskName)
+          .replace('{taskDescription}', taskDescription)
+          .replace('{dueDate}', dueDate || 'N/A')
+          .replace('{priority}', priority || 'N/A')
+          .replace('{additionalContext}', additionalContext || 'N/A')
+          .replace('{previousSubtasks}', previousSubtasksContext);
+
+        const response = await puter.ai.chat(prompt, {
+          model: 'gpt-4o-mini',
+          stream: false,
+        });
+        console.log('AI Subtask Response:', response);
+
+        let parsedSubtask: SubTask | null = null;
+        while (parsedSubtask === null && retries < 3) {
+          try {
+            parsedSubtask = JSON.parse(response) as SubTask;
+            // Validate subtask
+            if (
+              typeof parsedSubtask.id !== 'number' ||
+              typeof parsedSubtask.title !== 'string' ||
+              typeof parsedSubtask.description !== 'string' ||
+              typeof parsedSubtask.estimatedTime !== 'number' ||
+              typeof parsedSubtask.completed !== 'boolean'
+            ) {
+              setError('Invalid subtask format from AI.');
+              parsedSubtask = null;
+            }
+          } catch (parseError) {
+            console.error('JSON Parse Error:', parseError, 'AI Response:', response);
+            setError('Invalid JSON format from AI.');
+            retries++;
           }
         }
-        return subtasks;
+        if (parsedSubtask) {
+          generatedSubtasks.push(parsedSubtask);
+        } else {
+          console.error('Failed to parse subtask after multiple retries, skipping to next subtask.');
+        }
       }
+      setSubtasks(generatedSubtasks);
+      return generatedSubtasks;
     } catch (err: any) {
-      setError("Failed to generate subtasks. Please try again.");
-      console.error("AI Subtask Generation Error:", err);
-      setAiResponse(err?.message || "Failed to generate subtasks. Please try again.");
+      setError('Failed to generate subtasks. Please try again.');
+      console.error('AI Subtask Generation Error:', err);
       return [];
     } finally {
       setLoading(false);
@@ -122,17 +146,15 @@ export const useAISubtaskGenerator = () => {
         stream: false,
       });
       console.log("AI Dependency Analysis Response:", response);
-      setAiResponse(response);
       return response;
     } catch (err: any) {
       setError("Failed to identify dependencies. Please try again.");
       console.error("AI Dependency Analysis Error:", err);
-      setAiResponse(err?.message || "Error identifying dependencies.");
       return "Error identifying dependencies.";
     } finally {
       setLoading(false);
     }
   };
 
-  return { generateSubtasks, identifyDependencies, loading, error, aiResponse };
+  return { generateSubtasks, identifyDependencies, loading, error, subtasks };
 };
