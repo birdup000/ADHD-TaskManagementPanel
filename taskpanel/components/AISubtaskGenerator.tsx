@@ -44,6 +44,7 @@ Format the response as a string.
 export const useAISubtaskGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
 
   const generateSubtasks = async (
     taskName: string,
@@ -69,8 +70,14 @@ export const useAISubtaskGenerator = () => {
         stream: false,
       });
       console.log("AI Response:", response);
+      setAiResponse(response);
       // Parse the JSON response
-      const subtasks = JSON.parse(response) as SubTask[];
+      let subtasks: SubTask[];
+      try {
+        subtasks = JSON.parse(response) as SubTask[];
+      } catch (parseError) {
+        throw new Error('Invalid JSON format from AI.');
+      }
       // Validate subtasks
       for (const subtask of subtasks) {
         if (
@@ -87,6 +94,7 @@ export const useAISubtaskGenerator = () => {
     } catch (err) {
       setError("Failed to generate subtasks. Please try again.");
       console.error("AI Subtask Generation Error:", err);
+      setAiResponse("Failed to generate subtasks. Please try again.");
       return [];
     } finally {
       setLoading(false);
@@ -110,15 +118,17 @@ export const useAISubtaskGenerator = () => {
         stream: false,
       });
       console.log("AI Dependency Analysis Response:", response);
+      setAiResponse(response);
       return response;
     } catch (err) {
       setError("Failed to identify dependencies. Please try again.");
       console.error("AI Dependency Analysis Error:", err);
+      setAiResponse("Error identifying dependencies.");
       return "Error identifying dependencies.";
     } finally {
       setLoading(false);
     }
   };
 
-  return { generateSubtasks, identifyDependencies, loading, error };
+  return { generateSubtasks, identifyDependencies, loading, error, aiResponse };
 };

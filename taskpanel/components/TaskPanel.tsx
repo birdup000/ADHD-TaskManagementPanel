@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FocusTimer } from "./FocusTimer";
 import Reminders from "./Reminders";
-import { SubTask, useAISubtaskGenerator,  } from "./AISubtaskGenerator";
+import { SubTask, useAISubtaskGenerator } from "./AISubtaskGenerator";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
 import { getPuter } from "@/lib/puter";
 
@@ -37,9 +37,8 @@ export default function TaskPanel() {
     active: true,
     processing: false,
   });
-  const [aiOutput, setAiOutput] = useState<string | null>(null);
   const [generatedSubtasks, setGeneratedSubtasks] = useState<SubTask[]>([]);
-  const { generateSubtasks, identifyDependencies, loading, error } = useAISubtaskGenerator();
+  const { generateSubtasks, identifyDependencies, loading, error, aiResponse } = useAISubtaskGenerator();
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -373,16 +372,16 @@ export default function TaskPanel() {
                   onClick={async () => {
                     setAIStatus((prev) => ({ ...prev, processing: true }));
                     if (!activeTaskId) {
-                      setAiOutput("Please select a task first.");
+                      
                       setAIStatus((prev) => ({ ...prev, processing: false }));
                       return;
                     }
-                    setAiOutput(null);
+                    
                     const activeTask = tasks.find(
                       (t) => t.id === activeTaskId
                     );
                     if (activeTask) {
-                      let aiResponse: string | null = null;
+                      
                       try {
                         const response = await generateSubtasks(
                           activeTask.title,
@@ -391,19 +390,11 @@ export default function TaskPanel() {
                           activeTask.priority,
                           ""
                         );
-                        let aiResponse: any = null;
-                        try {
-                          aiResponse = response;
-                          const parsedResponse = JSON.parse(aiResponse) as SubTask[];
-                          setGeneratedSubtasks(parsedResponse);
-                        } catch (e) {
-                          console.error("Error parsing AI response", e);
-                        } finally {
-                          setAiOutput(String(aiResponse));
-                        }
-                      } catch (e) {
+                        
+                        setGeneratedSubtasks(response as SubTask[]);
+                      }
+                       catch (e) {
                         console.error("Error generating subtasks", e);
-                        setAiOutput("Error generating subtasks");
                       }
                     }
                     setAIStatus((prev) => ({ ...prev, processing: false }));
@@ -413,17 +404,28 @@ export default function TaskPanel() {
                 </button>
                 <button
                   className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                  onClick={() =>
-                    setAIStatus((prev) => ({ ...prev, processing: true }))
-                  }
-                >
-                  Auto-Schedule Tasks
-                </button>
-                <button
-                  className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                  onClick={() =>
-                    setAIStatus((prev) => ({ ...prev, processing: true }))
-                  }
+                  onClick={() => {
+                    setAIStatus((prev) => ({...prev, processing: true}));
+                    if (!activeTaskId) {
+                      setAIStatus((prev) => ({...prev, processing: false}));
+                      return;
+                    }
+                    const activeTask = tasks.find(
+                      (t) => t.id === activeTaskId
+                    );
+                    if (activeTask) {
+                      identifyDependencies(activeTask.title, activeTask.description || "")
+                      .then((response) => {
+                        console.log("Dependencies identified:", response);
+                      })
+                      .catch((error) => {
+                        console.error("Error identifying dependencies:", error);
+                      })
+                      .finally(() => {
+                        setAIStatus((prev) => ({...prev, processing: false}));
+                      });
+                    }
+                  }}
                 >
                   Identify Dependencies
                 </button>
@@ -452,8 +454,8 @@ export default function TaskPanel() {
                 <div className="pt-6 border-t border-border/20">
                   <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
                   <div className="text-sm text-muted-foreground">
-                    {aiOutput ? (
-                      <div className="text-red-500">{aiOutput}</div>
+                    {aiResponse ? (
+                      <div className="text-red-500">{aiResponse}</div>
                     ) : aiStatus.active ? (
                       aiStatus.processing ? (
                         <div className="flex items-center gap-2">
