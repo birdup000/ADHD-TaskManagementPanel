@@ -53,7 +53,6 @@ h1, h2, h3, h4 {
   background: var(--primary);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(4px);
 }
 
 .task-card {

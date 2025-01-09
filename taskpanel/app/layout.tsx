@@ -28,6 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full bg-background`}
       >
+        <script src="https://js.puter.com/v2/"></script>
         <div className="min-h-full flex flex-col">
           <header className="bg-primary/50 backdrop-blur-sm shadow-sm border-b border-border/50">
             <div className="w-full px-6 py-5">
