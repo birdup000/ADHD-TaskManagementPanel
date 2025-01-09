@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { FocusTimer } from "./FocusTimer";
 import Reminders from "./Reminders";
-import { SubTask, useAISubtaskGenerator } from "./AISubtaskGenerator";
+import { SubTask, useAISubtaskGenerator,  } from "./AISubtaskGenerator";
+import TaskDetailsDrawer from "./TaskDetailsDrawer";
 
 interface Task {
   id: string;
@@ -35,9 +36,9 @@ export default function TaskPanel() {
     active: true,
     processing: false,
   });
-
+  const [aiOutput, setAiOutput] = useState<string | null>(null);
   const [generatedSubtasks, setGeneratedSubtasks] = useState<SubTask[]>([]);
-  const { generateSubtasks, loading, error } = useAISubtaskGenerator();
+  const { generateSubtasks, identifyDependencies, loading, error } = useAISubtaskGenerator();
 
   const [tasks, setTasks] = useState<Task[]>([
     {
@@ -85,9 +86,12 @@ export default function TaskPanel() {
     priority: "medium",
   });
 
+  const [showAITools, setShowAITools] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
   return (
     <div className="container mx-auto p-6 dark:bg-background">
-      {/* Top Bar (Header) */}
+      {/* Header Bar */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <span className="text-2xl font-bold">Task Dashboard</span>
@@ -123,12 +127,6 @@ export default function TaskPanel() {
             placeholder="Search tasks..."
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all"
           />
-          {/* Select Filter */}
-          <select className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all">
-            <option value="all">All Tasks</option>
-            <option value="ai-generated">AI Generated</option>
-            <option value="user-created">User Created</option>
-          </select>
           {/* Profile or Settings Icon */}
           <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
             <svg
@@ -149,9 +147,9 @@ export default function TaskPanel() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Main Panel */}
-        <div className="col-span-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Main Column */}
+        <div className="md:col-span-2 space-y-6">
           {/* Task Statistics & Filters */}
           <div className="mb-6">
             <div className="flex flex-wrap gap-4 mb-4">
@@ -200,8 +198,120 @@ export default function TaskPanel() {
             </div>
           </div>
 
+          {/* AI Tools Panel (Collapsible) */}
+          <div className="border rounded-lg">
+            <button
+              onClick={() => setShowAITools((prev) => !prev)}
+              className="flex items-center justify-between w-full p-4"
+            >
+              <span className="text-lg font-semibold">AI Tools</span>
+              <span className="text-lg">{showAITools ? "▲" : "▼"}</span>
+            </button>
+
+            {showAITools && (
+              <div className="p-4 pt-0 space-y-4">
+                <button
+                  className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
+                  onClick={async () => {
+                    setAIStatus((prev) => ({ ...prev, processing: true }));
+                    if (activeTaskId) {
+                      const activeTask = tasks.find(
+                        (t) => t.id === activeTaskId
+                      );
+                      if (activeTask) {
+                        let aiResponse: string | null = null;
+                        try {
+                          const response = await generateSubtasks(
+                            activeTask.title,
+                            activeTask.description || "",
+                            activeTask.dueDate?.toISOString(),
+                            activeTask.priority,
+                            ""
+                          );
+                          let aiResponse: any = null;
+                          try {
+                            aiResponse = response;
+                            const parsedResponse = JSON.parse(aiResponse) as SubTask[];
+                            setGeneratedSubtasks(parsedResponse);
+                          } catch (e) {
+                            console.error("Error parsing AI response", e);
+                          } finally {
+                            setAiOutput(String(aiResponse));
+                          }
+                        } catch (e) {
+                          console.error("Error generating subtasks", e);
+                          setAiOutput("Error generating subtasks");
+                        }
+                      }
+                    }
+                    setAIStatus((prev) => ({ ...prev, processing: false }));
+                  }}
+                >
+                  Generate Subtasks
+                </button>
+                <button
+                  className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
+                  onClick={() =>
+                    setAIStatus((prev) => ({ ...prev, processing: true }))
+                  }
+                >
+                  Auto-Schedule Tasks
+                </button>
+                <button
+                  className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
+                  onClick={() =>
+                    setAIStatus((prev) => ({ ...prev, processing: true }))
+                  }
+                >
+                  Identify Dependencies
+                </button>
+                {generatedSubtasks.length > 0 && (
+                  <div className="mt-6 space-y-4">
+                    <h3 className="font-medium">Generated Subtasks</h3>
+                    <div className="space-y-2">
+                      {generatedSubtasks.map((subtask, index) => (
+                        <div
+                          key={index}
+                          className="p-3 bg-background/50 rounded-lg border border-border/20"
+                        >
+                          <div className="font-medium">{subtask.title}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {subtask.description}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Estimated Time: {subtask.estimatedTime} minutes
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-6 border-t border-border/20">
+                  <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
+                  <div className="text-sm text-muted-foreground">
+                    {aiStatus.active ? (
+                      aiStatus.processing ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                          Analyzing tasks...
+                          <br />
+                          This can also help debug as well if you are a dev of the program but it is cool to use if you are a user as well
+                        </div>
+                      ) : (
+                        "No suggestions available"
+                      )
+                    ) : (
+                      "Enable AI for suggestions"
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Task List / Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tasks.map((task) => (
               <div
                 key={task.id}
@@ -209,9 +319,11 @@ export default function TaskPanel() {
                   task.completed
                     ? "opacity-75 scale-95"
                     : "hover:backdrop-blur-md hover:border-accent/30"
-                } transition-all duration-300 glow-effect hover:glow-effect-hover min-w-[240px]`}
+                } transition-all duration-300 glow-effect hover:glow-effect-hover min-w-[240px] cursor-pointer`}
+                onClick={() => setSelectedTask(task)}
                 draggable
               >
+                {/* Task Card Content */}
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0 space-y-1.5">
@@ -359,153 +471,75 @@ export default function TaskPanel() {
             ))}
           </div>
 
-          {/* AI Tools Panel */}
-          <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-6 space-y-6 mb-6">
-            <h2 className="text-lg font-semibold">AI Tools</h2>
-
-            <div className="space-y-4">
-              <button
-                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                onClick={async () => {
-                  setAIStatus((prev) => ({ ...prev, processing: true }));
-                  if (activeTaskId) {
-                    const activeTask = tasks.find(
-                      (t) => t.id === activeTaskId
-                    );
-                    if (activeTask) {
-                      const subtasks = await generateSubtasks(
-                        activeTask.title,
-                        activeTask.description || "",
-                        activeTask.dueDate?.toISOString(),
-                        activeTask.priority,
-                        ""
-                      );
-                      setGeneratedSubtasks(subtasks);
-                    }
-                  }
-                  setAIStatus((prev) => ({ ...prev, processing: false }));
-                }}
-              >
-                Generate Subtasks
-              </button>
-              <button
-                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                onClick={() =>
-                  setAIStatus((prev) => ({ ...prev, processing: true }))
-                }
-              >
-                Auto-Schedule Tasks
-              </button>
-              <button
-                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                onClick={() =>
-                  setAIStatus((prev) => ({ ...prev, processing: true }))
-                }
-              >
-                Identify Dependencies
-              </button>
-            </div>
-
-            {generatedSubtasks.length > 0 && (
-              <div className="mt-6 space-y-4">
-                <h3 className="font-medium">Generated Subtasks</h3>
-                <div className="space-y-2">
-                  {generatedSubtasks.map((subtask, index) => (
-                    <div
-                      key={index}
-                      className="p-3 bg-background/50 rounded-lg border border-border/20"
-                    >
-                      <div className="font-medium">{subtask.title}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {subtask.description}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Estimated Time: {subtask.estimatedTime} minutes
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="pt-6 border-t border-border/20">
-              <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
-              <div className="text-sm text-muted-foreground">
-                {aiStatus.active ? (
-                  aiStatus.processing ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                      Analyzing tasks...
-                    </div>
-                  ) : (
-                    "No suggestions available"
-                  )
-                ) : (
-                  "Enable AI for suggestions"
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Task Details Drawer (Modal or Side Drawer) */}
+          {selectedTask && (
+            <TaskDetailsDrawer
+              task={selectedTask}
+              onClose={() => setSelectedTask(null)}
+            />
+          )}
         </div>
 
-        {/* Sidebar (Optional) - This can be toggled based on user preference or hidden if not needed */}
-        <div className="col-span-1 space-y-6">
+        {/* Side Column */}
+        <div className="col-span-1 flex flex-col gap-6">
           {/* Focus Timer & Reminders */}
-          <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-6 space-y-6 sticky top-0">
-            <FocusTimer
-              activeTask={activeTaskId}
-              onTaskComplete={() => {
-                if (activeTaskId) {
-                  setTasks((prev) =>
-                    prev.map((task) =>
-                      task.id === activeTaskId
-                        ? { ...task, completed: true }
-                        : task
-                    )
-                  );
-                  setActiveTaskId(null);
-                }
-              }}
-            />
-            <Reminders />
-          </div>
-
-          {/* New Task Form */}
-          <div className="bg-primary dark:bg-primary rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
-            <div className="flex flex-col gap-4">
-              <input
-                type="text"
-                value={newTask.title}
-                onChange={(e) =>
-                  setNewTask((prev) => ({ ...prev, title: e.target.value }))
-                }
-                placeholder="What needs to be done?"
-                className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
-              />
-              <div className="flex gap-2">
-                <select
-                  value={newTask.category}
-                  onChange={(e) =>
-                    setNewTask((prev) => ({
-                      ...prev,
-                      category: e.target.value as TaskCategory,
-                    }))
+          <div className="sticky top-6 space-y-6">
+            <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-6 space-y-6">
+              <FocusTimer
+                activeTask={activeTaskId}
+                onTaskComplete={() => {
+                  if (activeTaskId) {
+                    setTasks((prev) =>
+                      prev.map((task) =>
+                        task.id === activeTaskId
+                          ? { ...task, completed: true }
+                          : task
+                      )
+                    );
+                    setActiveTaskId(null);
                   }
+                }}
+              />
+              <Reminders />
+            </div>
+
+            {/* New Task Form */}
+            <div className="bg-primary dark:bg-primary rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
+              <div className="flex flex-col gap-4">
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) =>
+                    setNewTask((prev) => ({ ...prev, title: e.target.value }))
+                  }
+                  placeholder="What needs to be done?"
                   className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
-                >
-                  {["work", "personal", "urgent"].map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleAddTask}
-                  className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
-                >
-                  Add Task
-                </button>
+                />
+                <div className="flex gap-2">
+                  <select
+                    value={newTask.category}
+                    onChange={(e) =>
+                      setNewTask((prev) => ({
+                        ...prev,
+                        category: e.target.value as TaskCategory,
+                      }))
+                    }
+                    className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
+                  >
+                    {["work", "personal", "urgent"].map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleAddTask}
+                    className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
+                  >
+                    Add Task
+                  </button>
+                </div>
               </div>
             </div>
           </div>

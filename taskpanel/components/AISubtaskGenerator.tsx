@@ -28,6 +28,16 @@ Format the response as a JSON array of objects, where each object has the follow
 - completed: Boolean value (set to false for new subtasks)
 `;
 
+const IDENTIFY_DEPENDENCIES_PROMPT = `
+Given the following task details:
+Task Name: {taskName}
+Description: {taskDescription}
+
+Identify any dependencies this task has on other tasks, projects, people, or resources. Please provide a brief explanation for each dependency.
+
+Format the response as a string.
+`;
+
 export const useAISubtaskGenerator = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +65,7 @@ export const useAISubtaskGenerator = () => {
         model: "gpt-4o-mini",
         stream: false,
       });
-
+      console.log("AI Response:", response);
       // Parse the JSON response
       const subtasks = JSON.parse(response) as SubTask[];
       return subtasks;
@@ -68,5 +78,32 @@ export const useAISubtaskGenerator = () => {
     }
   };
 
-  return { generateSubtasks, loading, error };
+  const identifyDependencies = async (
+    taskName: string,
+    taskDescription: string
+  ): Promise<string> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const puter = await loadPuter();
+      const prompt = IDENTIFY_DEPENDENCIES_PROMPT
+        .replace('{taskName}', taskName)
+        .replace('{taskDescription}', taskDescription);
+
+      const response = await puter.ai.chat(prompt, {
+        model: "gpt-4o-mini",
+        stream: false,
+      });
+      console.log("AI Dependency Analysis Response:", response);
+      return response;
+    } catch (err) {
+      setError("Failed to identify dependencies. Please try again.");
+      console.error("AI Dependency Analysis Error:", err);
+      return "Error identifying dependencies.";
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { generateSubtasks, identifyDependencies, loading, error };
 };
