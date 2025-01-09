@@ -302,12 +302,12 @@ export default function TaskPanel() {
               ))}
             </div>
             <div className="flex gap-4">
-              <select className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all">
+              <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
                 <option value="all">All Statuses</option>
                 <option value="incomplete">Incomplete</option>
                 <option value="complete">Complete</option>
               </select>
-              <select className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all">
+              <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
                 <option value="priority">Sort by Priority</option>
                 <option value="dueDate">Sort by Due Date</option>
                 <option value="created">Sort by Created</option>
@@ -382,7 +382,7 @@ export default function TaskPanel() {
                               )
                             )
                           }
-                          className={`bg-background/20 dark:bg-background/30 text-foreground/90 backdrop-blur-sm border border-border/30 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-accent/50 transition-all hover:border-accent/40 hover:bg-background/30 dark:hover:bg-background/40 font-medium outline-none appearance-none cursor-pointer`}
+                          className={`px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors font-medium outline-none appearance-none cursor-pointer`}
                         >
                           <option value="high" className="bg-background/20">
                             High
