@@ -5,6 +5,7 @@ import { FocusTimer } from "./FocusTimer";
 import Reminders from "./Reminders";
 import { SubTask, useAISubtaskGenerator,  } from "./AISubtaskGenerator";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
+import { getPuter } from "@/lib/puter";
 
 interface Task {
   id: string;
@@ -88,6 +89,73 @@ export default function TaskPanel() {
 
   const [showAITools, setShowAITools] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [chatHistory, setChatHistory] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
+  const [chatInput, setChatInput] = useState("");
+
+  const handleSendMessage = async () => {
+    if (chatInput.trim()) {
+      const taskContext = tasks
+        .map(
+          (task) =>
+            `- ${task.title}: ${task.description} (Category: ${task.category}, Priority: ${task.priority})`
+        )
+        .join("\n");
+      const prompt = `Current tasks:\n${taskContext}\n\nUser message: ${chatInput}\n\nIf the user asks to create a task, respond with a JSON object with the following format: {"title": "task title", "description": "task description", "category": "work" | "personal" | "urgent", "priority": "high" | "medium" | "low", "dueDate": "YYYY-MM-DD"}. If the user does not ask to create a task, respond with a normal message.`;
+      setChatHistory((prev) => [...prev, { role: "user", content: chatInput }]);
+      const puter = getPuter();
+      try {
+        const response = await puter.ai.chat(prompt);
+        setChatHistory((prev) => [
+          ...prev,
+          { role: "assistant", content: String(response) },
+        ]);
+
+        // Attempt to parse task creation from AI response
+        try {
+          const parsedResponse = JSON.parse(response);
+          if (
+            parsedResponse &&
+            parsedResponse.title &&
+            parsedResponse.description &&
+            parsedResponse.category &&
+            parsedResponse.priority
+          ) {
+            const newTask: Task = {
+              id: Date.now().toString(),
+              title: parsedResponse.title.trim(),
+              description: parsedResponse.description.trim(),
+              category: parsedResponse.category.trim() as TaskCategory,
+              priority: parsedResponse.priority.trim() as TaskPriority,
+              completed: false,
+              createdAt: new Date(),
+              dueDate: parsedResponse.dueDate
+                ? new Date(parsedResponse.dueDate)
+                : undefined,
+            };
+            setTasks((prev) => [...prev, newTask]);
+            setChatHistory((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: `Task created: ${parsedResponse.title.trim()}`,
+              },
+            ]);
+          }
+        } catch (e) {
+          console.error("Error parsing AI response for task creation", e);
+        }
+      } catch (error) {
+        console.error("Error sending message:", error);
+        setChatHistory((prev) => [
+          ...prev,
+          { role: "assistant", content: "Error sending message." },
+        ]);
+      }
+      setChatInput("");
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 dark:bg-background">
@@ -538,6 +606,42 @@ export default function TaskPanel() {
                     className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
                   >
                     Add Task
+                  </button>
+                </div>
+              </div>
+            </div>
+            {/* Chat Interface */}
+            <div className="bg-primary dark:bg-primary rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Chat with Tasks</h2>
+              <div className="flex flex-col gap-4">
+                <div className="h-48 overflow-y-auto border border-border/20 rounded-lg p-2">
+                  {/* Chat History */}
+                  {chatHistory.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`mb-2 p-2 rounded-md ${
+                        message.role === "user"
+                          ? "bg-background/50 text-right"
+                          : "bg-muted/50 text-left"
+                      }`}
+                    >
+                      {message.content}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Type your message..."
+                    className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent flex-1"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
+                  >
+                    Send
                   </button>
                 </div>
               </div>
