@@ -8,7 +8,7 @@ import { SubTask, useAISubtaskGenerator } from "./AISubtaskGenerator";
 interface Task {
   id: string;
   title: string;
-  description: string; // Added description property
+  description: string;
   category: TaskCategory;
   priority: TaskPriority;
   completed: boolean;
@@ -18,9 +18,6 @@ interface Task {
 
 type TaskCategory = "work" | "personal" | "urgent";
 type TaskPriority = "high" | "medium" | "low";
-
-type PriorityColors = Record<TaskPriority, string>;
-type CategoryColors = Record<TaskCategory, string>;
 
 interface NewTaskForm {
   title: string;
@@ -46,7 +43,7 @@ export default function TaskPanel() {
     {
       id: "1",
       title: "Example Task",
-      description: "This is an example task", // Added description
+      description: "This is an example task",
       category: "work",
       priority: "medium",
       completed: false,
@@ -55,24 +52,6 @@ export default function TaskPanel() {
     },
   ]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-
-  const priorityColors: PriorityColors = {
-    high: "text-error hover:text-error/80 dark:text-error/90",
-    medium: "text-warning hover:text-warning/80 dark:text-warning/90",
-    low: "text-success hover:text-success/80 dark:text-success/90",
-  };
-
-  const categoryColors: CategoryColors = {
-    work: "bg-accent/10",
-    personal: "bg-success/10",
-    urgent: "bg-error/10",
-  };
-
-  const [newTask, setNewTask] = useState<NewTaskForm>({
-    title: "",
-    category: "work",
-    priority: "medium",
-  });
 
   const handleAddTask = () => {
     if (newTask.title.trim()) {
@@ -84,7 +63,7 @@ export default function TaskPanel() {
         completed: false,
         createdAt: new Date(),
         dueDate: new Date(Date.now() + 86400000),
-        description: "", // Add a default description
+        description: "",
       };
       setTasks((prev) => [...prev, newTaskObject]);
       setNewTask({ title: "", category: "work", priority: "medium" });
@@ -100,244 +79,129 @@ export default function TaskPanel() {
     });
   };
 
+  const [newTask, setNewTask] = useState<NewTaskForm>({
+    title: "",
+    category: "work",
+    priority: "medium",
+  });
+
   return (
-    <div className="p-6 dark:bg-background">
+    <div className="container mx-auto p-6 dark:bg-background">
+      {/* Top Bar (Header) */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <span className="text-2xl font-bold">Task Dashboard</span>
+          {/* AI Status and Toggle */}
+          <button
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              aiStatus.active
+                ? aiStatus.processing
+                  ? "bg-yellow-500 text-black"
+                  : "bg-green-500 text-white"
+                : "bg-gray-500 text-white"
+            }`}
+            onClick={() =>
+              setAIStatus((prev) => ({ ...prev, active: !prev.active }))
+            }
+          >
+            <div
+              className={`w-3 h-3 rounded-full ${
+                aiStatus.active
+                  ? aiStatus.processing
+                    ? "bg-yellow-500 animate-pulse"
+                    : "bg-green-500"
+                  : "bg-gray-500"
+              }`}
+            />
+            {aiStatus.active ? (aiStatus.processing ? "AI: Processing..." : "AI: ON") : "AI: OFF"}
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          {/* Search Field */}
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all"
+          />
+          {/* Select Filter */}
+          <select className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all">
+            <option value="all">All Tasks</option>
+            <option value="ai-generated">AI Generated</option>
+            <option value="user-created">User Created</option>
+          </select>
+          {/* Profile or Settings Icon */}
+          <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Header */}
-        <div className="col-span-4">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold">Task Panel</h1>
-            <div className="flex items-center gap-4">
-              {/* AI Status Indicator */}
-              <div className="flex items-center gap-2">
+        {/* Main Panel */}
+        <div className="col-span-3">
+          {/* Task Statistics & Filters */}
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-4 mb-4">
+              {[
+                { label: "Total Tasks", value: tasks.length },
+                {
+                  label: "Completed",
+                  value: tasks.filter((t) => t.completed).length,
+                },
+                {
+                  label: "In Progress",
+                  value: tasks.filter((t) => !t.completed).length,
+                },
+                {
+                  label: "Overdue",
+                  value: tasks.filter(
+                    (t) => t.dueDate && t.dueDate < new Date()
+                  ).length,
+                },
+              ].map((stat, i) => (
                 <div
-                  className={`w-3 h-3 rounded-full ${
-                    aiStatus.active
-                      ? aiStatus.processing
-                        ? "bg-yellow-500 animate-pulse"
-                        : "bg-green-500"
-                      : "bg-gray-500"
-                  }`}
-                />
-                <span className="text-sm text-muted-foreground">
-                  {aiStatus.active
-                    ? aiStatus.processing
-                      ? "Processing..."
-                      : "AI Active"
-                    : "AI Inactive"}
-                </span>
-              </div>
-
-              {/* AI Enhanced Search Bar */}
-              <div className="bg-primary/50 backdrop-blur-sm rounded-lg p-4 border border-border/20">
-                <div className="flex items-center gap-4">
-                  <input
-                    type="text"
-                    placeholder="Search tasks..."
-                    className="flex-1 bg-background/20 dark:bg-background/30 backdrop-blur-sm border border-border/30 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 transition-all hover:border-accent/40 outline-none"
-                  />
-                  <select className="bg-background/20 dark:bg-background/30 backdrop-blur-sm border border-border/30 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 transition-all hover:border-accent/40 outline-none">
-                    <option value="all">All Tasks</option>
-                    <option value="ai-generated">AI Generated Tasks</option>
-                    <option value="user-created">User Created Tasks</option>
-                  </select>
-                  <button
-                    className="bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                    onClick={() =>
-                      setAIStatus((prev) => ({
-                        ...prev,
-                        active: !prev.active,
-                      }))
-                    }
-                  >
-                    {aiStatus.active ? "Disable AI" : "Enable AI"}
-                  </button>
+                  key={i}
+                  className="bg-primary/50 backdrop-blur-sm rounded-lg p-4 border border-border/20 transition-all"
+                >
+                  <div className="text-sm text-muted-foreground mb-1">
+                    {stat.label}
+                  </div>
+                  <div className="text-2xl font-semibold">{stat.value}</div>
                 </div>
-              </div>
-
-              {/* Settings Button */}
-              <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-
-              {/* Close Button */}
-              <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
+              ))}
             </div>
-          </div>
-        </div>
-
-        {/* Task Statistics */}
-        <div className="col-span-2 md:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: "Total Tasks", value: tasks.length },
-              {
-                label: "Completed",
-                value: tasks.filter((t) => t.completed).length,
-              },
-              {
-                label: "In Progress",
-                value: tasks.filter((t) => !t.completed).length,
-              },
-              {
-                label: "Overdue",
-                value: tasks.filter(
-                  (t) => t.dueDate && t.dueDate < new Date()
-                ).length,
-              },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="bg-primary/50 backdrop-blur-sm rounded-lg p-4 border border-border/20 hover:border-accent/30 transition-all glow-effect hover:glow-effect-hover"
-              >
-                <div className="text-sm text-muted-foreground mb-1">
-                  {stat.label}
-                </div>
-                <div className="text-2xl font-semibold">{stat.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Filters & Sort Controls */}
-        <div className="col-span-2 md:col-span-2">
-          <div className="bg-primary dark:bg-primary rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Filter & Sort</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <select className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent">
-                <option value="all">All Tasks</option>
-                <option value="completed">Completed</option>
+            <div className="flex gap-4">
+              <select className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all">
+                <option value="all">All Statuses</option>
                 <option value="incomplete">Incomplete</option>
+                <option value="complete">Complete</option>
               </select>
-              <select className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent">
+              <select className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all">
                 <option value="priority">Sort by Priority</option>
                 <option value="dueDate">Sort by Due Date</option>
                 <option value="created">Sort by Created</option>
               </select>
-              <button className="bg-secondary hover:bg-secondary/80 text-foreground rounded-lg px-4 py-2 transition-colors">
+              <button className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
                 Clear Filters
               </button>
             </div>
           </div>
-        </div>
 
-        {/* AI Actions Sidebar */}
-        <div className="col-span-2 md:col-span-2">
-          <div className="bg-background/95 backdrop-blur-sm border-l border-border/20 p-6 space-y-6 sticky top-0">
-            <h2 className="text-lg font-semibold">AI Actions</h2>
-
-            <div className="space-y-4">
-              <button
-                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                onClick={async () => {
-                  setAIStatus((prev) => ({ ...prev, processing: true }));
-                  if (activeTaskId) {
-                    const activeTask = tasks.find(
-                      (t) => t.id === activeTaskId
-                    );
-                    if (activeTask) {
-                      const subtasks = await generateSubtasks(
-                        activeTask.title,
-                        activeTask.description || "", // Assuming a default empty string if description is not available
-                        activeTask.dueDate?.toISOString(), // Convert date to string if available
-                        activeTask.priority,
-                        "" // Assuming no additional context for now
-                      );
-                      setGeneratedSubtasks(subtasks);
-                    }
-                  }
-                  setAIStatus((prev) => ({ ...prev, processing: false }));
-                }}
-              >
-                Generate Subtasks
-              </button>
-              <button
-                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                onClick={() =>
-                  setAIStatus((prev) => ({ ...prev, processing: true }))
-                }
-              >
-                Auto-Schedule Tasks
-              </button>
-              <button
-                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                onClick={() =>
-                  setAIStatus((prev) => ({ ...prev, processing: true }))
-                }
-              >
-                Identify Dependencies
-              </button>
-            </div>
-
-            {generatedSubtasks.length > 0 && (
-              <div className="mt-6 space-y-4">
-                <h3 className="font-medium">Generated Subtasks</h3>
-                <div className="space-y-2">
-                  {generatedSubtasks.map((subtask, index) => (
-                    <div
-                      key={index}
-                      className="p-3 bg-background/50 rounded-lg border border-border/20"
-                    >
-                      <div className="font-medium">{subtask.title}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {subtask.description}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Estimated Time: {subtask.estimatedTime} minutes
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="pt-6 border-t border-border/20">
-              <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
-              <div className="text-sm text-muted-foreground">
-                {aiStatus.active ? (
-                  aiStatus.processing ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                      Analyzing tasks...
-                    </div>
-                  ) : (
-                    "No suggestions available"
-                  )
-                ) : (
-                  "Enable AI for suggestions"
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Task Grid */}
-        <div className="col-span-2 md:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Task List / Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {tasks.map((task) => (
               <div
                 key={task.id}
@@ -345,7 +209,7 @@ export default function TaskPanel() {
                   task.completed
                     ? "opacity-75 scale-95"
                     : "hover:backdrop-blur-md hover:border-accent/30"
-                } transition-all duration-300 glow-effect hover:glow-effect-hover min-w-[320px]`}
+                } transition-all duration-300 glow-effect hover:glow-effect-hover min-w-[240px]`}
                 draggable
               >
                 <div className="flex flex-col gap-2.5">
@@ -494,13 +358,122 @@ export default function TaskPanel() {
               </div>
             ))}
           </div>
+
+          {/* AI Tools Panel */}
+          <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-6 space-y-6 mb-6">
+            <h2 className="text-lg font-semibold">AI Tools</h2>
+
+            <div className="space-y-4">
+              <button
+                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
+                onClick={async () => {
+                  setAIStatus((prev) => ({ ...prev, processing: true }));
+                  if (activeTaskId) {
+                    const activeTask = tasks.find(
+                      (t) => t.id === activeTaskId
+                    );
+                    if (activeTask) {
+                      const subtasks = await generateSubtasks(
+                        activeTask.title,
+                        activeTask.description || "",
+                        activeTask.dueDate?.toISOString(),
+                        activeTask.priority,
+                        ""
+                      );
+                      setGeneratedSubtasks(subtasks);
+                    }
+                  }
+                  setAIStatus((prev) => ({ ...prev, processing: false }));
+                }}
+              >
+                Generate Subtasks
+              </button>
+              <button
+                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
+                onClick={() =>
+                  setAIStatus((prev) => ({ ...prev, processing: true }))
+                }
+              >
+                Auto-Schedule Tasks
+              </button>
+              <button
+                className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
+                onClick={() =>
+                  setAIStatus((prev) => ({ ...prev, processing: true }))
+                }
+              >
+                Identify Dependencies
+              </button>
+            </div>
+
+            {generatedSubtasks.length > 0 && (
+              <div className="mt-6 space-y-4">
+                <h3 className="font-medium">Generated Subtasks</h3>
+                <div className="space-y-2">
+                  {generatedSubtasks.map((subtask, index) => (
+                    <div
+                      key={index}
+                      className="p-3 bg-background/50 rounded-lg border border-border/20"
+                    >
+                      <div className="font-medium">{subtask.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {subtask.description}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Estimated Time: {subtask.estimatedTime} minutes
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-6 border-t border-border/20">
+              <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
+              <div className="text-sm text-muted-foreground">
+                {aiStatus.active ? (
+                  aiStatus.processing ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                      Analyzing tasks...
+                    </div>
+                  ) : (
+                    "No suggestions available"
+                  )
+                ) : (
+                  "Enable AI for suggestions"
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* New Task Form */}
-        <div className="col-span-2 md:col-span-2">
+        {/* Sidebar (Optional) - This can be toggled based on user preference or hidden if not needed */}
+        <div className="col-span-1 space-y-6">
+          {/* Focus Timer & Reminders */}
+          <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-6 space-y-6 sticky top-0">
+            <FocusTimer
+              activeTask={activeTaskId}
+              onTaskComplete={() => {
+                if (activeTaskId) {
+                  setTasks((prev) =>
+                    prev.map((task) =>
+                      task.id === activeTaskId
+                        ? { ...task, completed: true }
+                        : task
+                    )
+                  );
+                  setActiveTaskId(null);
+                }
+              }}
+            />
+            <Reminders />
+          </div>
+
+          {/* New Task Form */}
           <div className="bg-primary dark:bg-primary rounded-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col gap-4">
               <input
                 type="text"
                 value={newTask.title}
@@ -508,7 +481,7 @@ export default function TaskPanel() {
                   setNewTask((prev) => ({ ...prev, title: e.target.value }))
                 }
                 placeholder="What needs to be done?"
-                className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 flex-1 focus:ring-2 focus:ring-accent"
+                className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
               />
               <div className="flex gap-2">
                 <select
@@ -521,7 +494,7 @@ export default function TaskPanel() {
                   }
                   className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
                 >
-                  {Object.keys(categoryColors).map((category) => (
+                  {["work", "personal", "urgent"].map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
@@ -537,75 +510,55 @@ export default function TaskPanel() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Bottom Navigation */}
-        <div className="col-span-4 md:col-span-4">
-          <div className="bg-background/95 backdrop-blur-sm border-t border-border/20 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button className="px-4 py-2 rounded-lg hover:bg-background/50 transition-colors">
-                  List View
-                </button>
-                <button className="px-4 py-2 rounded-lg hover:bg-background/50 transition-colors">
-                  Timeline View
-                </button>
-              </div>
+      {/* Bottom Utility Bar (Optional) */}
+      <div className="mt-6">
+        <div className="bg-background/95 backdrop-blur-sm border-t border-border/20 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button className="px-4 py-2 rounded-lg hover:bg-background/50 transition-colors">
+                List View
+              </button>
+              <button className="px-4 py-2 rounded-lg hover:bg-background/50 transition-colors">
+                Timeline View
+              </button>
+            </div>
 
-              <div className="flex items-center gap-2">
-                <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-                <span className="text-sm text-muted-foreground">
-                  Page 1 of 3
-                </span>
-                <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+              <span className="text-sm text-muted-foreground">
+                Page 1 of 3
+              </span>
+              <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* FocusTimer and Reminders */}
-        <div className="col-span-2 md:col-span-2">
-          <FocusTimer
-            activeTask={activeTaskId}
-            onTaskComplete={() => {
-              if (activeTaskId) {
-                setTasks((prev) =>
-                  prev.map((task) =>
-                    task.id === activeTaskId
-                      ? { ...task, completed: true }
-                      : task
-                  )
-                );
-                setActiveTaskId(null);
-              }
-            }}
-          />
-          <Reminders />
         </div>
       </div>
     </div>
