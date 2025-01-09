@@ -102,7 +102,7 @@ export default function TaskPanel() {
             `- ${task.title}: ${task.description} (Category: ${task.category}, Priority: ${task.priority})`
         )
         .join("\n");
-      const prompt = `Current tasks:\n${taskContext}\n\nUser message: ${chatInput}\n\nIf the user asks to create a task, respond with a JSON object with the following format: {"title": "task title", "description": "task description", "category": "work" | "personal" | "urgent", "priority": "high" | "medium" | "low", "dueDate": "YYYY-MM-DD"}. If the user does not ask to create a task, respond with a normal message.`;
+      const prompt = `Current tasks:\n${taskContext}\n\nUser message: ${chatInput}\n\nRespond with a JSON object with the following format:\n\n{\n  "command": "create" | "edit" | "delete" | "complete" | "editDueDate",\n  "taskId": "task id (required for edit, delete, complete, editDueDate)",\n  "title": "task title (required for create and edit)",\n  "description": "task description (required for create and edit)",\n  "category": "work" | "personal" | "urgent" (required for create and edit),\n  "priority": "high" | "medium" | "low" (required for create and edit),\n  "dueDate": "YYYY-MM-DD" (required for create and editDueDate)\n}\n\nIf the user does not ask to perform any of these actions, respond with a normal message.`;
       setChatHistory((prev) => [...prev, { role: "user", content: chatInput }]);
       const puter = getPuter();
       try {
@@ -112,39 +112,129 @@ export default function TaskPanel() {
           { role: "assistant", content: String(response) },
         ]);
 
-        // Attempt to parse task creation from AI response
+        // Attempt to parse task command from AI response
         try {
           const parsedResponse = JSON.parse(response);
-          if (
-            parsedResponse &&
-            parsedResponse.title &&
-            parsedResponse.description &&
-            parsedResponse.category &&
-            parsedResponse.priority
-          ) {
-            const newTask: Task = {
-              id: Date.now().toString(),
-              title: parsedResponse.title.trim(),
-              description: parsedResponse.description.trim(),
-              category: parsedResponse.category.trim() as TaskCategory,
-              priority: parsedResponse.priority.trim() as TaskPriority,
-              completed: false,
-              createdAt: new Date(),
-              dueDate: parsedResponse.dueDate
-                ? new Date(parsedResponse.dueDate)
-                : undefined,
-            };
-            setTasks((prev) => [...prev, newTask]);
-            setChatHistory((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content: `Task created: ${parsedResponse.title.trim()}`,
-              },
-            ]);
+          if (parsedResponse && parsedResponse.command) {
+            switch (parsedResponse.command) {
+              case "create":
+                if (
+                  parsedResponse.title &&
+                  parsedResponse.description &&
+                  parsedResponse.category &&
+                  parsedResponse.priority
+                ) {
+                  const newTask: Task = {
+                    id: Date.now().toString(),
+                    title: parsedResponse.title.trim(),
+                    description: parsedResponse.description.trim(),
+                    category: parsedResponse.category.trim() as TaskCategory,
+                    priority: parsedResponse.priority.trim() as TaskPriority,
+                    completed: false,
+                    createdAt: new Date(),
+                    dueDate: parsedResponse.dueDate
+                      ? new Date(parsedResponse.dueDate)
+                      : undefined,
+                  };
+                  setTasks((prev) => [...prev, newTask]);
+                  setChatHistory((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: `Task created: ${parsedResponse.title.trim()}`,
+                    },
+                  ]);
+                }
+                break;
+              case "edit":
+                if (
+                  parsedResponse.taskId &&
+                  parsedResponse.title &&
+                  parsedResponse.description &&
+                  parsedResponse.category &&
+                  parsedResponse.priority
+                ) {
+                  setTasks((prev) =>
+                    prev.map((task) =>
+                      task.id === String(parsedResponse.taskId)
+                        ? {
+                            ...task,
+                            title: parsedResponse.title.trim(),
+                            description: parsedResponse.description.trim(),
+                            category: parsedResponse.category.trim() as TaskCategory,
+                            priority: parsedResponse.priority.trim() as TaskPriority,
+                          }
+                        : task
+                    )
+                  );
+                  setChatHistory((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: `Task ${parsedResponse.taskId} edited.`,
+                    },
+                  ]);
+                }
+                break;
+              case "delete":
+                if (parsedResponse.taskId) {
+                  setTasks((prev) =>
+                    prev.filter((task) => task.id !== String(parsedResponse.taskId))
+                  );
+                  setChatHistory((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: `Task ${parsedResponse.taskId} deleted.`,
+                    },
+                  ]);
+                }
+                break;
+              case "complete":
+                if (parsedResponse.taskId) {
+                  setTasks((prev) =>
+                    prev.map((task) =>
+                      task.id === String(parsedResponse.taskId)
+                        ? { ...task, completed: true }
+                        : task
+                    )
+                  );
+                  setChatHistory((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: `Task ${parsedResponse.taskId} marked as complete.`,
+                    },
+                  ]);
+                }
+                break;
+              case "editDueDate":
+                if (parsedResponse.taskId && parsedResponse.dueDate) {
+                  setTasks((prev) =>
+                    prev.map((task) =>
+                      task.id === String(parsedResponse.taskId)
+                        ? {
+                            ...task,
+                            dueDate: new Date(parsedResponse.dueDate),
+                          }
+                        : task
+                    )
+                  );
+                  setChatHistory((prev) => [
+                    ...prev,
+                    {
+                      role: "assistant",
+                      content: `Due date for task ${parsedResponse.taskId} updated.`,
+                    },
+                  ]);
+                }
+                break;
+              default:
+                break;
+            }
           }
         } catch (e) {
-          console.error("Error parsing AI response for task creation", e);
+          console.error("Error parsing AI response for task command", e);
         }
       } catch (error) {
         console.error("Error sending message:", error);
