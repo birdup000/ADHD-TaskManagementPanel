@@ -101,7 +101,7 @@ export default function TaskPanel() {
   };
 
   return (
-    <div className="container mx-auto p-6 dark:bg-background">
+    <div className="p-6 dark:bg-background">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Header */}
         <div className="col-span-4">

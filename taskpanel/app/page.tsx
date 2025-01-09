@@ -91,7 +91,7 @@ export default function Home() {
 
   return (
     <div className="animate-fade-in">
-      <div className="max-w-xl mx-auto">
+      <div>
         <div className="space-y-2 mb-10">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
             Welcome to Your Task Panel
