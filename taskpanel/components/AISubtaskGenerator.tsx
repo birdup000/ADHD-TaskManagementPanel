@@ -24,7 +24,10 @@ Additional Context: {additionalContext}
 Generate a list of 3-5 subtasks that break down this main task into smaller, actionable items. Each subtask should be specific, measurable, and contribute to the completion of the main task. 
 
 Format the response as a JSON array of objects, where each object has the following properties:
-- id: A unique identifier (you can use numbers starting from 1- text: The description of the subtask
+- id: A unique identifier (you can use numbers starting from 1)
+- title: The title of the subtask
+- description: The description of the subtask
+- estimatedTime: The estimated time to complete the subtask in minutes
 - completed: Boolean value (set to false for new subtasks)
 `;
 
@@ -68,6 +71,18 @@ export const useAISubtaskGenerator = () => {
       console.log("AI Response:", response);
       // Parse the JSON response
       const subtasks = JSON.parse(response) as SubTask[];
+      // Validate subtasks
+      for (const subtask of subtasks) {
+        if (
+          typeof subtask.id !== 'number' ||
+          typeof subtask.title !== 'string' ||
+          typeof subtask.description !== 'string' ||
+          typeof subtask.estimatedTime !== 'number' ||
+          typeof subtask.completed !== 'boolean'
+        ) {
+          throw new Error('Invalid subtask format from AI.');
+        }
+      }
       return subtasks;
     } catch (err) {
       setError("Failed to generate subtasks. Please try again.");

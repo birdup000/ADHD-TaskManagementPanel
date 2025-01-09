@@ -372,34 +372,38 @@ export default function TaskPanel() {
                   className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
                   onClick={async () => {
                     setAIStatus((prev) => ({ ...prev, processing: true }));
-                    if (activeTaskId) {
-                      const activeTask = tasks.find(
-                        (t) => t.id === activeTaskId
-                      );
-                      if (activeTask) {
-                        let aiResponse: string | null = null;
+                    if (!activeTaskId) {
+                      setAiOutput("Please select a task first.");
+                      setAIStatus((prev) => ({ ...prev, processing: false }));
+                      return;
+                    }
+                    setAiOutput(null);
+                    const activeTask = tasks.find(
+                      (t) => t.id === activeTaskId
+                    );
+                    if (activeTask) {
+                      let aiResponse: string | null = null;
+                      try {
+                        const response = await generateSubtasks(
+                          activeTask.title,
+                          activeTask.description || "",
+                          activeTask.dueDate?.toISOString(),
+                          activeTask.priority,
+                          ""
+                        );
+                        let aiResponse: any = null;
                         try {
-                          const response = await generateSubtasks(
-                            activeTask.title,
-                            activeTask.description || "",
-                            activeTask.dueDate?.toISOString(),
-                            activeTask.priority,
-                            ""
-                          );
-                          let aiResponse: any = null;
-                          try {
-                            aiResponse = response;
-                            const parsedResponse = JSON.parse(aiResponse) as SubTask[];
-                            setGeneratedSubtasks(parsedResponse);
-                          } catch (e) {
-                            console.error("Error parsing AI response", e);
-                          } finally {
-                            setAiOutput(String(aiResponse));
-                          }
+                          aiResponse = response;
+                          const parsedResponse = JSON.parse(aiResponse) as SubTask[];
+                          setGeneratedSubtasks(parsedResponse);
                         } catch (e) {
-                          console.error("Error generating subtasks", e);
-                          setAiOutput("Error generating subtasks");
+                          console.error("Error parsing AI response", e);
+                        } finally {
+                          setAiOutput(String(aiResponse));
                         }
+                      } catch (e) {
+                        console.error("Error generating subtasks", e);
+                        setAiOutput("Error generating subtasks");
                       }
                     }
                     setAIStatus((prev) => ({ ...prev, processing: false }));
@@ -448,7 +452,9 @@ export default function TaskPanel() {
                 <div className="pt-6 border-t border-border/20">
                   <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
                   <div className="text-sm text-muted-foreground">
-                    {aiStatus.active ? (
+                    {aiOutput ? (
+                      <div className="text-red-500">{aiOutput}</div>
+                    ) : aiStatus.active ? (
                       aiStatus.processing ? (
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
@@ -478,7 +484,10 @@ export default function TaskPanel() {
                     ? "opacity-75 scale-95"
                     : "hover:backdrop-blur-md hover:border-accent/30"
                 } transition-all duration-300 glow-effect hover:glow-effect-hover min-w-[240px] cursor-pointer`}
-                onClick={() => setSelectedTask(task)}
+                onClick={() => {
+                  setSelectedTask(task);
+                  setActiveTaskId(task.id);
+                }}
                 draggable
               >
                 {/* Task Card Content */}
