@@ -2,16 +2,9 @@
 
 import { useState } from "react";
 import { loadPuter } from "../lib/puter";
+import { SubTask } from "./TaskDetailsDrawer";
 
 /// <reference path="../types/puter.d.ts" />
-
-export interface SubTask {
-  id: number;
-  title: string; // New property
-  description: string; // New property
-  estimatedTime: number; // New property
-  completed: boolean;
-}
 
 const GENERATE_SINGLE_SUBTASK_PROMPT = `
 Given the following task details:

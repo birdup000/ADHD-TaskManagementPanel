@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { FocusTimer } from "./FocusTimer";
 import Reminders from "./Reminders";
-import { SubTask, useAISubtaskGenerator } from "./AISubtaskGenerator";
+import { SubTask } from "./TaskDetailsDrawer";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
-import { getPuter } from "@/lib/puter";
+import { getPuter } from "../lib/puter";
 
 interface Task {
   id: string;
@@ -37,9 +37,6 @@ export default function TaskPanel() {
     active: true,
     processing: false,
   });
-  const [generatedSubtasks, setGeneratedSubtasks] = useState<SubTask[]>([]);
-  const { generateSubtasks, identifyDependencies, loading, error, subtasks } = useAISubtaskGenerator();
-
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "1",
@@ -367,95 +364,12 @@ export default function TaskPanel() {
 
             {showAITools && (
               <div className="p-4 pt-0 space-y-4">
-                <button
-                  className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                  onClick={async () => {
-                    setAIStatus((prev) => ({ ...prev, processing: true }));
-                    if (!activeTaskId) {
-                      
-                      setAIStatus((prev) => ({ ...prev, processing: false }));
-                      return;
-                    }
-                    
-                    const activeTask = tasks.find(
-                      (t) => t.id === activeTaskId
-                    );
-                    if (activeTask) {
-                      
-                      try {
-                        const response = await generateSubtasks(
-                          activeTask.title,
-                          activeTask.description || "",
-                          activeTask.dueDate?.toISOString(),
-                          activeTask.priority,
-                          ""
-                        );
-                        
-                        setGeneratedSubtasks(response as SubTask[]);
-                      }
-                       catch (e) {
-                        console.error("Error generating subtasks", e);
-                      }
-                    }
-                    setAIStatus((prev) => ({ ...prev, processing: false }));
-                  }}
-                >
-                  Generate Subtasks
-                </button>
-                <button
-                  className="w-full bg-accent/90 hover:bg-accent text-background rounded-lg px-4 py-2 transition-colors"
-                  onClick={() => {
-                    setAIStatus((prev) => ({...prev, processing: true}));
-                    if (!activeTaskId) {
-                      setAIStatus((prev) => ({...prev, processing: false}));
-                      return;
-                    }
-                    const activeTask = tasks.find(
-                      (t) => t.id === activeTaskId
-                    );
-                    if (activeTask) {
-                      identifyDependencies(activeTask.title, activeTask.description || "")
-                      .then((response) => {
-                        console.log("Dependencies identified:", response);
-                      })
-                      .catch((error) => {
-                        console.error("Error identifying dependencies:", error);
-                      })
-                      .finally(() => {
-                        setAIStatus((prev) => ({...prev, processing: false}));
-                      });
-                    }
-                  }}
-                >
-                  Identify Dependencies
-                </button>
-                {generatedSubtasks.length > 0 && (
-                  <div className="mt-6 space-y-4">
-                    <h3 className="font-medium">Generated Subtasks</h3>
-                    <div className="space-y-2">
-                      {generatedSubtasks.map((subtask, index) => (
-                        <div
-                          key={index}
-                          className="p-3 bg-background/50 rounded-lg border border-border/20"
-                        >
-                          <div className="font-medium">{subtask.title}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {subtask.description}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Estimated Time: {subtask.estimatedTime} minutes
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
+                
                 <div className="pt-6 border-t border-border/20">
                   <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
                   <div className="text-sm text-muted-foreground">
-                    {subtasks && subtasks.length === 0 ? (
-                      aiStatus.active ? (
+                    
+                      {aiStatus.active ? (
                         aiStatus.processing ? (
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
@@ -468,8 +382,8 @@ export default function TaskPanel() {
                         )
                       ) : (
                         "Enable AI for suggestions"
-                      )
-                    ) : null}
+                      )}
+                    
                   </div>
                 </div>
               </div>
