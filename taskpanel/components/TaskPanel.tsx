@@ -27,16 +27,7 @@ interface NewTaskForm {
   priority: TaskPriority;
 }
 
-interface AIStatus {
-  active: boolean;
-  processing: boolean;
-}
-
 export default function TaskPanel() {
-  const [aiStatus, setAIStatus] = useState<AIStatus>({
-    active: true,
-    processing: false,
-  });
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "1",
@@ -83,7 +74,6 @@ export default function TaskPanel() {
     priority: "medium",
   });
 
-  const [showAITools, setShowAITools] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [chatHistory, setChatHistory] = useState<
     { role: "user" | "assistant"; content: string }[]
@@ -249,30 +239,6 @@ export default function TaskPanel() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <span className="text-2xl font-bold">Task Dashboard</span>
-          {/* AI Status and Toggle */}
-          <button
-            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              aiStatus.active
-                ? aiStatus.processing
-                  ? "bg-yellow-500 text-black"
-                  : "bg-green-500 text-white"
-                : "bg-gray-500 text-white"
-            }`}
-            onClick={() =>
-              setAIStatus((prev) => ({ ...prev, active: !prev.active }))
-            }
-          >
-            <div
-              className={`w-3 h-3 rounded-full ${
-                aiStatus.active
-                  ? aiStatus.processing
-                    ? "bg-yellow-500 animate-pulse"
-                    : "bg-green-500"
-                  : "bg-gray-500"
-              }`}
-            />
-            {aiStatus.active ? (aiStatus.processing ? "AI: Processing..." : "AI: ON") : "AI: OFF"}
-          </button>
         </div>
         <div className="flex items-center gap-4">
           {/* Search Field */}
@@ -350,44 +316,6 @@ export default function TaskPanel() {
                 Clear Filters
               </button>
             </div>
-          </div>
-
-          {/* AI Tools Panel (Collapsible) */}
-          <div className="border rounded-lg">
-            <button
-              onClick={() => setShowAITools((prev) => !prev)}
-              className="flex items-center justify-between w-full p-4"
-            >
-              <span className="text-lg font-semibold">AI Tools</span>
-              <span className="text-lg">{showAITools ? "▲" : "▼"}</span>
-            </button>
-
-            {showAITools && (
-              <div className="p-4 pt-0 space-y-4">
-                
-                <div className="pt-6 border-t border-border/20">
-                  <h3 className="text-sm font-medium mb-2">AI Suggestions</h3>
-                  <div className="text-sm text-muted-foreground">
-                    
-                      {aiStatus.active ? (
-                        aiStatus.processing ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-                            Analyzing tasks...
-                            <br />
-                            This can also help debug as well if you are a dev of the program but it is cool to use if you are a user as well
-                          </div>
-                        ) : (
-                          "No subtasks generated yet."
-                        )
-                      ) : (
-                        "Enable AI for suggestions"
-                      )}
-                    
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Task List / Cards */}
