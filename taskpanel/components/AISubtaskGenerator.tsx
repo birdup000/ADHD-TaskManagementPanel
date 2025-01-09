@@ -52,7 +52,7 @@ export const useAISubtaskGenerator = () => {
     dueDate?: string,
     priority?: string,
     additionalContext?: string
-  ): Promise<SubTask[]> => {
+  ): Promise<SubTask[] | undefined> => {
     setLoading(true);
     setError(null);
 
@@ -76,25 +76,29 @@ export const useAISubtaskGenerator = () => {
       try {
         subtasks = JSON.parse(response) as SubTask[];
       } catch (parseError) {
-        throw new Error('Invalid JSON format from AI.');
+        console.error("JSON Parse Error:", parseError);
+        setAiResponse("Invalid JSON format from AI.");
+        return [];
       }
       // Validate subtasks
-      for (const subtask of subtasks) {
-        if (
-          typeof subtask.id !== 'number' ||
-          typeof subtask.title !== 'string' ||
-          typeof subtask.description !== 'string' ||
-          typeof subtask.estimatedTime !== 'number' ||
-          typeof subtask.completed !== 'boolean'
-        ) {
-          throw new Error('Invalid subtask format from AI.');
+      if (subtasks) {
+        for (const subtask of subtasks) {
+          if (
+            typeof subtask.id !== 'number' ||
+            typeof subtask.title !== 'string' ||
+            typeof subtask.description !== 'string' ||
+            typeof subtask.estimatedTime !== 'number' ||
+            typeof subtask.completed !== 'boolean'
+          ) {
+            throw new Error('Invalid subtask format from AI.');
+          }
         }
+        return subtasks;
       }
-      return subtasks;
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to generate subtasks. Please try again.");
       console.error("AI Subtask Generation Error:", err);
-      setAiResponse("Failed to generate subtasks. Please try again.");
+      setAiResponse(err?.message || "Failed to generate subtasks. Please try again.");
       return [];
     } finally {
       setLoading(false);
@@ -120,10 +124,10 @@ export const useAISubtaskGenerator = () => {
       console.log("AI Dependency Analysis Response:", response);
       setAiResponse(response);
       return response;
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to identify dependencies. Please try again.");
       console.error("AI Dependency Analysis Error:", err);
-      setAiResponse("Error identifying dependencies.");
+      setAiResponse(err?.message || "Error identifying dependencies.");
       return "Error identifying dependencies.";
     } finally {
       setLoading(false);
