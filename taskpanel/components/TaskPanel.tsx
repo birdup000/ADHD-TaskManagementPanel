@@ -309,8 +309,8 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
       {/* Priority Bar (Enhanced Header) */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <span className="text-2xl font-bold">Task Dashboard</span>
         </div>
+        <div className="text-2xl font-bold mb-4">Task Dashboard</div>
         <div className="flex items-center gap-4">
           {/* Quick Filtering */}
           <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
@@ -323,14 +323,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
             <option value="dueDate">Sort by Due Date</option>
             <option value="created">Sort by Created</option>
           </select>
-
-          {/* Quick Add Task Button */}
-          <button
-            onClick={handleAddTask}
-            className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
-          >
-            + Add Task
-          </button>
 
           {/* Search Field */}
           <input
@@ -385,7 +377,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
               <Tutorial onClose={() => setShowTutorial(false)} />
             )}
           </div>
-=======
         </div>
       </div>
 
@@ -394,7 +385,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
               <div className="space-y-6 flex-1">
           {/* Task Statistics */}
           <div className="mb-6">
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 items-start flex-row">
               {[
                 { label: "Total Tasks", value: tasks.length },
                 {
@@ -414,14 +405,66 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
               ].map((stat, i) => (
                 <div
                   key={i}
-                  className="bg-primary/50 backdrop-blur-sm rounded-lg p-4 border border-border/20 transition-all"
+                  className="bg-primary/50 backdrop-blur-sm rounded-lg p-6 border border-border/20 transition-all"
                 >
                   <div className="text-sm text-muted-foreground mb-1">
                     {stat.label}
                   </div>
-                  <div className="text-2xl font-semibold">{stat.value}</div>
+                  <div className="text-3xl font-semibold">{stat.value}</div>
                 </div>
               ))}
+              <div className="bg-primary dark:bg-primary rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
+                <div className="flex flex-col gap-4">
+                  <input
+                    type="text"
+                    value={newTask.title}
+                    onChange={(e) =>
+                      setNewTask((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    placeholder="What needs to be done?"
+                    className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
+                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={newTask.category}
+                      onChange={(e) =>
+                        setNewTask((prev) => ({
+                          ...prev,
+                          category: e.target.value as TaskCategory,
+                        }))
+                      }
+                      className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
+                    >
+                      {["work", "personal", "urgent"].map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={newTask.priority}
+                      onChange={(e) =>
+                        setNewTask((prev) => ({
+                          ...prev,
+                          priority: e.target.value as TaskPriority,
+                        }))
+                      }
+                      className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
+                    >
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                    <button
+                      onClick={handleAddTask}
+                      className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
+                    >
+                      Add Task
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -655,60 +698,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 }}
               />
               <Reminders />
-            </div>
-
-            {/* New Task Form */}
-            <div className="bg-primary dark:bg-primary rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Add New Task</h2>
-              <div className="flex flex-col gap-4">
-                <input
-                  type="text"
-                  value={newTask.title}
-                  onChange={(e) =>
-                    setNewTask((prev) => ({ ...prev, title: e.target.value }))
-                  }
-                  placeholder="What needs to be done?"
-                  className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
-                />
-                <div className="flex gap-2">
-                  <select
-                    value={newTask.category}
-                    onChange={(e) =>
-                      setNewTask((prev) => ({
-                        ...prev,
-                        category: e.target.value as TaskCategory,
-                      }))
-                    }
-                    className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
-                  >
-                    {["work", "personal", "urgent"].map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={newTask.priority}
-                    onChange={(e) =>
-                      setNewTask((prev) => ({
-                        ...prev,
-                        priority: e.target.value as TaskPriority,
-                      }))
-                    }
-                    className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
-                  >
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                  <button
-                    onClick={handleAddTask}
-                    className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
-                  >
-                    Add Task
-                  </button>
-                </div>
-              </div>
             </div>
 
             {/* Chat Interface */}

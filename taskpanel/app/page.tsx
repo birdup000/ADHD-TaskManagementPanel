@@ -100,9 +100,8 @@ export default function Home() {
 
   return (
     <div className="animate-fade-in">
-      <div className="pt-2 mb-10">
-        <div className="">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+      <div>
+        <div className=""><h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
             Welcome to Your Task Panel
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400">
