@@ -46,7 +46,7 @@ export const useAITaskCheckin = () => {
         stream: false,
       });
 
-      return response;
+      return response.toString();
     } catch (err: any) {
       setError('Failed to generate check-in prompt. Please try again.');
       console.error('AI Check-in Generation Error:', err);
@@ -84,7 +84,7 @@ export const useAITaskCheckin = () => {
         stream: false,
       });
 
-      return JSON.parse(analysisResponse);
+      return JSON.parse(analysisResponse.toString());
     } catch (err) {
       console.error('Response Analysis Error:', err);
       return {

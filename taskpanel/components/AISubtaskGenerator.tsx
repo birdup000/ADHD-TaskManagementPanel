@@ -87,7 +87,7 @@ export const useAISubtaskGenerator = () => {
         let parsedSubtask: SubTask | null = null;
         while (parsedSubtask === null && retries < 3) {
           try {
-            parsedSubtask = JSON.parse(response) as SubTask;
+            parsedSubtask = JSON.parse(response.toString()) as SubTask;
             // Validate subtask
             if (
               typeof parsedSubtask.id !== 'number' ||
@@ -140,7 +140,7 @@ export const useAISubtaskGenerator = () => {
         stream: false,
       });
       console.log("AI Dependency Analysis Response:", response);
-      return response;
+      return response.toString();
     } catch (err: any) {
       setError("Failed to identify dependencies. Please try again.");
       console.error("AI Dependency Analysis Error:", err);

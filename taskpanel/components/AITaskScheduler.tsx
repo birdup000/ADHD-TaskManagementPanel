@@ -93,7 +93,7 @@ export const useAITaskScheduler = (): {
       });
 
       try {
-        return JSON.parse(response);
+        return JSON.parse(response.toString());
       } catch (parseError) {
         console.error('Failed to parse AI response:', parseError);
         throw new Error('Failed to parse schedule data from AI response');

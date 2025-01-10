@@ -920,7 +920,11 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                                   : "bg-background/50 mr-auto max-w-[80%]"
                               }`}
                             >
-                              {typeof message.content === 'string' ? message.content : JSON.stringify(message.content, null, 2)}
+                              {typeof message.content === 'string' ? message.content : 
+  typeof message.content === 'object' && message.content !== null ? 
+    JSON.stringify(message.content, null, 2) : 
+    String(message.content)
+}
                             </div>
                           ))
                         )}
