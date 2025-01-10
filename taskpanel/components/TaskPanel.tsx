@@ -589,7 +589,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         </span>
                         <span className="text-xs font-semibold text-yodaGreen">
                           {task.subtasks ? `${Math.round((task.subtasks.filter(subtask => subtask.completed).length / task.subtasks.length) * 100)}% complete` : "0% complete"}
-                        </span>
+                        </span>;
                       </div>
                       <div className="w-full bg-background/30 rounded-full h-2 overflow-hidden">
                         <div
@@ -630,7 +630,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
-                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />;
                       </svg>
                     </button>
                     <button
