@@ -6,7 +6,7 @@ import { SubTask } from "./TaskDetailsDrawer";
 import Tutorial from "./Tutorial";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
 import AITaskCheckin from "./AITaskCheckin";
-import AITaskScheduler from "./AITaskScheduler";
+import { AITaskScheduler } from "./AITaskScheduler";
 import { useNotificationSystem } from "./NotificationSystem";
 import NotificationSystem from "./NotificationSystem";
 import { useAISubtaskGenerator } from "./AISubtaskGenerator";
@@ -861,10 +861,10 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                     {/* AI Task Scheduler */}
                     <AITaskScheduler
                       tasks={tasks}
-                      onScheduleUpdate={(schedule) => {
+                      onScheduleUpdate={(schedule: Array<{ taskId: string; suggestedStartDate: string; suggestedEndDate: string; }>) => {
                         console.log('Schedule received in onScheduleUpdate:', schedule);
                         const updatedTasks = tasks.map((task) => {
-                          const scheduledTask = schedule.find((s) => s.taskId === task.id);
+                          const scheduledTask = schedule.find((s: { taskId: string; suggestedStartDate: string; suggestedEndDate: string; }) => s.taskId === task.id);
                           if (scheduledTask) {
                             return {
                               ...task,

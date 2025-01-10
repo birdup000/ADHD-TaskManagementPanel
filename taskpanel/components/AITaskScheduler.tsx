@@ -35,7 +35,24 @@ Respond with a valid JSON object in the following format, without any markdown f
 }
 `;
 
-export const useAITaskScheduler = () => {
+export const useAITaskScheduler = (): {
+  generateSchedule: (tasks: Task[]) => Promise<{
+    schedule: Array<{
+      taskId: string;
+      suggestedStartDate: string;
+      suggestedEndDate: string;
+      rationale: string;
+    }>;
+    conflicts: Array<{
+      taskIds: string[];
+      reason: string;
+      suggestion: string;
+    }>;
+    recommendations: string[];
+  }>;
+  loading: boolean;
+  error: string | null;
+} => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +92,12 @@ export const useAITaskScheduler = () => {
         stream: false,
       });
 
-      return (response as any).message;
+      try {
+        return JSON.parse(response);
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError);
+        throw new Error('Failed to parse schedule data from AI response');
+      }
     } catch (err) {
       setError('Failed to generate schedule. Please try again.');
       console.error('AI Schedule Generation Error:', err);
@@ -105,7 +127,7 @@ interface AITaskSchedulerProps {
   }[]) => void;
 }
 
-export default function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProps) {
+export function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProps) {
   const { generateSchedule, loading, error } = useAITaskScheduler();
   const [schedule, setSchedule] = useState<{
     schedule: Array<{
