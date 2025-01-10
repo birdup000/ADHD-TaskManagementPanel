@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { loadPuter } from '../lib/puter';
 import { Task } from './TaskPanel';
+import { SubTask } from './TaskDetailsDrawer';
 
 const SCHEDULE_ANALYSIS_PROMPT = `
 Given the following tasks and their details:
@@ -13,9 +14,9 @@ Please analyze the tasks and suggest an optimal schedule considering:
 4. Time estimates
 5. Current progress
 
-Respond with a JSON object in the following format:
+
+Respond with a valid JSON object in the following format, without any markdown formatting:
 {
-  "schedule": [
     {
       "taskId": string,
       "suggestedStartDate": string (ISO date),
@@ -63,8 +64,8 @@ export const useAITaskScheduler = () => {
         Description: ${task.description}
         Priority: ${task.priority}
         Due Date: ${task.dueDate?.toISOString() || 'Not set'}
-        Progress: ${task.subtasks ? 
-          Math.round((task.subtasks.filter(st => st.completed).length / task.subtasks.length) * 100) : 0}%
+        Progress: ${task.subtasks ?
+          Math.round((task.subtasks.filter((st: SubTask) => st.completed).length / task.subtasks.length) * 100) : 0}%
         Completed: ${task.completed}
       `).join('\n\n');
 
@@ -74,7 +75,7 @@ export const useAITaskScheduler = () => {
         stream: false,
       });
 
-      return JSON.parse(response);
+      return (response as any).message;
     } catch (err) {
       setError('Failed to generate schedule. Please try again.');
       console.error('AI Schedule Generation Error:', err);
@@ -122,7 +123,9 @@ export default function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSched
   } | null>(null);
 
   const handleGenerateSchedule = async () => {
+    console.log('Tasks before generateSchedule:', tasks);
     const newSchedule = await generateSchedule(tasks);
+    console.log('New Schedule:', newSchedule);
     setSchedule(newSchedule);
     onScheduleUpdate(newSchedule.schedule);
   };
@@ -144,6 +147,7 @@ export default function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSched
 
       {schedule && (
         <div className="space-y-4">
+          <pre>{JSON.stringify(schedule, null, 2)}</pre>
           <div className="space-y-2">
             <h4 className="font-medium">Suggested Schedule</h4>
             {schedule.schedule.map((item) => (

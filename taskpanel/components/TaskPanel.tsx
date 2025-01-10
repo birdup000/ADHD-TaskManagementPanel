@@ -12,7 +12,7 @@ import NotificationSystem from "./NotificationSystem";
 import { useAISubtaskGenerator } from "./AISubtaskGenerator";
 import { getPuter } from "../lib/puter";
 
-interface Task {
+export interface Task {
   id: string;
   title: string;
   description: string;
@@ -160,14 +160,33 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
             `- ${task.title}: ${task.description} (Category: ${task.category}, Priority: ${task.priority})`
         )
         .join("\n");
-      const prompt = `Current tasks:\n${taskContext}\n\nUser message: ${chatInput}\n\nRespond with a JSON object with the following format:\n\n{\n  "command": "create" | "edit" | "delete" | "complete" | "editDueDate",\n  "taskId": "task id (required for edit, delete, complete, editDueDate)",\n  "title": "task title (required for create and edit)",\n  "description": "task description (required for create and edit)",\n  "category": "work" | "personal" | "urgent" (required for create and edit),\n  "priority": "high" | "medium" | "low" (required for create and edit),\n  "dueDate": "YYYY-MM-DD" (required for create and editDueDate)\n}\n\nIf the user does not ask to perform any of these actions, respond with a normal message.`;
+      const prompt = `Current tasks:\n${taskContext}\n\nUser message: ${chatInput}\n\nRespond with a helpful message. If the user is requesting to manage tasks, provide your response as a JSON object with this format:\n{\n  "command": "create" | "edit" | "delete" | "complete" | "editDueDate",\n  "taskId": "task id (for edit/delete/complete/editDueDate)",\n  "title": "task title (for create/edit)",\n  "description": "task description (for create/edit)",\n  "category": "work|personal|urgent (for create/edit)",\n  "priority": "high|medium|low (for create/edit)",\n  "dueDate": "YYYY-MM-DD (for create/editDueDate)"\n}\n\nOtherwise, respond with a simple text message.`;
       setChatHistory((prev) => [...prev, { role: "user", content: chatInput }]);
       const puter = getPuter();
       try {
         const response = await puter.ai.chat(prompt);
+        // Ensure the response is properly formatted as a string
+        const responseText = typeof response === 'object' ? 
+          JSON.stringify(response, null, 2) : // Pretty print JSON if it's an object
+          String(response); // Otherwise convert to string
+        
+        // Debug logging
+        console.log('AI Response type:', typeof response);
+        console.log('AI Response:', response);
+        // Convert response to string before adding to chat history
+        let contentToAdd = '';
+        try {
+          contentToAdd = typeof responseText === 'string' ? 
+            responseText : 
+            JSON.stringify(responseText, null, 2);
+        } catch (e) {
+          console.error('Error stringifying response:', e);
+          contentToAdd = 'Error processing response';
+        }
+        
         setChatHistory((prev) => [
           ...prev,
-          { role: "assistant", content: String(response) },
+          { role: "assistant", content: contentToAdd },
         ]);
 
         // Attempt to parse task command from AI response
@@ -843,6 +862,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                     <AITaskScheduler
                       tasks={tasks}
                       onScheduleUpdate={(schedule) => {
+                        console.log('Schedule received in onScheduleUpdate:', schedule);
                         const updatedTasks = tasks.map((task) => {
                           const scheduledTask = schedule.find((s) => s.taskId === task.id);
                           if (scheduledTask) {
@@ -900,7 +920,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                                   : "bg-background/50 mr-auto max-w-[80%]"
                               }`}
                             >
-                              {message.content}
+                              {typeof message.content === 'string' ? message.content : JSON.stringify(message.content, null, 2)}
                             </div>
                           ))
                         )}
