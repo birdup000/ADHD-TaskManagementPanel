@@ -16,6 +16,7 @@ interface Task {
   completed: boolean;
   dueDate?: Date;
   createdAt: Date;
+  subtasks?: SubTask[];
 }
 
 type TaskCategory = "work" | "personal" | "urgent";
@@ -38,6 +39,7 @@ export default function TaskPanel() {
       completed: false,
       createdAt: new Date(),
       dueDate: new Date(Date.now() + 86400000), // Tomorrow
+      subtasks: [],
     },
   ]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -59,6 +61,7 @@ export default function TaskPanel() {
         createdAt: new Date(),
         dueDate: new Date(Date.now() + 86400000),
         description: "",
+        subtasks: [],
       };
       setTasks((prev) => [...prev, newTaskObject]);
       setNewTask({ title: "", category: "work", priority: "medium" });
@@ -121,6 +124,7 @@ export default function TaskPanel() {
                     dueDate: parsedResponse.dueDate
                       ? new Date(parsedResponse.dueDate)
                       : undefined,
+                    subtasks: [],
                   };
                   setTasks((prev) => [...prev, newTask]);
                   setChatHistory((prev) => [
@@ -375,6 +379,7 @@ export default function TaskPanel() {
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <select
+                          title="Set task priority"
                           value={task.priority}
                           onChange={(e) =>
                             setTasks((prev) =>
@@ -409,15 +414,16 @@ export default function TaskPanel() {
                         </div>
                       </div>
                       <button
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setTasks((prev) =>
                             prev.map((t) =>
                               t.id === task.id
                                 ? { ...t, completed: !t.completed }
                                 : t
                             )
-                          )
-                        }
+                          );
+                        }}
                         className="p-1.5 rounded-full hover:bg-muted transition-colors"
                       >
                         {task.completed ? (
@@ -438,13 +444,13 @@ export default function TaskPanel() {
                           Progress
                         </span>
                         <span className="text-xs font-semibold text-yodaGreen">
-                          30% complete
+                          {task.subtasks ? `${Math.round((task.subtasks.filter(subtask => subtask.completed).length / task.subtasks.length) * 100)}% complete` : "0% complete"}
                         </span>
                       </div>
                       <div className="w-full bg-background/30 rounded-full h-2 overflow-hidden">
                         <div
                           className="bg-gradient-to-r from-accent to-yodaGreen h-2 rounded-full transition-all duration-300 glow-effect"
-                          style={{ width: "30%" }} // TODO: Calculate actual progress
+                          style={{ width: task.subtasks ? `${(task.subtasks.filter(subtask => subtask.completed).length / task.subtasks.length) * 100}%` : "0%" }}
                         />
                       </div>
                     </div>
@@ -452,15 +458,16 @@ export default function TaskPanel() {
 
                   <div className="flex items-center gap-2 pt-3 border-t border-border/20">
                     <button
-                      onClick={() =>
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setTasks((prev) =>
                           prev.map((t) =>
                             t.id === task.id
                               ? { ...t, completed: !t.completed }
                               : t
                           )
-                        )
-                      }
+                        );
+                      }}
                       className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                         task.completed
                           ? "bg-success/10 hover:bg-success/20 text-success"
