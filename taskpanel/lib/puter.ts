@@ -14,10 +14,7 @@ export const loadPuter = async (): Promise<Puter> => {
         // Create Puter instance with available modules
         const instance: Puter = {
           ai: window.puter.ai,
-          auth: (() => {
-            if (!window.puter.auth) {
-              throw new Error('Puter auth module not available');
-            }
+          auth: window.puter?.auth ? (() => {
             const auth = window.puter.auth;
             return {
               signIn: () => auth.signIn(),
@@ -26,7 +23,7 @@ export const loadPuter = async (): Promise<Puter> => {
               getUser: () => auth.getUser(),
               authenticate: () => auth.signIn()
             };
-          })(),
+          })() : undefined,
           kv: (() => {
             if (!window.puter.kv) {
               throw new Error('Puter kv module not available');
