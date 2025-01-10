@@ -47,7 +47,6 @@ h1, h2, h3, h4 {
 }
 
 .task-container {
-  max-width: 1200px;
   margin: 0 auto;
   padding: 3rem;
   background: var(--primary);

@@ -152,7 +152,13 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
 
         // Attempt to parse task command from AI response
         try {
-          const parsedResponse = JSON.parse(response);
+          let parsedResponse;
+          try {
+            parsedResponse = JSON.parse(response);
+          } catch (e) {
+            console.error("AI response is not valid JSON", response);
+            return;
+          }
           if (parsedResponse && parsedResponse.command) {
             switch (parsedResponse.command) {
               case "create":
@@ -299,7 +305,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   };
 
   return (
-    <div className="container mx-auto p-6 dark:bg-background">
+    <div className="container mx-auto p-4 dark:bg-background">
       {/* Priority Bar (Enhanced Header) */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -383,9 +389,9 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Main Column */}
-        <div className="md:col-span-2 space-y-6">
+      <div className="flex flex-col md:flex-row gap-6">
+              {/* Main Column */}
+              <div className="space-y-6 flex-1">
           {/* Task Statistics */}
           <div className="mb-6">
             <div className="flex flex-wrap gap-4">
@@ -627,10 +633,10 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         </div>
 
         {/* Side Column */}
-        <div className="col-span-1 flex flex-col gap-6">
-          {/* Focus Timer & Reminders */}
-          <div className="sticky top-6 space-y-6">
-            <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-6 space-y-6">
+        <div className="flex flex-col gap-6">
+              {/* Focus Timer & Reminders */}
+              <div className="space-y-6">
+            <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-4 space-y-4">
               <FocusTimer
                 activeTask={activeTaskId}
                 onTaskComplete={async () => {

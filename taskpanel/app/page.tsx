@@ -22,9 +22,6 @@ export default function Home() {
         if (isMounted) {
           setIsAuthenticated(isAuthenticated);
         }
-        import('../lib/puter').then((module) => {
-          module.testPuterKV();
-        });
       } catch (error) {
         if (isMounted) {
           console.error('Failed to load Puter.js:', error);
@@ -42,7 +39,7 @@ export default function Home() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -61,12 +58,12 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <div className="animate-fade-in">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto pt-20">
           <div className="space-y-2 mb-10">
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+            <h1 className="text-4xl text-center font-bold text-neutral-900 dark:text-neutral-100 mb-8">
               Authentication Required
             </h1>
-            <p className="text-neutral-500 dark:text-neutral-400">
+            <p className="text-center text-neutral-500 dark:text-neutral-400 mb-8">
               Please authenticate to access your task panel
             </p>
             <button
@@ -91,7 +88,7 @@ export default function Home() {
                   setIsLoading(false);
                 }
               }}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className="mt-12 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors block mx-auto"
             >
               Retry Authentication
             </button>
@@ -103,8 +100,8 @@ export default function Home() {
 
   return (
     <div className="animate-fade-in">
-      <div>
-        <div className="space-y-2 mb-10">
+      <div className="pt-2 mb-10">
+        <div className="">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
             Welcome to Your Task Panel
           </h1>

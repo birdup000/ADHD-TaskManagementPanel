@@ -31,14 +31,11 @@ export default function RootLayout({
         <script src="https://js.puter.com/v2/"></script>
         <div className="min-h-full flex flex-col">
           <header className="bg-primary/50 backdrop-blur-sm shadow-sm border-b border-border/50">
-            <div className="w-full px-6 py-5">
-              <h1 className="text-2xl font-bold text-foreground">
-                ADHD-Friendly Task Panel
-              </h1>
+            <div className="w-full px-6 py-2">
             </div>
           </header>
-          <main className="flex-1 py-10">
-            <div className="w-full px-6 sm:px-8 lg:px-10 space-y-10">
+          <main className="flex-1 py-3">
+            <div className="w-full px-4 sm:px-6 lg:px-8 space-y-6">
               {children}
             </div>
           </main>
