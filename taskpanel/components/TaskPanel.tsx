@@ -42,6 +42,12 @@ export default function TaskPanel() {
   ]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
+  const [newTask, setNewTask] = useState<NewTaskForm>({
+    title: "",
+    category: "work",
+    priority: "medium",
+  });
+
   const handleAddTask = () => {
     if (newTask.title.trim()) {
       const newTaskObject: Task = {
@@ -67,12 +73,6 @@ export default function TaskPanel() {
       minute: "numeric",
     });
   };
-
-  const [newTask, setNewTask] = useState<NewTaskForm>({
-    title: "",
-    category: "work",
-    priority: "medium",
-  });
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [chatHistory, setChatHistory] = useState<
@@ -235,18 +235,39 @@ export default function TaskPanel() {
 
   return (
     <div className="container mx-auto p-6 dark:bg-background">
-      {/* Header Bar */}
+      {/* Priority Bar (Enhanced Header) */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <span className="text-2xl font-bold">Task Dashboard</span>
         </div>
         <div className="flex items-center gap-4">
+          {/* Quick Filtering */}
+          <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
+            <option value="all">All Statuses</option>
+            <option value="incomplete">Incomplete</option>
+            <option value="complete">Complete</option>
+          </select>
+          <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
+            <option value="priority">Sort by Priority</option>
+            <option value="dueDate">Sort by Due Date</option>
+            <option value="created">Sort by Created</option>
+          </select>
+
+          {/* Quick Add Task Button */}
+          <button
+            onClick={handleAddTask}
+            className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
+          >
+            + Add Task
+          </button>
+
           {/* Search Field */}
           <input
             type="text"
             placeholder="Search tasks..."
             className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent/50 transition-all"
           />
+
           {/* Profile or Settings Icon */}
           <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
             <svg
@@ -270,9 +291,9 @@ export default function TaskPanel() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main Column */}
         <div className="md:col-span-2 space-y-6">
-          {/* Task Statistics & Filters */}
+          {/* Task Statistics */}
           <div className="mb-6">
-            <div className="flex flex-wrap gap-4 mb-4">
+            <div className="flex flex-wrap gap-4">
               {[
                 { label: "Total Tasks", value: tasks.length },
                 {
@@ -301,25 +322,10 @@ export default function TaskPanel() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-4">
-              <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
-                <option value="all">All Statuses</option>
-                <option value="incomplete">Incomplete</option>
-                <option value="complete">Complete</option>
-              </select>
-              <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
-                <option value="priority">Sort by Priority</option>
-                <option value="dueDate">Sort by Due Date</option>
-                <option value="created">Sort by Created</option>
-              </select>
-              <button className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors">
-                Clear Filters
-              </button>
-            </div>
           </div>
 
           {/* Task List / Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-4">
             {tasks.map((task) => (
               <div
                 key={task.id}
@@ -327,7 +333,7 @@ export default function TaskPanel() {
                   task.completed
                     ? "opacity-75 scale-95"
                     : "hover:backdrop-blur-md hover:border-accent/30"
-                } transition-all duration-300 glow-effect hover:glow-effect-hover min-w-[240px] cursor-pointer`}
+                } transition-all duration-300 glow-effect hover:glow-effect-hover cursor-pointer`}
                 onClick={() => {
                   setSelectedTask(task);
                   setActiveTaskId(task.id);
@@ -455,11 +461,11 @@ export default function TaskPanel() {
                           )
                         )
                       }
-                      className="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
                         task.completed
-                          ? 'bg-success/10 hover:bg-success/20 text-success'
-                          : 'bg-background/50 hover:bg-background/70 text-foreground'
-                      } glow-effect hover:glow-effect-hover"
+                          ? "bg-success/10 hover:bg-success/20 text-success"
+                          : "bg-background/50 hover:bg-background/70 text-foreground"
+                      } glow-effect hover:glow-effect-hover`}
                     >
                       {task.completed ? "✓ Completed" : "Mark Complete"}
                     </button>
@@ -544,6 +550,20 @@ export default function TaskPanel() {
                       </option>
                     ))}
                   </select>
+                  <select
+                    value={newTask.priority}
+                    onChange={(e) =>
+                      setNewTask((prev) => ({
+                        ...prev,
+                        priority: e.target.value as TaskPriority,
+                      }))
+                    }
+                    className="bg-background dark:bg-muted border border-border dark:border-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent"
+                  >
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
                   <button
                     onClick={handleAddTask}
                     className="bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors"
@@ -553,6 +573,7 @@ export default function TaskPanel() {
                 </div>
               </div>
             </div>
+
             {/* Chat Interface */}
             <div className="bg-primary dark:bg-primary rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Chat with Tasks</h2>
