@@ -101,7 +101,7 @@ export const useAITaskScheduler = (): {
     } catch (err) {
       setError('Failed to generate schedule. Please try again.');
       console.error('AI Schedule Generation Error:', err);
-      return {
+      throw {
         schedule: [],
         conflicts: [],
         recommendations: []
@@ -129,6 +129,7 @@ interface AITaskSchedulerProps {
 
 export function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProps) {
   const { generateSchedule, loading, error } = useAITaskScheduler();
+  const [localError, setError] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<{
     schedule: Array<{
       taskId: string;
@@ -146,10 +147,19 @@ export function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProp
 
   const handleGenerateSchedule = async () => {
     console.log('Tasks before generateSchedule:', tasks);
-    const newSchedule = await generateSchedule(tasks);
-    console.log('New Schedule:', newSchedule);
-    setSchedule(newSchedule);
-    onScheduleUpdate(newSchedule.schedule);
+    try {
+      const newSchedule = await generateSchedule(tasks);
+      console.log('New Schedule:', newSchedule);
+      if (newSchedule && newSchedule.schedule) {
+        setSchedule(newSchedule);
+        onScheduleUpdate(newSchedule.schedule);
+      } else {
+        setError('Invalid schedule format received');
+      }
+    } catch (err) {
+      console.error('Failed to generate schedule:', err);
+      setError('Failed to generate schedule. Please try again.');
+    }
   };
 
   return (
@@ -165,9 +175,9 @@ export function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProp
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {(error || localError) && <p className="text-sm text-red-500">{localError || error}</p>}
 
-      {schedule && (
+      {schedule?.schedule && schedule.schedule.length > 0 && (
         <div className="space-y-4">
           <pre>{JSON.stringify(schedule, null, 2)}</pre>
           <div className="space-y-2">
@@ -182,15 +192,15 @@ export function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProp
                     <div className="text-sm text-muted-foreground">{item.rationale}</div>
                   </div>
                   <div className="text-sm text-right">
-                    <div>Start: {new Date(item.suggestedStartDate).toLocaleDateString()}</div>
-                    <div>End: {new Date(item.suggestedEndDate).toLocaleDateString()}</div>
+                    <div>Start: {new Date(item.suggestedStartDate).toISOString().split('T')[0]}</div>
+                    <div>End: {new Date(item.suggestedEndDate).toISOString().split('T')[0]}</div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {schedule.conflicts.length > 0 && (
+          {schedule.conflicts && schedule.conflicts.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium">Conflicts</h4>
               {schedule.conflicts.map((conflict, index) => (
@@ -207,7 +217,7 @@ export function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProp
             </div>
           )}
 
-          {schedule.recommendations.length > 0 && (
+          {schedule.recommendations && schedule.recommendations.length > 0 && (
             <div className="space-y-2">
               <h4 className="font-medium">Recommendations</h4>
               <ul className="list-disc list-inside space-y-1">
