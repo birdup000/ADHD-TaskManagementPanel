@@ -96,12 +96,12 @@ export const useAISubtaskGenerator = () => {
               typeof parsedSubtask.estimatedTime !== 'number' ||
               typeof parsedSubtask.completed !== 'boolean'
             ) {
-              setError('Invalid subtask format from AI.');
+              setError('Invalid subtask format from AI. Please try again.');
               parsedSubtask = null;
             }
           } catch (parseError) {
             console.error('JSON Parse Error:', parseError, 'AI Response:', response);
-            setError('Invalid JSON format from AI.');
+            setError('Invalid JSON format from AI. Please try again.');
             retries++;
           }
         }
@@ -109,6 +109,7 @@ export const useAISubtaskGenerator = () => {
           generatedSubtasks.push(parsedSubtask);
         } else {
           console.error('Failed to parse subtask after multiple retries, skipping to next subtask.');
+          setError('Failed to parse subtask after multiple retries. Please try again.');
         }
       }
       setSubtasks(generatedSubtasks);

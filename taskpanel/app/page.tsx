@@ -22,8 +22,12 @@ export default function Home() {
         if (isMounted) {
           setIsAuthenticated(isAuthenticated);
         }
+        import('../lib/puter').then((module) => {
+          module.testPuterKV();
+        });
       } catch (error) {
         if (isMounted) {
+          console.error('Failed to load Puter.js:', error);
           setIsAuthenticated(false);
         }
       } finally {
@@ -34,11 +38,6 @@ export default function Home() {
     };
 
     authenticate();
-    loadPuter().then(() => {
-      import('../lib/puter').then((module) => {
-        module.testPuterKV();
-      });
-    });
 
     return () => {
       isMounted = false;
@@ -76,13 +75,17 @@ export default function Home() {
                   setIsLoading(true);
                   const puter = getPuter();
                   if (!puter.auth) {
-                    throw new Error('Puter auth not available');
+                    console.error('Puter auth not available');
+                    alert('Puter authentication module is not available. Please try again later.');
+                    setIsAuthenticated(false);
+                    return;
                   }
                   await puter.auth.authenticate();
                   const authResult = puter.auth.isSignedIn();
                   setIsAuthenticated(authResult);
                 } catch (error) {
                   console.error('Authentication failed:', error);
+                  alert('Authentication failed. Please try again.');
                   setIsAuthenticated(false);
                 } finally {
                   setIsLoading(false);

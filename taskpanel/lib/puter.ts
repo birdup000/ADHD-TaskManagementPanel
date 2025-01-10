@@ -48,7 +48,9 @@ export const loadPuter = async (): Promise<Puter> => {
         if (!puterInstance.auth) {
           console.warn('Using Puter.js without auth functionality');
         }
-        
+        if (!puterInstance.kv) {
+          console.warn('Using Puter.js without kv functionality');
+        }
         resolve(puterInstance);
       } else {
         reject(new Error('Failed to load Puter.js'));
