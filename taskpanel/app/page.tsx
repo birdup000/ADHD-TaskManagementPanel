@@ -7,6 +7,10 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -100,7 +104,7 @@ export default function Home() {
             Let's make today productive and stress-free
           </p>
         </div>
-        <TaskPanel />
+        <TaskPanel onLogout={handleLogout} />
       </div>
     </div>
   );

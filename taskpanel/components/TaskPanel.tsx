@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FocusTimer } from "./FocusTimer";
 import Reminders from "./Reminders";
 import { SubTask } from "./TaskDetailsDrawer";
+import Tutorial from "./Tutorial";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
 import { getPuter } from "../lib/puter";
 
@@ -28,7 +29,11 @@ interface NewTaskForm {
   priority: TaskPriority;
 }
 
-export default function TaskPanel() {
+interface TaskPanelProps {
+  onLogout: () => void;
+}
+
+export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "1",
@@ -82,6 +87,29 @@ export default function TaskPanel() {
     { role: "user" | "assistant"; content: string }[]
   >([]);
   const [chatInput, setChatInput] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => {
+    const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
+    return hasSeenTutorial ? false : true;
+  });
+  const puter = getPuter();
+
+  const handleLogout = async () => {
+    console.log("handleLogout called", puter);
+    if (puter && puter.auth) {
+      try {
+        await puter.auth.signOut();
+        console.log("signOut successful");
+        onLogout();
+      } catch (error) {
+        console.error("signOut error", error);
+      }
+      setMenuOpen(false);
+    } else {
+      console.error("puter.auth is undefined, cannot sign out");
+      // Optionally display a user-friendly message here
+    }
+  };
 
   const handleSendMessage = async () => {
     if (chatInput.trim()) {
@@ -273,22 +301,52 @@ export default function TaskPanel() {
           />
 
           {/* Profile or Settings Icon */}
-          <button className="p-2 rounded-lg hover:bg-background/50 transition-colors">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div className="relative">
+            <button
+              onClick={() => {
+                setMenuOpen(!menuOpen);
+              }}
+              className="p-2 rounded-lg hover:bg-background/50 transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-background border border-border/20 rounded-lg shadow-lg z-10">
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 hover:bg-muted/50 transition-colors"
+                >
+                  Log Out
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTutorial(true);
+                    setTimeout(() => setMenuOpen(false), 100);
+                  }}
+                  className="block w-full text-left px-4 py-2 hover:bg-muted/50 transition-colors"
+                >
+                  View Tutorial
+                </button>
+              </div>
+            )}
+            {showTutorial && (
+              <Tutorial onClose={() => setShowTutorial(false)} />
+            )}
+          </div>
+=======
         </div>
       </div>
 
