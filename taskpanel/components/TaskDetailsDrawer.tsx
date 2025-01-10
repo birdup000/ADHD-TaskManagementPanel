@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAISubtaskGenerator } from './AISubtaskGenerator';
+import SubtaskGenerator from './SubtaskGenerator';
 
 export interface SubTask {
   id: number;
@@ -12,37 +12,40 @@ export interface SubTask {
 interface TaskDetailsDrawerProps {
   task: any;
   onClose: () => void;
+  onUpdate?: (updatedTask: any) => void;
 }
 
-const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose }) => {
-  const { subtasks, loading, error, generateSubtasks, identifyDependencies } = useAISubtaskGenerator();
-  const [aiStatus, setAIStatus] = useState({
-    active: true,
-    processing: false,
-  });
+const identifyDependencies = async (title: string, description: string) => {
+  // Placeholder for dependency identification logic
+  console.log("Identifying dependencies for:", title, description);
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  return ["dependency 1", "dependency 2"];
+};
 
-  const handleGenerateSubtasks = async () => {
-    setAIStatus((prev) => ({ ...prev, processing: true }));
-    try {
-      await generateSubtasks(
-        task.title,
-        task.description || "",
-        task.dueDate?.toISOString(),
-        task.priority,
-        ""
-      );
-    } catch (e) {
-      console.error("Error generating subtasks", e);
-    }
-    setAIStatus((prev) => ({ ...prev, processing: false }));
+const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, onUpdate }) => {
+  const [taskState, setTaskState] = useState(task);
+  const [aiStatus, setAIStatus] = useState({ processing: false });
+  const [error, setError] = useState<string | null>(null);
+  const [subtasks, setSubtasks] = useState<SubTask[]>([]);
+
+  const handleSubtasksGenerated = (newSubtasks: SubTask[]) => {
+    const updatedTask = {
+      ...taskState,
+      subtasks: [...(taskState.subtasks || []), ...newSubtasks],
+    };
+    setTaskState(updatedTask);
+    onUpdate?.(updatedTask);
+    setSubtasks(updatedTask.subtasks || []);
   };
 
   const handleIdentifyDependencies = async () => {
     setAIStatus((prev) => ({ ...prev, processing: true }));
     try {
-      await identifyDependencies(task.title, task.description || "");
+      const dependencies = await identifyDependencies(task.title, task.description || "");
+      console.log("Dependencies identified:", dependencies);
     } catch (error) {
       console.error("Error identifying dependencies:", error);
+      setError(String(error));
     }
     finally {
       setAIStatus((prev) => ({ ...prev, processing: false }));
@@ -52,27 +55,15 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose }) 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
       <div className="bg-background dark:bg-background rounded-lg p-6 max-w-md mx-auto mt-20">
-        <h2 className="text-xl font-semibold mb-4">{task.title}</h2>
-        <p className="text-muted-foreground mb-4">{task.description}</p>
-        <div className="flex space-x-2 mb-4">
-          <button
-            onClick={handleGenerateSubtasks}
-            className={`bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors ${
-              aiStatus.processing ? "animate-pulse bg-yellow-500" : ""
-            }`}
-            disabled={loading}
-          >
-            {loading ? "Generating..." : "Generate Subtasks"}
-          </button>
-          <button
-            onClick={handleIdentifyDependencies}
-            className={`bg-accent hover:bg-accent/80 text-background rounded-lg px-4 py-2 transition-colors ${
-              aiStatus.processing ? "animate-pulse bg-yellow-500" : ""
-            }`}
-            disabled={loading}
-          >
-            {loading ? "Analyzing..." : "Analyze Dependencies"}
-          </button>
+        <h2 className="text-xl font-semibold mb-4">{taskState.title}</h2>
+        <p className="text-muted-foreground mb-4">{taskState.description}</p>
+        
+        {/* AI Subtask Generator */}
+        <div className="mb-6">
+          <SubtaskGenerator
+            task={taskState}
+            onSubtasksGenerated={handleSubtasksGenerated}
+          />
         </div>
         {aiStatus.processing && (
           <div className="flex items-center gap-2 mb-4">

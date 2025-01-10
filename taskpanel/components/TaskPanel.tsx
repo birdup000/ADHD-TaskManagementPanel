@@ -2,10 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { FocusTimer } from "./FocusTimer";
-import Reminders from "./Reminders";
 import { SubTask } from "./TaskDetailsDrawer";
 import Tutorial from "./Tutorial";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
+import AITaskCheckin from "./AITaskCheckin";
+import AITaskScheduler from "./AITaskScheduler";
+import { useNotificationSystem } from "./NotificationSystem";
+import NotificationSystem from "./NotificationSystem";
+import { useAISubtaskGenerator } from "./AISubtaskGenerator";
 import { getPuter } from "../lib/puter";
 
 interface Task {
@@ -18,6 +22,7 @@ interface Task {
   dueDate?: Date;
   createdAt: Date;
   subtasks?: SubTask[];
+  lastUpdate?: Date;
 }
 
 type TaskCategory = "work" | "personal" | "urgent";
@@ -36,6 +41,7 @@ interface TaskPanelProps {
 export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const { notifications, checkDeadlines, checkProgress, checkBlockers } = useNotificationSystem();
 
   const [newTask, setNewTask] = useState<NewTaskForm>({
     title: "",
@@ -59,6 +65,11 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
               }));
               setTasks(parsedTasksWithDates);
+              
+              // Check notifications after loading tasks
+              checkDeadlines(parsedTasksWithDates);
+              checkProgress(parsedTasksWithDates);
+              checkBlockers(parsedTasksWithDates);
             }
           } catch (error) {
             console.error("Error parsing tasks from storage:", error);
@@ -101,6 +112,16 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   };
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const handleTaskUpdate = async (updatedTask: Task) => {
+    const updatedTasks = tasks.map(t => 
+      t.id === updatedTask.id ? updatedTask : t
+    );
+    if (puter.kv) {
+      await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+      setTasks(updatedTasks);
+    }
+    setSelectedTask(updatedTask);
+  };
   const [chatHistory, setChatHistory] = useState<
     { role: "user" | "assistant"; content: string }[]
   >([]);
@@ -308,6 +329,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   return (
     <React.Fragment>
       <div className="min-h-screen bg-gradient-to-b from-background via-background/98 to-background/95 overflow-x-hidden">
+      </div>
         {/* Top Navigation Bar */}
         <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/20 shadow-sm shadow-primary/5"></nav>
         <div>
@@ -772,15 +794,70 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                   <TaskDetailsDrawer
                     task={selectedTask}
                     onClose={() => setSelectedTask(null)}
+                    onUpdate={handleTaskUpdate}
                   />
                 )}
               </div>
 
               {/* Side Column */}
               <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
-                {/* Focus Timer & Reminders */}
+                {/* AI Features Panel */}
                 <div className="space-y-6">
                   <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10 shadow-xl shadow-primary/5 space-y-4">
+                    {/* AI Task Check-in */}
+                    {selectedTask && (
+                      <AITaskCheckin
+                        task={{
+                          id: selectedTask.id,
+                          title: selectedTask.title,
+                          description: selectedTask.description,
+                          dueDate: selectedTask.dueDate,
+                          lastUpdate: selectedTask.lastUpdate || new Date(),
+                          progress: selectedTask.subtasks
+                            ? Math.round(
+                                (selectedTask.subtasks.filter((st) => st.completed).length /
+                                  selectedTask.subtasks.length) *
+                                  100
+                              )
+                            : 0,
+                        }}
+                        onProgressUpdate={(progress, blockers, nextSteps) => {
+                          const updatedTasks = tasks.map((task) =>
+                            task.id === selectedTask.id
+                              ? {
+                                  ...task,
+                                  subtasks: task.subtasks?.map((st, index) =>
+                                    index < Math.floor((progress / 100) * (task.subtasks?.length || 0))
+                                      ? { ...st, completed: true }
+                                      : st
+                                  ),
+                                }
+                              : task
+                          );
+                          setTasks(updatedTasks);
+                        }}
+                      />
+                    )}
+
+                    {/* AI Task Scheduler */}
+                    <AITaskScheduler
+                      tasks={tasks}
+                      onScheduleUpdate={(schedule) => {
+                        const updatedTasks = tasks.map((task) => {
+                          const scheduledTask = schedule.find((s) => s.taskId === task.id);
+                          if (scheduledTask) {
+                            return {
+                              ...task,
+                              dueDate: new Date(scheduledTask.suggestedEndDate),
+                            };
+                          }
+                          return task;
+                        });
+                        setTasks(updatedTasks);
+                      }}
+                    />
+
+                    {/* Focus Timer */}
                     <FocusTimer
                       activeTask={activeTaskId}
                       onTaskComplete={async () => {
@@ -801,8 +878,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         }
                       }}
                     />
-                    <Reminders />
-                  </div>
 
                   {/* Chat Interface */}
                   <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10">
@@ -850,6 +925,9 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 </div>
               </div>
             </div>
+
+            {/* Notification System */}
+            <NotificationSystem tasks={tasks} />
 
             {/* Bottom Utility Bar (Optional) */}
             <div className="mt-auto pt-6">

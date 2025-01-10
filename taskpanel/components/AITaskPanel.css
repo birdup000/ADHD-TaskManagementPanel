@@ -1,0 +1,56 @@
+/* AI Task Panel Styles */
+.ai-feature-panel {
+  @apply bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10;
+}
+
+.ai-feature-title {
+  @apply text-lg font-semibold mb-4 text-foreground;
+}
+
+.ai-feature-section {
+  @apply space-y-4;
+}
+
+.ai-checkin-message {
+  @apply p-4 bg-accent/10 rounded-lg text-sm text-foreground;
+}
+
+.ai-scheduler-card {
+  @apply p-4 bg-background/50 rounded-lg border border-border/20;
+}
+
+.ai-notification {
+  @apply p-3 rounded-lg transition-colors;
+}
+
+.ai-notification.deadline {
+  @apply bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200;
+}
+
+.ai-notification.progress {
+  @apply bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200;
+}
+
+.ai-notification.escalation {
+  @apply bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200;
+}
+
+.ai-button {
+  @apply px-4 py-2 rounded-lg transition-colors;
+}
+
+.ai-button-primary {
+  @apply bg-accent text-white hover:bg-accent/80;
+}
+
+.ai-button-secondary {
+  @apply bg-background/50 hover:bg-background/70 text-foreground;
+}
+
+.progress-bar {
+  @apply w-full h-2 bg-background/30 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full bg-gradient-to-r from-accent to-green-500 transition-all duration-300;
+}
