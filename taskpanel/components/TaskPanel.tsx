@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FocusTimer } from "./FocusTimer";
 import Reminders from "./Reminders";
 import { SubTask } from "./TaskDetailsDrawer";
@@ -33,20 +33,9 @@ interface TaskPanelProps {
   onLogout: () => void;
 }
 
+
 export default function TaskPanel({ onLogout }: TaskPanelProps) {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Example Task",
-      description: "This is an example task",
-      category: "work",
-      priority: "medium",
-      completed: false,
-      createdAt: new Date(),
-      dueDate: new Date(Date.now() + 86400000), // Tomorrow
-      subtasks: [],
-    },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   const [newTask, setNewTask] = useState<NewTaskForm>({
@@ -55,7 +44,33 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
     priority: "medium",
   });
 
-  const handleAddTask = () => {
+  const puter = getPuter();
+
+  useEffect(() => {
+    const loadTasks = async () => {
+      if (puter.kv) {
+        const tasksString = await puter.kv.get('tasks');
+        if (tasksString) {
+          try {
+            const parsedTasks = JSON.parse(tasksString);
+            if (Array.isArray(parsedTasks)) {
+              const parsedTasksWithDates = parsedTasks.map(task => ({
+                ...task,
+                createdAt: new Date(task.createdAt),
+                dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+              }));
+              setTasks(parsedTasksWithDates);
+            }
+          } catch (error) {
+            console.error('Error parsing tasks from storage:', error);
+          }
+        }
+      }
+    };
+    loadTasks();
+  }, [puter.kv]);
+
+  const handleAddTask = async () => {
     if (newTask.title.trim()) {
       const newTaskObject: Task = {
         id: Date.now().toString(),
@@ -68,12 +83,16 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         description: "",
         subtasks: [],
       };
-      setTasks((prev) => [...prev, newTaskObject]);
+      if (puter.kv) {
+        const updatedTasks = [...tasks, newTaskObject];
+        await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+        setTasks(updatedTasks);
+      }
       setNewTask({ title: "", category: "work", priority: "medium" });
     }
   };
-
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return "";
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -92,7 +111,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
     const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
     return hasSeenTutorial ? false : true;
   });
-  const puter = getPuter();
 
   const handleLogout = async () => {
     console.log("handleLogout called", puter);
@@ -103,6 +121,9 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         onLogout();
       } catch (error) {
         console.error("signOut error", error);
+      }
+      if (puter.kv) {
+        await puter.kv.del('tasks');
       }
       setMenuOpen(false);
     } else {
@@ -154,7 +175,11 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                       : undefined,
                     subtasks: [],
                   };
-                  setTasks((prev) => [...prev, newTask]);
+                  const updatedTasks = [...tasks, newTask];
+                  if (puter.kv) {
+                    await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                    setTasks(updatedTasks);
+                  }
                   setChatHistory((prev) => [
                     ...prev,
                     {
@@ -172,19 +197,21 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                   parsedResponse.category &&
                   parsedResponse.priority
                 ) {
-                  setTasks((prev) =>
-                    prev.map((task) =>
-                      task.id === String(parsedResponse.taskId)
-                        ? {
-                            ...task,
-                            title: parsedResponse.title.trim(),
-                            description: parsedResponse.description.trim(),
-                            category: parsedResponse.category.trim() as TaskCategory,
-                            priority: parsedResponse.priority.trim() as TaskPriority,
-                          }
-                        : task
-                    )
+                  const updatedTasks = tasks.map((task) =>
+                    task.id === String(parsedResponse.taskId)
+                      ? {
+                          ...task,
+                          title: parsedResponse.title.trim(),
+                          description: parsedResponse.description.trim(),
+                          category: parsedResponse.category.trim() as TaskCategory,
+                          priority: parsedResponse.priority.trim() as TaskPriority,
+                        }
+                      : task
                   );
+                  if (puter.kv) {
+                    await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                    setTasks(updatedTasks);
+                  }
                   setChatHistory((prev) => [
                     ...prev,
                     {
@@ -196,9 +223,11 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 break;
               case "delete":
                 if (parsedResponse.taskId) {
-                  setTasks((prev) =>
-                    prev.filter((task) => task.id !== String(parsedResponse.taskId))
-                  );
+                  const updatedTasks = tasks.filter((task) => task.id !== String(parsedResponse.taskId));
+                  if (puter.kv) {
+                    await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                    setTasks(updatedTasks);
+                  }
                   setChatHistory((prev) => [
                     ...prev,
                     {
@@ -210,13 +239,15 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 break;
               case "complete":
                 if (parsedResponse.taskId) {
-                  setTasks((prev) =>
-                    prev.map((task) =>
-                      task.id === String(parsedResponse.taskId)
-                        ? { ...task, completed: true }
-                        : task
-                    )
+                  const updatedTasks = tasks.map((task) =>
+                    task.id === String(parsedResponse.taskId)
+                      ? { ...task, completed: true }
+                      : task
                   );
+                  if (puter.kv) {
+                    await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                    setTasks(updatedTasks);
+                  }
                   setChatHistory((prev) => [
                     ...prev,
                     {
@@ -228,16 +259,18 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 break;
               case "editDueDate":
                 if (parsedResponse.taskId && parsedResponse.dueDate) {
-                  setTasks((prev) =>
-                    prev.map((task) =>
-                      task.id === String(parsedResponse.taskId)
-                        ? {
-                            ...task,
-                            dueDate: new Date(parsedResponse.dueDate),
-                          }
-                        : task
-                    )
+                  const updatedTasks = tasks.map((task) =>
+                    task.id === String(parsedResponse.taskId)
+                      ? {
+                          ...task,
+                          dueDate: new Date(parsedResponse.dueDate),
+                        }
+                      : task
                   );
+                  if (puter.kv) {
+                    await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                    setTasks(updatedTasks);
+                  }
                   setChatHistory((prev) => [
                     ...prev,
                     {
@@ -439,18 +472,20 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         <select
                           title="Set task priority"
                           value={task.priority}
-                          onChange={(e) =>
-                            setTasks((prev) =>
-                              prev.map((t) =>
-                                t.id === task.id
-                                  ? {
-                                      ...t,
-                                      priority: e.target.value as TaskPriority,
-                                    }
-                                  : t
-                              )
-                            )
-                          }
+                          onChange={async (e) => {
+                            const updatedTasks = tasks.map((t) =>
+                              t.id === task.id
+                                ? {
+                                    ...t,
+                                    priority: e.target.value as TaskPriority,
+                                  }
+                                : t
+                            );
+                            if (puter.kv) {
+                              await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                              setTasks(updatedTasks);
+                            }
+                          }}
                           className={`px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors font-medium outline-none appearance-none cursor-pointer`}
                         >
                           <option value="high" className="bg-background/20">
@@ -472,15 +507,17 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         </div>
                       </div>
                       <button
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          setTasks((prev) =>
-                            prev.map((t) =>
-                              t.id === task.id
-                                ? { ...t, completed: !t.completed }
+                          const updatedTasks = tasks.map((t) =>
+                            t.id === task.id
+                              ? { ...t, completed: !t.completed }
                                 : t
-                            )
                           );
+                          if (puter.kv) {
+                            await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                            setTasks(updatedTasks);
+                          }
                         }}
                         className="p-1.5 rounded-full hover:bg-muted transition-colors"
                       >
@@ -547,7 +584,34 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
                       </svg>
                     </button>
-                  </div>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const updatedTasks = tasks.filter((t) => t.id !== task.id);
+                        if (puter.kv) {
+                          await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                          setTasks(updatedTasks);
+                        }
+                      }}
+                      className="p-1.5 rounded-md hover:bg-background/50 transition-all glow-effect hover:glow-effect-hover"
+                      title="Remove task"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-muted-foreground"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                </div>
                 </div>
               </div>
             ))}
@@ -569,15 +633,17 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
             <div className="bg-background/95 backdrop-blur-sm border border-border/20 p-6 space-y-6">
               <FocusTimer
                 activeTask={activeTaskId}
-                onTaskComplete={() => {
+                onTaskComplete={async () => {
                   if (activeTaskId) {
-                    setTasks((prev) =>
-                      prev.map((task) =>
-                        task.id === activeTaskId
-                          ? { ...task, completed: true }
-                          : task
-                      )
+                    const updatedTasks = tasks.map((task) =>
+                      task.id === activeTaskId
+                        ? { ...task, completed: true }
+                        : task
                     );
+                    if (puter.kv) {
+                      await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+                      setTasks(updatedTasks);
+                    }
                     setActiveTaskId(null);
                   }
                 }}

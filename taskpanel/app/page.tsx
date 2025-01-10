@@ -34,6 +34,11 @@ export default function Home() {
     };
 
     authenticate();
+    loadPuter().then(() => {
+      import('../lib/puter').then((module) => {
+        module.testPuterKV();
+      });
+    });
 
     return () => {
       isMounted = false;

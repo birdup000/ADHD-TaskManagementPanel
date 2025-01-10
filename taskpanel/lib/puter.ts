@@ -26,6 +26,21 @@ export const loadPuter = async (): Promise<Puter> => {
               getUser: () => auth.getUser(),
               authenticate: () => auth.signIn()
             };
+          })(),
+          kv: (() => {
+            if (!window.puter.kv) {
+              throw new Error('Puter kv module not available');
+            }
+            const kv = window.puter.kv;
+            return {
+              set: (key: string, value: string | number | boolean) => kv.set(key, value),
+              get: (key: string) => kv.get(key),
+              incr: (key: string, amount?: number) => kv.incr(key, amount),
+              decr: (key: string, amount?: number) => kv.decr(key, amount),
+              del: (key: string) => kv.del(key),
+              list: (pattern?: string, returnValues?: boolean) => kv.list(pattern, returnValues),
+              flush: () => kv.flush(),
+            };
           })()
         };
         puterInstance = instance;
@@ -64,5 +79,24 @@ export const authenticateWithPuter = async (): Promise<boolean> => {
   } catch (error) {
     console.error('Puter authentication failed:', error);
     return false;
+  }
+};
+
+export const testPuterKV = async () => {
+  const puter = getPuter();
+  if (!puter.kv) {
+    throw new Error('Puter kv module not available. Please ensure you are using a version of Puter.js that includes key-value storage functionality.');
+  }
+  try {
+    const setSuccess = await puter.kv.set('testKey', 'testValue');
+    console.log('Set success:', setSuccess);
+    const value = await puter.kv.get('testKey');
+    console.log('Value:', value);
+    const deleteSuccess = await puter.kv.del('testKey');
+    console.log('Delete success:', deleteSuccess);
+    const valueAfterDelete = await puter.kv.get('testKey');
+    console.log('Value after delete:', valueAfterDelete);
+  } catch (error) {
+    console.error('Puter kv test failed:', error);
   }
 };
