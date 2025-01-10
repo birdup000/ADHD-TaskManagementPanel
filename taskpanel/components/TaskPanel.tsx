@@ -114,7 +114,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
 
   const handleLogout = async () => {
     console.log("handleLogout called", puter);
-    if (puter && puter.auth) {
+    if (puter.auth) {
       try {
         await puter.auth.signOut();
         console.log("signOut successful");
@@ -122,14 +122,14 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
       } catch (error) {
         console.error("signOut error", error);
       }
-      if (puter.kv) {
-        await puter.kv.del('tasks');
-      }
-      setMenuOpen(false);
     } else {
       console.error("puter.auth is undefined, cannot sign out");
       // Optionally display a user-friendly message here
     }
+    if (puter.kv) {
+      await puter.kv.del('tasks');
+    }
+    setMenuOpen(false);
   };
 
   const handleSendMessage = async () => {
