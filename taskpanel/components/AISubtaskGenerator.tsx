@@ -2,38 +2,16 @@
 
 import { useState } from "react";
 import { loadPuter } from "../lib/puter";
-import { SubTask } from "./TaskDetailsDrawer";
+import { SubTask } from "../types/SubTask";
+import { taskTemplates, taskTips, makeTaskConcrete } from "../lib/task-templates";
+import { GENERATE_SINGLE_SUBTASK_PROMPT } from "../lib/prompt-templates";
 
 /// <reference path="../types/puter.d.ts" />
 
-const GENERATE_SINGLE_SUBTASK_PROMPT = `
-Given the following task details:
-Task Name: {taskName}
-Description: {taskDescription}
-Due Date: {dueDate}
-Priority: {priority}
-Additional Context: {additionalContext}
-
-Previous Subtasks:
-{previousSubtasks}
-
-Generate the next subtask that breaks down this main task into smaller, actionable items. This subtask should be specific, measurable, and contribute to the completion of the main task.
-
-The response MUST be a valid JSON object conforming to the following schema:
-{
- "type": "object",
- "properties": {
-   "id": { "type": "number", "description": "A unique identifier (starting from 1)" },
-   "title": { "type": "string", "description": "The title of the subtask" },
-   "description": { "type": "string", "description": "The description of the subtask" },
-   "estimatedTime": { "type": "number", "description": "The estimated time to complete the subtask in minutes" },
-   "completed": { "type": "boolean", "description": "Boolean value (always false for new subtasks)" }
- },
- "required": ["id", "title", "description", "estimatedTime", "completed"],
- "description": "The response MUST be a valid JSON object conforming to this schema. Do not include any additional text or formatting."
-}
+The response MUST be a valid JSON object conforming to this schema.
 `;
 
+// Dependencies Prompt
 const IDENTIFY_DEPENDENCIES_PROMPT = `
 Given the following task details:
 Task Name: {taskName}
@@ -70,9 +48,21 @@ export const useAISubtaskGenerator = () => {
           .map((subtask) => `- ${subtask.title}: ${subtask.description}`)
           .join('\n');
 
+        // Make task more concrete and get context from templates
+        const concreteTaskName = makeTaskConcrete(taskName);
+        const concreteDescription = makeTaskConcrete(taskDescription);
+        const allTemplates = Object.values(taskTemplates).flat();
+        const allTips = Object.values(taskTips).flat();
+
+        // Make task more concrete and add context
+        const concreteTaskName = makeTaskConcrete(taskName);
+        const concreteDescription = makeTaskConcrete(taskDescription);
+        const allTemplates = Object.values(taskTemplates).flat();
+        const allTips = Object.values(taskTips).flat();
+
         const prompt = GENERATE_SINGLE_SUBTASK_PROMPT
-          .replace('{taskName}', taskName)
-          .replace('{taskDescription}', taskDescription)
+          .replace('{taskName}', concreteTaskName)
+          .replace('{taskDescription}', concreteDescription)
           .replace('{dueDate}', dueDate || 'N/A')
           .replace('{priority}', priority || 'N/A')
           .replace('{additionalContext}', additionalContext || 'N/A')
@@ -94,7 +84,9 @@ export const useAISubtaskGenerator = () => {
               typeof parsedSubtask.title !== 'string' ||
               typeof parsedSubtask.description !== 'string' ||
               typeof parsedSubtask.estimatedTime !== 'number' ||
-              typeof parsedSubtask.completed !== 'boolean'
+              typeof parsedSubtask.completed !== 'boolean' ||
+              !Array.isArray(parsedSubtask.tips) ||
+              !Array.isArray(parsedSubtask.prerequisites)
             ) {
               setError('Invalid subtask format from AI. Please try again.');
               parsedSubtask = null;
