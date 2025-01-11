@@ -800,9 +800,9 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
               <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
                 {/* AI Features Panel */}
                 <div className="space-y-6">
-                  <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10 shadow-xl shadow-primary/5 space-y-4">
-                    {/* AI Task Check-in */}
-                    {selectedTask && (
+                  {/* AI Task Check-in */}
+                  {selectedTask && (
+                    <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10 shadow-xl shadow-primary/5">
                       <AITaskCheckin
                         task={{
                           id: String(selectedTask.id),
@@ -834,7 +834,11 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                           setTasks(updatedTasks);
                         }}
                       />
-                    )}
+                    </div>
+                  )}
+                  
+                  {/* AI Task Scheduler */}
+                  <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10 shadow-xl shadow-primary/5">
                     <AITaskScheduler
                       tasks={tasks}
                       onScheduleUpdate={(schedule: Array<{ taskId: string; suggestedStartDate: string; suggestedEndDate: string; }>) => {
@@ -857,7 +861,10 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         })));
                       }}
                     />
-                    {/* Focus Timer */}
+                  </div>
+
+                  {/* Focus Timer */}
+                  <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10 shadow-xl shadow-primary/5">
                     <FocusTimer
                       activeTask={activeTaskId}
                       onTaskComplete={async () => {
@@ -878,6 +885,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         }
                       }}
                     />
+                  </div>
 
                   {/* Chat Interface */}
                   <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10">
@@ -980,7 +988,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
           </div>
         </div>
       </div>
-    </div>
     </React.Fragment>
   );
 }
