@@ -1,5 +1,19 @@
 export interface PuterAI {
-  chat: (prompt: string, options?: { model?: string; stream?: boolean }) => Promise<string>;
+  chat: (prompt: string, options?: { 
+    model?: string; 
+    stream?: boolean;
+    temperature?: number;
+    max_tokens?: number;
+    stop?: string[];
+    presence_penalty?: number;
+    frequency_penalty?: number;
+  }) => Promise<string>;
+  
+  // Enhanced capabilities
+  analyze: (content: string, type: 'sentiment' | 'entities' | 'keywords' | 'summary') => Promise<any>;
+  complete: (prompt: string, options?: { temperature?: number; max_tokens?: number }) => Promise<string>;
+  embed: (text: string) => Promise<number[]>;
+  moderate: (content: string) => Promise<{ flagged: boolean; categories: string[] }>;
 }
 
 export interface PuterAuth {
