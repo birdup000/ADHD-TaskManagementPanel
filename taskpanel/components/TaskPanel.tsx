@@ -9,7 +9,7 @@ import AITaskCheckin from "./AITaskCheckin";
 import { AITaskScheduler } from "./AITaskScheduler";
 import { useNotificationSystem } from "./NotificationSystem";
 import NotificationSystem from "./NotificationSystem";
-import { useAISubtaskGenerator } from "./AISubtaskGenerator";
+
 import { getPuter } from "../lib/puter";
 
 export interface Task {

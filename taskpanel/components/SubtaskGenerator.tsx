@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAISubtaskGenerator } from './AISubtaskGenerator';
+import { useAISubtaskGenerator } from '../hooks/useAISubtaskGenerator';
 import { SubTask } from './TaskDetailsDrawer';
 
 interface SubtaskGeneratorProps {
