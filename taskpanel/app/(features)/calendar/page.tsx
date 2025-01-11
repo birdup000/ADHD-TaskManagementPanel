@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import MainCalendar from '../../components/MainCalendar';
-import { Task } from '../../components/TaskPanel';
+import MainCalendar from '../../../components/MainCalendar';
+import { Task } from '../../../components/TaskPanel';
 
 export default function CalendarPage() {
   const [tasks, setTasks] = React.useState<Task[]>([
@@ -10,9 +10,13 @@ export default function CalendarPage() {
       id: '1',
       title: 'Sample Task 1',
       description: 'This is a sample task',
-      priority: 'medium',
-      status: 'todo',
+      category: 'work' as TaskCategory,
+      priority: 'medium' as TaskPriority,
+      completed: false,
+      status: 'todo' as "todo" | "in_progress" | "done",
       dueDate: new Date(),
+      createdAt: new Date(),
+      subtasks: [],
     }
   ]);
   const [scheduledBlocks, setScheduledBlocks] = React.useState<Array<{

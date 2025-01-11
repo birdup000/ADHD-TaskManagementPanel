@@ -19,7 +19,7 @@ export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks, onEditBlock 
   const handleDrop = (e: React.DragEvent, date: Date) => {
     e.preventDefault();
     if (draggedTask) {
-      onTimeBlockDrop(draggedTask.id, date);
+      onTimeBlockDrop(String(draggedTask.id), date);
     }
   };
 

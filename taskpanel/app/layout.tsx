@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import React from "react";
-import NotificationSystem from "../components/NotificationSystem";
+import NotificationSystem from "@/components/NotificationSystem";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -40,7 +40,7 @@ export default function RootLayout({
                     <span className="text-2xl font-bold bg-gradient-to-r from-accent via-accent to-accent text-transparent bg-clip-text leading-none">ADHD Task Panel</span>
                   </a>
                   <div className="hidden md:flex items-center space-x-2 animate-fade-in bg-background/30 backdrop-blur-sm rounded-full px-2 border border-border/5">
-                    <a href="/" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">Dashboard</a>
+                    <a href="/dashboard" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">Dashboard</a>
                     <a href="/calendar" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">Calendar</a>
                     <a href="/analytics" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors">Analytics</a>
                   </div>
@@ -57,7 +57,7 @@ export default function RootLayout({
               <input type="checkbox" id="mobile-menu-checkbox" className="hidden" />
               <div className="md:hidden mobile-menu-overlay">
                 <div className="px-2 pt-2 pb-3 space-y-1">
-                  <a href="/" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors block">Dashboard</a>
+                  <a href="/dashboard" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors block">Dashboard</a>
                   <a href="/calendar" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors block">Calendar</a>
                   <a href="/analytics" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors block">Analytics</a>
                 </div>

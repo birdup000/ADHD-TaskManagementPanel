@@ -18,15 +18,16 @@ import { getPuter } from "../lib/puter";
 import type { SubTask } from './TaskDetailsDrawer';
 
 export interface Task {
-  id: string | number;
+  id: string;
   title: string;
   description: string;
   category: TaskCategory;
   priority: TaskPriority;
   completed: boolean;
+  status: "todo" | "in_progress" | "done";
   dueDate?: Date;
   createdAt: Date;
-  subtasks?: SubTask[]; // Using SubTask from TaskDetailsDrawer with number IDs
+  subtasks?: SubTask[];
   lastUpdate?: Date;
 }
 

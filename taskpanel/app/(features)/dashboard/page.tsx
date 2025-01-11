@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import TaskPanel from "../components/TaskPanel";
-import { loadPuter, getPuter } from "../lib/puter";
+import TaskPanel from "../../../components/TaskPanel";
+import { loadPuter, getPuter } from "../../../lib/puter";
 
-export default function Home() {
+export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 

@@ -102,7 +102,7 @@ export const useSchedulingEngine = (tasks: Task[]) => {
     
     if (suggestion) {
       const newBlock: ScheduledBlock = {
-        taskId: task.id,
+        taskId: String(task.id),
         startDate: suggestion.startDate,
         endDate: suggestion.endDate,
         estimatedDuration: workPatterns.taskDurations[task.id]
