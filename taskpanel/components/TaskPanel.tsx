@@ -46,7 +46,7 @@ interface TaskPanelProps {
 
 export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const { scheduledBlocks, conflicts } = useSchedulingEngine(tasks);
+  const { scheduledBlocks, conflicts, autoScheduleTask } = useSchedulingEngine(tasks);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   
@@ -92,11 +92,12 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const handleAddTask = async () => {
     if (newTask.title.trim()) {
       const newTaskObject: Task = {
-        id: Date.now(),
+        id: Date.now().toString(),
         title: newTask.title,
         category: newTask.category,
         priority: newTask.priority,
         completed: false,
+        status: "todo",
         createdAt: new Date(),
         dueDate: new Date(Date.now() + 86400000),
         description: "",
@@ -108,6 +109,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         setTasks(updatedTasks);
       }
       setNewTask({ title: "", category: "work", priority: "medium" });
+      autoScheduleTask(newTaskObject);
     }
   };
   const formatDate = (date: Date | undefined) => {
@@ -129,11 +131,11 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
       const tasksDueForRecreation = getTasksDueForRecreation(tasks);
       if (tasksDueForRecreation.length > 0) {
         const tasksToRecreate = tasks.filter(task => tasksDueForRecreation.includes(String(task.id)));
-        const newTasks = tasksToRecreate.map(task => {
+          const newTasks = tasksToRecreate.map(task => {
           const pattern = recurringPatterns.find(p => p.taskId === String(task.id));
           return {
             ...task,
-            id: Date.now() + Math.random(), // Ensure unique ID
+            id: String(Date.now() + Math.random()), // Convert to string
             completed: false,
             createdAt: new Date(),
             dueDate: pattern?.nextDue,
@@ -269,6 +271,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                       ? new Date(parsedResponse.dueDate)
                       : undefined,
                     subtasks: [],
+                    status: "todo",
                   };
                   const updatedTasks = [...tasks, newTask];
                   if (puter.kv) {
