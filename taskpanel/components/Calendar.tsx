@@ -52,9 +52,17 @@ export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks }: CalendarPr
             return task ? (
               <div
                 key={block.taskId}
-                className="bg-accent/10 p-2 rounded text-sm mb-1"
+                className={`p-2 rounded text-sm mb-1 ${
+                  task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-green-100 text-green-800'
+                }`}
               >
-                {task.title}
+                <div className="font-medium">{task.title}</div>
+                <div className="text-xs">
+                  {block.startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                  {block.endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             ) : null;
           })}

@@ -8,16 +8,21 @@ Given the following tasks and their details:
 {tasks}
 
 Please analyze the tasks and suggest an optimal schedule considering:
-1. Task priorities
-2. Due dates
-3. Dependencies
-4. Time estimates
-5. Current progress
+1. Task priorities (high priority tasks should be scheduled earlier)
+2. Due dates (ensure tasks are completed before deadlines)
+3. Dependencies between tasks
+4. Time estimates based on task complexity
+5. Current progress (partially completed tasks may need less time)
 6. Working hours (9 AM - 5 PM by default)
-7. Need for breaks between focused work sessions
-8. Maximum recommended daily work hours (8 hours)
-9. Task complexity and cognitive load
-10. Preferred time blocks for different task types
+7. Need for breaks (15-minute breaks between tasks)
+8. Maximum daily work hours (8 hours)
+9. Task complexity and cognitive load (avoid scheduling complex tasks back-to-back)
+10. Preferred time blocks (morning for complex tasks, afternoon for meetings/collaboration)
+11. Buffer time for unexpected delays (add 20% buffer to estimated durations)
+12. Task urgency vs importance matrix
+13. Available resources and constraints
+14. Historical task completion patterns
+15. Energy levels throughout the day (complex tasks during peak energy hours)
 
 
 Respond with a valid JSON object in the following format, without any markdown formatting:

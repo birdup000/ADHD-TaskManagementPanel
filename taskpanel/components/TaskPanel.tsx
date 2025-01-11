@@ -8,6 +8,7 @@ import AITaskCheckin from "./AITaskCheckin";
 import { AITaskScheduler } from "./AITaskScheduler";
 import { useNotificationSystem } from "./NotificationSystem";
 import NotificationSystem from "./NotificationSystem";
+import { useSchedulingEngine } from "../hooks/useSchedulingEngine";
 import CalendarModal from "./CalendarModal";
 
 
@@ -43,11 +44,7 @@ interface TaskPanelProps {
 
 export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [scheduledBlocks, setScheduledBlocks] = useState<Array<{
-    taskId: string;
-    startDate: Date;
-    endDate: Date;
-  }>>([]);
+  const { scheduledBlocks, conflicts, setScheduledBlocks } = useSchedulingEngine(tasks);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   
@@ -837,30 +834,51 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                     </div>
                   )}
                   
-                  {/* AI Task Scheduler */}
+                  {/* Smart Scheduling Panel */}
                   <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10 shadow-xl shadow-primary/5">
-                    <AITaskScheduler
-                      tasks={tasks}
-                      onScheduleUpdate={(schedule: Array<{ taskId: string; suggestedStartDate: string; suggestedEndDate: string; }>) => {
-                        console.log('Schedule received in onScheduleUpdate:', schedule);
-                        const updatedTasks = tasks.map((task) => {
-                          const scheduledTask = schedule.find((s: { taskId: string; suggestedStartDate: string; suggestedEndDate: string; }) => s.taskId === task.id);
-                          if (scheduledTask) {
-                            return {
-                              ...task,
-                              dueDate: new Date(scheduledTask.suggestedEndDate),
-                            };
-                          }
-                          return task;
-                        });
-                        setTasks(updatedTasks);
-                        setScheduledBlocks(schedule.map(s => ({
-                          taskId: s.taskId,
-                          startDate: new Date(s.suggestedStartDate),
-                          endDate: new Date(s.suggestedEndDate)
-                        })));
-                      }}
-                    />
+                    <h3 className="text-lg font-semibold mb-4">Smart Schedule</h3>
+                    <div className="space-y-4">
+                      {/* Scheduled Tasks */}
+                      <div className="space-y-2">
+                        {scheduledBlocks.map((block, index) => {
+                          const task = tasks.find(t => t.id === block.taskId);
+                          if (!task) return null;
+                          return (
+                            <div key={index} className="flex justify-between items-center p-3 bg-background/50 rounded-lg border border-border/10">
+                              <div>
+                                <div className="font-medium">{task.title}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {block.startDate.toLocaleTimeString()} - {block.endDate.toLocaleTimeString()}
+                                </div>
+                              </div>
+                              <div className={`px-2 py-1 text-xs rounded ${
+                                task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {task.priority}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Conflicts */}
+                      {conflicts.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-red-600">Scheduling Conflicts</h4>
+                          {conflicts.map((conflict, index) => (
+                            <div key={index} className="p-3 bg-red-50 rounded-lg text-sm">
+                              <div className="font-medium text-red-800">
+                                {conflict.taskIds.map(id => tasks.find(t => t.id === id)?.title).join(' & ')}
+                              </div>
+                              <div className="text-red-600">{conflict.reason}</div>
+                              <div className="text-red-700 mt-1">Suggestion: {conflict.suggestion}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Focus Timer */}
