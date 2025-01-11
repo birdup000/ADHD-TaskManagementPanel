@@ -9,9 +9,10 @@ interface CalendarProps {
     startDate: Date;
     endDate: Date;
   }>;
+  onEditBlock?: (taskId: string, startDate: Date, endDate: Date) => void;
 }
 
-export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks }: CalendarProps) {
+export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks, onEditBlock }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
@@ -52,7 +53,8 @@ export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks }: CalendarPr
             return task ? (
               <div
                 key={block.taskId}
-                className={`p-2 rounded text-sm mb-1 ${
+                onClick={() => onEditBlock && onEditBlock(block.taskId, block.startDate, block.endDate)}
+                className={`p-2 rounded text-sm mb-1 cursor-pointer hover:opacity-80 ${
                   task.priority === 'high' ? 'bg-red-100 text-red-800' :
                   task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-green-100 text-green-800'

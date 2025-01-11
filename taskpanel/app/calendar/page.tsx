@@ -5,7 +5,16 @@ import MainCalendar from '../../components/MainCalendar';
 import { Task } from '../../components/TaskPanel';
 
 export default function CalendarPage() {
-  const [tasks, setTasks] = React.useState<Task[]>([]);
+  const [tasks, setTasks] = React.useState<Task[]>([
+    {
+      id: '1',
+      title: 'Sample Task 1',
+      description: 'This is a sample task',
+      priority: 'medium',
+      status: 'todo',
+      dueDate: new Date(),
+    }
+  ]);
   const [scheduledBlocks, setScheduledBlocks] = React.useState<Array<{
     taskId: string;
     startDate: Date;
