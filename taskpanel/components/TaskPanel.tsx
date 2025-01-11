@@ -385,7 +385,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
 
             <div className="flex items-center space-x-2 md:space-x-4">
               <div className="hidden md:flex items-center space-x-3 sm:space-x-2 lg:space-x-3">
-                <select className="px-4 py-2 bg-secondary/50 hover:bg-secondary/80 text-foreground rounded-lg transition-colors backdrop-blur-sm">
+                <select className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors backdrop-blur-sm">
                   <option value="all">All Statuses</option>
                   <option value="incomplete">Incomplete</option>
                   <option value="complete">Complete</option>
@@ -687,11 +687,11 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                               className="p-1.5 rounded-full hover:bg-muted transition-colors"
                             >
                               {task.completed ? (
-                                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white">
+                                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-secondary text-white">
                                   ✓
                                 </span>
                               ) : (
-                                <span className="w-6 h-6 rounded-full border-2 border-neutral-300 dark:border-neutral-500 hover:border-neutral-400 dark:hover:border-neutral-400 transition-colors" />
+                                <span className="w-6 h-6 rounded-full bg-secondary/50 transition-colors" />
                               )}
                             </button>
                           </div>
