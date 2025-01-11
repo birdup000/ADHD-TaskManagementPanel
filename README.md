@@ -10,13 +10,18 @@ This project is a task management panel built using React and Next.js. It includ
 - **AI Task Check-in:** An `AITaskCheckin` component is included to provide AI-assisted task progress updates.
 - **AI Task Scheduler:** An `AITaskScheduler` component is available for AI-assisted task scheduling.
 - **Notification System:** A `NotificationSystem` component is implemented to manage and display notifications related to tasks.
+- **Calendar:** A `Calendar` component for visualizing tasks and schedules.
+- **Recurring Task Management:** A `RecurringTaskManager` component for handling recurring tasks.
+- **Bottleneck Forecast:** A `BottleneckForecast` component for predicting potential bottlenecks in task management.
+- **Analytics:** An analytics feature for tracking task completion rates, productivity, and other metrics.
 
 The project is structured with the following directories:
 
-- `app`: Contains the main application layout (`layout.tsx`) and the main page (`page.tsx`).
-- `components`: Contains reusable UI components such as `TaskPanel`, `FocusTimer`, `Reminders`, `AISubtaskGenerator`, `Tutorial`, `TaskDetailsDrawer`, `AITaskCheckin`, `AITaskScheduler`, and `NotificationSystem`.
-- `lib`: Contains utility files, such as `puter.ts`.
-- `taskpanel/types`: Contains type definitions, such as `ai-responses.d.ts` and `puter.d.ts`.
+- `app`: Contains the main application layout (`layout.tsx`) and the main page (`page.tsx`), as well as the analytics feature.
+- `components`: Contains reusable UI components such as `TaskPanel`, `FocusTimer`, `Reminders`, `AISubtaskGenerator`, `Tutorial`, `TaskDetailsDrawer`, `AITaskCheckin`, `AITaskScheduler`, `NotificationSystem`, `Calendar`, `RecurringTaskManager`, and `BottleneckForecast`.
+- `hooks`: Contains custom hooks like `useAISubtaskGenerator`, `usePredictiveAnalytics`, and `useSchedulingEngine`.
+- `lib`: Contains utility files, such as `puter.ts`, `prompt-templates.ts`, and `task-templates.ts`.
+- `types`: Contains type definitions, such as `ai-responses.d.ts`, `puter.d.ts`, and `SubTask.ts`.
 - `public`: Contains static assets such as images and icons.
 
 The project also includes configuration files such as `next.config.ts`, `package.json`, `postcss.config.mjs`, `tailwind.config.ts`, and `tsconfig.json`.
