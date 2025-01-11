@@ -100,14 +100,7 @@ export default function Home() {
 
   return (
     <div className="animate-fade-in">
-      <div>
-        <div className=""><h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
-            Welcome to Your Task Panel
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400">
-            Let's make today productive and stress-free
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen">
         <TaskPanel onLogout={handleLogout} />
       </div>
     </div>

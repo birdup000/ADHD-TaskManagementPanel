@@ -348,11 +348,9 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   return (
     <React.Fragment>
       <div className="min-h-screen bg-gradient-to-b from-background via-background/98 to-background/95 overflow-x-hidden">
-      </div>
         {/* Top Navigation Bar */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border/20 shadow-sm shadow-primary/5"></nav>
         <div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <h1 className="text-xl font-semibold flex items-center gap-3">
                 <button className="md:hidden p-2 hover:bg-primary/10 rounded-lg transition-colors">
@@ -371,7 +369,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                     />
                   </svg>
                 </button>
-                Task Dashboard
               </h1>
               <div className="hidden md:flex items-center space-x-2 animate-fade-in bg-background/30 backdrop-blur-sm rounded-full px-2 border border-border/5">
                 <button className="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/10 transition-colors">
@@ -457,9 +454,9 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
           </div>
 
           {/* Main Content Area */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 min-h-[calc(100vh-4rem)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-16 min-h-[calc(100vh-4rem)]">
             {/* Task Statistics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8 animate-fade-in">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6 animate-fade-in">
               {[
                 { label: "Total Tasks", value: tasks.length },
                 {
@@ -491,7 +488,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
               ))}
             </div>
             {/* Main Grid Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
               {/* Task List Column */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Add New Task */}
@@ -1005,6 +1002,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
           </div>
         </div>
       </div>
+    </div>
     </React.Fragment>
   );
 }
