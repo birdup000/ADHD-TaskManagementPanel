@@ -41,10 +41,6 @@ export const useSchedulingEngine = (tasks: Task[]) => {
     const completedTasks = tasks.filter(t => t.completed);
     const patterns = analyzeWorkPatterns(completedTasks, scheduledBlocks);
     setWorkPatterns(patterns);
-    
-    // Update conflicts whenever scheduled blocks change
-    const newConflicts = detectConflicts(scheduledBlocks);
-    setConflicts(newConflicts);
   }, [tasks, scheduledBlocks]);
 
   const detectConflicts = (blocks: ScheduledBlock[]): ScheduleConflict[] => {
@@ -56,11 +52,14 @@ export const useSchedulingEngine = (tasks: Task[]) => {
         const block1 = blocks[i];
         const block2 = blocks[j];
         
-        if (block1.startDate < block2.endDate && block2.startDate < block1.endDate) {
+        if (
+          (block1.startDate <= block2.endDate && block1.endDate >= block2.startDate) ||
+          (block2.startDate <= block1.endDate && block2.endDate >= block1.startDate)
+        ) {
           newConflicts.push({
             taskIds: [block1.taskId, block2.taskId],
-            reason: 'Time block overlap detected',
-            suggestion: 'Consider rescheduling one of these tasks to a different time slot'
+            reason: "Time block overlap detected",
+            suggestion: "Consider rescheduling one of these tasks to a different time slot"
           });
         }
       }
@@ -123,7 +122,6 @@ export const useSchedulingEngine = (tasks: Task[]) => {
     detectConflicts,
     autoScheduleTask,
     scheduledBlocks,
-    conflicts,
     workPatterns
   };
 };

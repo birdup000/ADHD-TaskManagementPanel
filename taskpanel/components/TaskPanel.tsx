@@ -45,7 +45,7 @@ interface TaskPanelProps {
 
 export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const { scheduledBlocks, conflicts, setScheduledBlocks } = useSchedulingEngine(tasks);
+  const { scheduledBlocks, conflicts } = useSchedulingEngine(tasks);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
   
@@ -923,7 +923,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                       </div>
                       
                       {/* Conflicts */}
-                      {conflicts.length > 0 && (
+                      {conflicts?.length > 0 && (
                         <div className="space-y-2">
                           <h4 className="font-medium text-red-600">Scheduling Conflicts</h4>
                           {conflicts.map((conflict, index) => (
