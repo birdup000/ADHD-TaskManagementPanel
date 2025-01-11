@@ -1,93 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { getPuter } from '../../lib/puter';
-import type { Task } from '../../components/TaskPanel';
+import { useAnalytics } from './useAnalytics';
 
 export default function Analytics() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [analytics, setAnalytics] = useState({
-    completionRate: 0,
-    avgCompletionTime: 0,
-    tasksByPriority: { high: 0, medium: 0, low: 0 },
-    tasksByCategory: { work: 0, personal: 0, urgent: 0 },
-    productiveHours: [] as { hour: number; completions: number }[],
-  });
-
-  useEffect(() => {
-    const loadTasks = async () => {
-      const puter = getPuter();
-      if (puter.kv) {
-        const tasksString = await puter.kv.get("tasks");
-        if (tasksString) {
-          const parsedTasks = JSON.parse(tasksString);
-          setTasks(parsedTasks.map((task: any) => ({
-            ...task,
-            createdAt: new Date(task.createdAt),
-            dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-          })));
-        }
-      }
-    };
-    loadTasks();
-  }, []);
-
-  useEffect(() => {
-    // Calculate analytics when tasks change
-    const calculateAnalytics = async () => {
-      // Completion rate
-      const completedTasks = tasks.filter(task => task.completed);
-      const completionRate = (completedTasks.length / tasks.length) * 100;
-
-      // Average completion time
-      const completionTimes = completedTasks.map(task => {
-        const created = new Date(task.createdAt).getTime();
-        const completed = task.lastUpdate ? new Date(task.lastUpdate).getTime() : Date.now();
-        return (completed - created) / (1000 * 60 * 60); // hours
-      });
-      const avgCompletionTime = completionTimes.length > 0 
-        ? completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length 
-        : 0;
-
-      // Tasks by priority
-      const tasksByPriority = tasks.reduce((acc, task) => {
-        acc[task.priority] = (acc[task.priority] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      // Tasks by category
-      const tasksByCategory = tasks.reduce((acc, task) => {
-        acc[task.category] = (acc[task.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      // Most productive hours
-      const productiveHours = Array.from({ length: 24 }, (_, i) => ({
-        hour: i,
-        completions: completedTasks.filter(task => 
-          task.lastUpdate && new Date(task.lastUpdate).getHours() === i
-        ).length
-      }));
-
-      setAnalytics({
-        completionRate,
-        avgCompletionTime,
-        tasksByPriority: {
-          high: tasksByPriority.high || 0,
-          medium: tasksByPriority.medium || 0,
-          low: tasksByPriority.low || 0,
-        },
-        tasksByCategory: {
-          work: tasksByCategory.work || 0,
-          personal: tasksByCategory.personal || 0,
-          urgent: tasksByCategory.urgent || 0,
-        },
-        productiveHours,
-      });
-    };
-
-    calculateAnalytics();
-  }, [tasks]);
+  const { analytics, tasks } = useAnalytics();
 
   return (
     <div className="animate-fade-in space-y-6 py-8">
