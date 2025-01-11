@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { FocusTimer } from "./FocusTimer";
+import { RecurringTaskManager, useRecurringTaskManager } from "./RecurringTaskManager";
 import Tutorial from "./Tutorial";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
 import AITaskCheckin from "./AITaskCheckin";
@@ -119,6 +120,36 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   };
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { recurringPatterns, updateTaskCompletion, addRecurringPattern, getTasksDueForRecreation } = useRecurringTaskManager();
+
+  // Check and recreate recurring tasks
+  useEffect(() => {
+    const recreateDueTasks = async () => {
+      const tasksDueForRecreation = getTasksDueForRecreation(tasks);
+      if (tasksDueForRecreation.length > 0) {
+        const tasksToRecreate = tasks.filter(task => tasksDueForRecreation.includes(String(task.id)));
+        const newTasks = tasksToRecreate.map(task => {
+          const pattern = recurringPatterns.find(p => p.taskId === String(task.id));
+          return {
+            ...task,
+            id: Date.now() + Math.random(), // Ensure unique ID
+            completed: false,
+            createdAt: new Date(),
+            dueDate: pattern?.nextDue,
+          };
+        });
+
+        const updatedTasks = [...tasks, ...newTasks];
+        if (puter.kv) {
+          await puter.kv.set('tasks', JSON.stringify(updatedTasks));
+          setTasks(updatedTasks);
+        }
+      }
+    };
+
+    recreateDueTasks();
+  }, [tasks, recurringPatterns]);
+
   const handleTaskUpdate = async (updatedTask: Task) => {
     const updatedTasks = tasks.map(t => 
       t.id === updatedTask.id ? updatedTask : t
@@ -128,6 +159,17 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
       setTasks(updatedTasks);
     }
     setSelectedTask(updatedTask);
+
+    // Update recurring pattern if task is completed
+    if (updatedTask.completed) {
+      const pattern = recurringPatterns.find(p => p.taskId === String(updatedTask.id));
+      if (pattern) {
+        const duration = updatedTask.lastUpdate ? 
+          Math.round((new Date().getTime() - updatedTask.lastUpdate.getTime()) / 60000) : 
+          30; // Default to 30 minutes if no lastUpdate
+        await updateTaskCompletion(String(updatedTask.id), duration);
+      }
+    }
   };
   const [chatHistory, setChatHistory] = useState<
     { role: "user" | "assistant"; content: string }[]
@@ -785,11 +827,28 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
 
                 {/* Task Details Drawer (Modal or Side Drawer) */}
                 {selectedTask && (
-                  <TaskDetailsDrawer
-                    task={selectedTask}
-                    onClose={() => setSelectedTask(null)}
-                    onUpdate={handleTaskUpdate}
-                  />
+                  <>
+                    <TaskDetailsDrawer
+                      task={selectedTask}
+                      onClose={() => setSelectedTask(null)}
+                      onUpdate={handleTaskUpdate}
+                    />
+                    <RecurringTaskManager
+                      task={selectedTask}
+                      onAddRecurring={(frequency) => {
+                        const pattern = recurringPatterns.find(p => p.taskId === String(selectedTask.id));
+                        if (!pattern) {
+                          addRecurringPattern(
+                            String(selectedTask.id),
+                            frequency,
+                            selectedTask.lastUpdate ? 
+                              Math.round((new Date().getTime() - selectedTask.lastUpdate.getTime()) / 60000) : 
+                              30 // Default to 30 minutes if no lastUpdate
+                          );
+                        }
+                      }}
+                    />
+                  </>
                 )}
               </div>
 
