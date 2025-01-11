@@ -2,18 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { FocusTimer } from "./FocusTimer";
-import { SubTask } from "./TaskDetailsDrawer";
 import Tutorial from "./Tutorial";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
 import AITaskCheckin from "./AITaskCheckin";
 import { AITaskScheduler } from "./AITaskScheduler";
 import { useNotificationSystem } from "./NotificationSystem";
 import NotificationSystem from "./NotificationSystem";
+import CalendarModal from "./CalendarModal";
+
 
 import { getPuter } from "../lib/puter";
 
+import type { SubTask } from './TaskDetailsDrawer';
+
 export interface Task {
-  id: string;
+  id: string | number;
   title: string;
   description: string;
   category: TaskCategory;
@@ -21,7 +24,7 @@ export interface Task {
   completed: boolean;
   dueDate?: Date;
   createdAt: Date;
-  subtasks?: SubTask[];
+  subtasks?: SubTask[]; // Using SubTask from TaskDetailsDrawer with number IDs
   lastUpdate?: Date;
 }
 
@@ -40,7 +43,14 @@ interface TaskPanelProps {
 
 export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [scheduledBlocks, setScheduledBlocks] = useState<Array<{
+    taskId: string;
+    startDate: Date;
+    endDate: Date;
+  }>>([]);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  
   const { notifications, checkDeadlines, checkProgress, checkBlockers } = useNotificationSystem();
 
   const [newTask, setNewTask] = useState<NewTaskForm>({
@@ -83,7 +93,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const handleAddTask = async () => {
     if (newTask.title.trim()) {
       const newTaskObject: Task = {
-        id: Date.now().toString(),
+        id: Date.now(),
         title: newTask.title,
         category: newTask.category,
         priority: newTask.priority,
@@ -91,7 +101,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         createdAt: new Date(),
         dueDate: new Date(Date.now() + 86400000),
         description: "",
-        subtasks: [],
+        subtasks: [] as SubTask[], // Initialize with proper type from TaskDetailsDrawer
       };
       if (puter.kv) {
         const updatedTasks = [...tasks, newTaskObject];
@@ -351,36 +361,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         {/* Top Navigation Bar */}
         <div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold flex items-center gap-3">
-                <button className="md:hidden p-2 hover:bg-primary/10 rounded-lg transition-colors">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16m-7 6h7"
-                    />
-                  </svg>
-                </button>
-              </h1>
-              <div className="hidden md:flex items-center space-x-2 animate-fade-in bg-background/30 backdrop-blur-sm rounded-full px-2 border border-border/5">
-                <button className="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/10 transition-colors">
-                  All Tasks
-                </button>
-                <button className="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/10 transition-colors">
-                  Calendar
-                </button>
-                <button className="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary/10 transition-colors">
-                  Analytics
-                </button>
-              </div>
+            <div className="flex items-center space-x-4">              
             </div>
 
             <div className="flex items-center space-x-2 md:space-x-4">
@@ -400,7 +381,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 <input
                   type="text"
                   placeholder="Search tasks..."
-                  className="w-48 px-4 py-2 bg-background/50 border border-border/20 rounded-lg focus:ring-2 focus:ring-accent/50 transition-all placeholder:text-muted-foreground/60"
+                  className="w-48 px-4 py-2 bg-background/50 border border-border/20 rounded-lg focus:ring-2 focus:ring-accent/50 transition-all placeholder:text-black"
                 />
 
                 {/* Profile or Settings Icon */}
@@ -488,7 +469,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
               ))}
             </div>
             {/* Main Grid Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mt-6">
               {/* Task List Column */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Add New Task */}
@@ -578,7 +559,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                   } transition-all duration-300 hover:-translate-y-0.5 glow-effect hover:glow-effect-hover cursor-pointer`}
                       onClick={() => {
                         setSelectedTask(task);
-                        setActiveTaskId(task.id);
+                        setActiveTaskId(String(task.id));
                       }}
                       draggable
                     >
@@ -824,7 +805,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                     {selectedTask && (
                       <AITaskCheckin
                         task={{
-                          id: selectedTask.id,
+                          id: String(selectedTask.id),
                           title: selectedTask.title,
                           description: selectedTask.description,
                           dueDate: selectedTask.dueDate,
@@ -854,8 +835,6 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         }}
                       />
                     )}
-
-                    {/* AI Task Scheduler */}
                     <AITaskScheduler
                       tasks={tasks}
                       onScheduleUpdate={(schedule: Array<{ taskId: string; suggestedStartDate: string; suggestedEndDate: string; }>) => {
@@ -871,9 +850,13 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                           return task;
                         });
                         setTasks(updatedTasks);
+                        setScheduledBlocks(schedule.map(s => ({
+                          taskId: s.taskId,
+                          startDate: new Date(s.suggestedStartDate),
+                          endDate: new Date(s.suggestedEndDate)
+                        })));
                       }}
                     />
-
                     {/* Focus Timer */}
                     <FocusTimer
                       activeTask={activeTaskId}
@@ -932,7 +915,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           placeholder="Type your message..."
-                          className="flex-1 bg-background/50 border border-border/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50"
+                          className="flex-1 bg-background/50 border border-border/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 text-foreground"
                         />
                         <button
                           onClick={handleSendMessage}
@@ -955,12 +938,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
               <div className="bg-background/95 backdrop-blur-sm border-t border-border/20 py-4 px-4 sm:px-6 lg:px-8 shadow-lg shadow-primary/5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <button className="px-4 py-2 rounded-lg hover:bg-background/50 transition-colors">
-                      List View
-                    </button>
-                    <button className="px-4 py-2 rounded-lg hover:bg-background/50 transition-colors">
-                      Timeline View
-                    </button>
+                    
                   </div>
 
                   <div className="flex items-center gap-2">

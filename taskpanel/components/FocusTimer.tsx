@@ -12,6 +12,8 @@ export function FocusTimer({ activeTask, onTaskComplete }: FocusTimerProps) {
   const [isActive, setIsActive] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState(25);
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [isBreakTime, setIsBreakTime] = useState(false);
+  const [sessionsCompleted, setSessionsCompleted] = useState(0);
   const [currentTask, setCurrentTask] = useState<string | null>(null);
 
   const durations = [15, 25, 50, 90]; // Available focus durations in minutes
@@ -29,13 +31,23 @@ export function FocusTimer({ activeTask, onTaskComplete }: FocusTimerProps) {
     } else if (timeLeft === 0) {
       new Audio("/notification.mp3").play();
       setIsActive(false);
-      if (currentTask) {
-        setCompletedTasks((prev) => [...prev, currentTask]);
-        setCurrentTask(null);
+      
+      if (isBreakTime) {
+        setIsBreakTime(false);
+        setTimeLeft(selectedDuration * 60);
+      } else {
+        setSessionsCompleted(prev => prev + 1);
+        setIsBreakTime(true);
+        setTimeLeft(sessionsCompleted % 4 === 0 ? 15 * 60 : 5 * 60); // Longer break every 4 sessions
+        
+        if (currentTask) {
+          setCompletedTasks((prev) => [...prev, currentTask]);
+          setCurrentTask(null);
       }
     }
+  }
     return () => clearInterval(interval);
-  }, [isActive, timeLeft, currentTask]);
+  }, [isActive, timeLeft, currentTask, selectedDuration, sessionsCompleted]);
 
   const startTimer = (duration?: number) => {
     const timerDuration = duration || selectedDuration;

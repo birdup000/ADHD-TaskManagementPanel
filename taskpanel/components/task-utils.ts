@@ -1,4 +1,5 @@
-import { Task, SubTask } from './TaskPanel';
+import { Task } from './TaskPanel';
+import type { SubTask } from './TaskDetailsDrawer';
 
 export const calculateTaskProgress = (task: Task): number => {
   if (!task.subtasks || task.subtasks.length === 0) return 0;
@@ -42,10 +43,10 @@ export const getStatusColor = (status: ReturnType<typeof getTaskStatus>): string
 };
 
 export const estimateSubtaskTime = (subtask: SubTask): number => {
-  return subtask.estimatedTime || 30; // Default to 30 minutes if not specified
+  return subtask.estimatedTime ?? 30; // Use nullish coalescing to handle undefined
 };
 
 export const getTotalEstimatedTime = (task: Task): number => {
   if (!task.subtasks) return 0;
-  return task.subtasks.reduce((total, subtask) => total + estimateSubtaskTime(subtask), 0);
+  return task.subtasks.reduce((total, st) => total + estimateSubtaskTime(st), 0);
 };

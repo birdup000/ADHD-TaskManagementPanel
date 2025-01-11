@@ -13,6 +13,11 @@ Please analyze the tasks and suggest an optimal schedule considering:
 3. Dependencies
 4. Time estimates
 5. Current progress
+6. Working hours (9 AM - 5 PM by default)
+7. Need for breaks between focused work sessions
+8. Maximum recommended daily work hours (8 hours)
+9. Task complexity and cognitive load
+10. Preferred time blocks for different task types
 
 
 Respond with a valid JSON object in the following format, without any markdown formatting:
