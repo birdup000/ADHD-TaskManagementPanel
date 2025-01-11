@@ -1,8 +1,26 @@
 import { useEffect, useState } from 'react';
 import { getPuter } from '../../lib/puter';
 import type { Task } from '../../components/TaskPanel';
+import { usePredictiveAnalytics } from '../../hooks/usePredictiveAnalytics';
 
 interface Analytics {
+  bottleneckAnalysis?: {
+    potentialBottlenecks: Array<{
+      type: string;
+      description: string;
+      impact: string;
+      affectedTasks: string[];
+      predictedDelay: number;
+      mitigationSuggestions: string[];
+    }>;
+    workloadForecasts: Array<{
+      timeframe: string;
+      predictedUtilization: number;
+      riskLevel: string;
+      bottleneckProbability: number;
+      recommendations: string[];
+    }>;
+  };
   completionRate: number;
   avgCompletionTime: number;
   tasksByPriority: { high: number; medium: number; low: number };
@@ -38,6 +56,8 @@ export function useAnalytics() {
     loadTasks();
   }, []);
 
+  const { analyzeBottlenecks } = usePredictiveAnalytics();
+
   useEffect(() => {
     const generateAnalytics = async () => {
       if (tasks.length === 0) return;
@@ -49,7 +69,19 @@ export function useAnalytics() {
       try {
         const response = await puter.ai.chat(prompt);
         const analyticsData = JSON.parse(response);
-        setAnalytics(analyticsData);
+        
+        const bottleneckAnalysis = await analyzeBottlenecks(
+          tasks.filter(t => t.completed),  // historical tasks
+          tasks.filter(t => !t.completed)  // current tasks
+        ).catch(() => undefined);
+        
+        setAnalytics({
+          ...analyticsData,
+          bottleneckAnalysis: bottleneckAnalysis ? {
+            potentialBottlenecks: bottleneckAnalysis.potentialBottlenecks,
+            workloadForecasts: bottleneckAnalysis.workloadForecasts
+          } : undefined
+        });
       } catch (error) {
         console.error('Failed to generate analytics:', error);
       }
