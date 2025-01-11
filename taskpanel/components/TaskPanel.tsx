@@ -530,7 +530,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                           }))
                         }
                         placeholder="What needs to be done?"
-                        className="w-full bg-background/50 border border-border/20 rounded-lg px-4 py-3 focus:ring-2 focus:ring-accent/50 transition-colors placeholder:text-muted-foreground/60 group-hover:border-border/40"
+                        className="w-full bg-background/50 border border-border/20 rounded-lg px-4 py-3 focus:ring-2 focus:ring-accent/50 transition-colors placeholder:text-muted-foreground/60 group-hover:border-border/40 text-softWhite"
                       />
                       <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
                         <svg
@@ -906,12 +906,13 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         {scheduledBlocks.map((block, index) => {
                           const task = tasks.find(t => t.id === block.taskId);
                           if (!task) return null;
+                          console.log('Scheduled Block:', block);
                           return (
                             <div key={index} className="flex justify-between items-center p-3 bg-background/50 rounded-lg border border-border/10">
                               <div>
                                 <div className="font-medium">{task.title}</div>
                                 <div className="text-xs text-muted-foreground">
-                                  {block.startDate.toLocaleTimeString()} - {block.endDate.toLocaleTimeString()}
+                                  {block.startDate.toISOString()} - {block.endDate.toISOString()}
                                 </div>
                               </div>
                               <div className={`px-2 py-1 text-xs rounded ${
@@ -1004,7 +1005,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           placeholder="Type your message..."
-                          className="flex-1 bg-background/50 border border-border/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 text-foreground"
+                          className="flex-1 bg-background/50 border border-border/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 text-softWhite"
                         />
                         <button
                           onClick={handleSendMessage}

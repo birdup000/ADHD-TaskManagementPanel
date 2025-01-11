@@ -54,7 +54,7 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
   const [error, setError] = useState<string | null>(null);
   const [subtasks, setSubtasks] = useState<SubTask[]>(task.subtasks || []);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [notes, setNotes] = useState<TaskNote[]>(task.notes || []);
+  const [notes, setNotes] = useState<({ id: number, content: string, timestamp: Date, isEditing: boolean })[]>(task.notes?.map((note: TaskNote) => ({ ...note, isEditing: false })) || []);
   const [newNote, setNewNote] = useState('');
 
   const handleSubtasksGenerated = (newSubtasks: SubTask[]) => {
@@ -98,12 +98,13 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
   const handleAddNote = () => {
     if (!newNote.trim()) return;
     
-    const newNoteObj: TaskNote = {
+    
+    const newNoteObj = {
       id: Date.now(),
       content: newNote.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
+      isEditing: false
     };
-    
     const updatedNotes = [...notes, newNoteObj];
     const updatedTask = {
       ...taskState,
@@ -114,6 +115,26 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
     setTaskState(updatedTask);
     onUpdate?.(updatedTask);
     setNewNote('');
+  };
+
+  const handleEditNote = (id: number) => {
+    setNotes(prevNotes =>
+      prevNotes.map(note =>
+        note.id === id ? { ...note, isEditing: true } : note
+      )
+    );
+  };
+
+  const handleRenameNote = (id: number, newContent: string) => {
+    setNotes(prevNotes =>
+      prevNotes.map(note =>
+        note.id === id ? { ...note, content: newContent, isEditing: false } : note
+      )
+    );
+  };
+
+  const handleDeleteNote = (id: number) => {
+    setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
   };
 
   const handleIdentifyDependencies = async () => {
@@ -133,8 +154,29 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50">
       <div className="bg-background dark:bg-background rounded-lg p-6 max-w-2xl mx-auto mt-20 max-h-[80vh] overflow-y-auto">
-        <h2 className="text-2xl font-semibold mb-4">{taskState.title}</h2>
-        <p className="text-muted-foreground mb-6">{taskState.description}</p>
+        <h2 className="text-2xl font-semibold mb-2">{taskState.title}</h2>
+        <p className="text-muted-foreground mb-4">{taskState.description}</p>
+        <input
+          type="text"
+          value={taskState.title}
+          onChange={(e) => {
+            const updatedTask = {...taskState, title: e.target.value};
+            setTaskState(updatedTask);
+            onUpdate?.(updatedTask);
+          }}
+          className="text-lg font-medium mb-2 bg-transparent border-b border-border/20 focus:outline-none w-full text-softWhite"
+          placeholder="Task Title"
+        />
+        <textarea
+          value={taskState.description}
+          onChange={(e) => {
+            const updatedTask = {...taskState, description: e.target.value};
+            setTaskState(updatedTask);
+            onUpdate?.(updatedTask);
+          }}
+          className="text-sm text-muted-foreground mb-4 bg-transparent border-b border-border/20 focus:outline-none w-full text-softWhite"
+          placeholder="Task Description"
+        />
         
         {/* Task Status and Priority */}
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -143,7 +185,7 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
             <select
               value={taskState.priority || TaskPriority.MEDIUM}
               onChange={(e) => handlePriorityChange(e.target.value as TaskPriorityType)}
-              className="w-full p-2 rounded-md border border-border"
+              className="w-full p-2 rounded-md border border-border text-muted-foreground text-foreground bg-background"
             >
               <option value={TaskPriority.LOW}>Low</option>
               <option value={TaskPriority.MEDIUM}>Medium</option>
@@ -156,7 +198,7 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
             <select
               value={taskState.status || TaskStatus.NOT_STARTED}
               onChange={(e) => handleStatusChange(e.target.value as TaskStatusType)}
-              className="w-full p-2 rounded-md border border-border"
+              className="w-full p-2 rounded-md border border-border text-muted-foreground bg-background text-foreground"
             >
               <option value={TaskStatus.NOT_STARTED}>Not Started</option>
               <option value={TaskStatus.IN_PROGRESS}>In Progress</option>
@@ -261,7 +303,7 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="Add a note..."
-                className="flex-1 p-2 rounded-md border border-border"
+                className="flex-1 p-2 rounded-md border border-border text-softWhite"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
               />
               <button
@@ -275,12 +317,40 @@ const TaskDetailsDrawer: React.FC<TaskDetailsDrawerProps> = ({ task, onClose, on
               {notes.map((note) => (
                 <div
                   key={note.id}
-                  className="p-3 bg-background/50 rounded-lg border border-border/20"
+                  className="p-3 bg-background/50 rounded-lg border border-border/20 flex items-center gap-2"
                 >
-                  <p className="text-sm">{note.content}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {format(new Date(note.timestamp), 'PPp')}
-                  </p>
+                  {note.isEditing ? (
+                    <input
+                      type="text"
+                      className="flex-1 p-1 rounded-md border border-border"
+                      value={note.content}
+                      onChange={(e) => handleRenameNote(note.id, e.target.value)}
+                      onBlur={() => setNotes(prevNotes => prevNotes.map(n => n.id === note.id ? {...n, isEditing: false} : n))}
+                    />
+                  ) : (
+                    <div className="flex-1">
+                      <p className="text-sm">{note.content}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {format(new Date(note.timestamp), 'PPp')}
+                      </p>
+                    </div>
+                  )}
+                  {!note.isEditing && (
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleEditNote(note.id)}
+                        className="text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

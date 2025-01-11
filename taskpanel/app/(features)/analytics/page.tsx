@@ -1,6 +1,6 @@
 "use client";
 
-import { useAnalytics } from './hooks/useAnalytics';
+import { useAnalytics } from '../../analytics/useAnalytics';
 
 export default function Analytics() {
   const { analytics, tasks } = useAnalytics();

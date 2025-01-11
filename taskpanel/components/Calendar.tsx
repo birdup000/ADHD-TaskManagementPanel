@@ -45,7 +45,7 @@ export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks, onEditBlock 
           key={date.toISOString()}
           onDrop={(e) => handleDrop(e, date)}
           onDragOver={handleDragOver}
-          className="min-h-[100px] border border-border/20 p-2"
+          className="min-h-[100px] border border-border/20 p-3 hover:bg-background/5"
         >
           <div className="font-medium mb-2">{day}</div>
           {scheduledTasksForDay.map(block => {
@@ -77,7 +77,9 @@ export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks, onEditBlock 
   return (
     <div className="bg-primary/5 backdrop-blur-sm rounded-xl p-6 border border-border/10">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Calendar</h2>
+        <h2 className="text-lg font-semibold">
+          {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+        </h2>
         <div className="flex gap-2">
           <button
             onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}
@@ -98,6 +100,16 @@ export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks, onEditBlock 
           <div key={day} className="text-center font-medium p-2">{day}</div>
         ))}
         {generateCalendarDays()}
+      </div>
+      <div className="mt-4">
+        <h3 className="text-md font-semibold mb-2">Unscheduled Tasks</h3>
+        {tasks
+          .filter(task => !scheduledBlocks.find(block => block.taskId === task.id))
+          .map(task => (
+            <div key={task.id} className="p-2 rounded text-sm mb-1 bg-gray-100 text-gray-800">
+              {task.title}
+            </div>
+          ))}
       </div>
     </div>
   );
