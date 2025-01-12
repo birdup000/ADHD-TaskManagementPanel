@@ -50,7 +50,7 @@ export class AITaskPrioritizer {
       const response = await aiService.analyzeTask(prompt);
       
       if (response.status === 'error') {
-        throw new Error(typeof response.error === 'string' ? response.error : String(response.error));
+        throw new Error(response.error ? response.error : 'Unknown error from AI service');
       }
       if (typeof response.content === 'string') {
         throw new Error('Unexpected string response from AI service');
@@ -70,22 +70,46 @@ export class AITaskPrioritizer {
     aiAnalysis: any
   ): PrioritizedTask[] {
     try {
-      // Implement robust parsing logic here
-      return originalTasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        priority: {
-          score: Math.floor(Math.random() * 100), // Replace with actual parsed score
-          category: 'normal' as const,
+      const aiAnalysisString = typeof aiAnalysis === 'string' ? aiAnalysis : JSON.stringify(aiAnalysis);
+      const lines = aiAnalysisString.split('\n');
+      const prioritizedTasks: PrioritizedTask[] = [];
+
+      for (let i = 0; i < originalTasks.length; i++) {
+        const task = originalTasks[i];
+        const taskLines = lines.slice(i * 7, (i + 1) * 7); // Assuming 7 lines per task
+
+        const scoreMatch = taskLines.find(line => line.startsWith('1. Priority score:'))?.match(/(\d+)/);
+        const categoryMatch = taskLines.find(line => line.startsWith('2. Category:'))?.match(/(urgent|important|normal|low)/);
+        const urgencyMatch = taskLines.find(line => line.includes('- Urgency:'))?.match(/(\d+)/);
+        const importanceMatch = taskLines.find(line => line.includes('- Importance:'))?.match(/(\d+)/);
+        const complexityMatch = taskLines.find(line => line.includes('- Complexity:'))?.match(/(\d+)/);
+        const dependenciesMatch = taskLines.find(line => line.includes('- Dependencies:'))?.match(/(\d+)/);
+        const reasoningMatch = taskLines.find(line => line.startsWith('4. Brief reasoning:'))?.split(':').slice(1).join(':').trim();
+        const deadlineMatch = taskLines.find(line => line.startsWith('5. Suggested deadline:'))?.split(':').slice(1).join(':').trim();
+        const dependencyIdsMatch = taskLines.find(line => line.startsWith('6. Dependencies:'))?.split(':').slice(1).join(':').trim().split(',').map(id => id.trim());
+
+        const priority: TaskPriority = {
+          score: scoreMatch ? parseInt(scoreMatch[1], 10) : 50,
+          category: (categoryMatch ? categoryMatch[1] : 'normal') as 'urgent' | 'important' | 'normal' | 'low',
           factors: {
-            urgency: Math.floor(Math.random() * 100),
-            importance: Math.floor(Math.random() * 100),
-            complexity: Math.floor(Math.random() * 100),
-            dependencies: Math.floor(Math.random() * 100),
+            urgency: urgencyMatch ? parseInt(urgencyMatch[1], 10) : 50,
+            importance: importanceMatch ? parseInt(importanceMatch[1], 10) : 50,
+            complexity: complexityMatch ? parseInt(complexityMatch[1], 10) : 50,
+            dependencies: dependenciesMatch ? parseInt(dependenciesMatch[1], 10) : 50,
           },
-          reasoning: ['Based on AI analysis']
-        }
-      }));
+          reasoning: reasoningMatch ? [reasoningMatch] : ['No reasoning provided'],
+        };
+
+        const prioritizedTask: PrioritizedTask = {
+          id: task.id,
+          title: task.title,
+          priority,
+          suggestedDeadline: deadlineMatch,
+          dependencyIds: dependencyIdsMatch,
+        };
+        prioritizedTasks.push(prioritizedTask);
+      }
+      return prioritizedTasks;
     } catch (error) {
       console.error('Failed to parse AI prioritization:', error);
       return this.fallbackPrioritization(originalTasks);

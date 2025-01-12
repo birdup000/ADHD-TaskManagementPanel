@@ -103,13 +103,20 @@ export function Calendar({ tasks, onTimeBlockDrop, scheduledBlocks, onEditBlock 
       </div>
       <div className="mt-4">
         <h3 className="text-md font-semibold mb-2">Unscheduled Tasks</h3>
-        {tasks
-          .filter(task => !scheduledBlocks.find(block => block.taskId === task.id))
-          .map(task => (
-            <div key={task.id} className="p-2 rounded text-sm mb-1 bg-gray-100 text-gray-800">
-              {task.title}
-            </div>
-          ))}
+        {tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            <div className="text-muted-foreground mt-4">please wait as we load your tasks</div>
+          </div>
+        ) : (
+          tasks
+            .filter(task => !scheduledBlocks.find(block => block.taskId === task.id))
+            .map(task => (
+              <div key={task.id} className="p-2 rounded text-sm mb-1 bg-gray-100 text-gray-800">
+                {task.title}
+              </div>
+            ))
+        )}
       </div>
     </div>
   );

@@ -34,25 +34,46 @@ export const AICalendarEditor: React.FC<AICalendarEditorProps> = ({
   const { loading, suggestions, generateSuggestions } = useAICalendarSuggestions(task);
 
   const generateAISuggestions = async () => {
-    await generateSuggestions(start);
-    const formattedSuggestions = suggestions.map(suggestion => ({
-      taskId: task?.id || '',
-      startDate: suggestion.startDate,
-      endDate: suggestion.endDate,
-      title: `AI Suggestion (${Math.round(suggestion.confidence * 100)}% confidence)`,
-      description: suggestion.reasoning
-    }));
-    setAiSuggestions(formattedSuggestions);
+    try {
+      await generateSuggestions(start);
+      if (!suggestions) return;
+      
+      const formattedSuggestions = suggestions.map(suggestion => ({
+        taskId: task?.id || '',
+        startDate: suggestion.startDate,
+        endDate: suggestion.endDate,
+        title: `AI Suggestion (${Math.min(Math.round(suggestion.confidence * 100), 100)}% confidence)`,
+        description: suggestion.reasoning
+      }));
+      setAiSuggestions(formattedSuggestions);
+    } catch (error) {
+      console.error('Failed to generate AI suggestions:', error);
+      // Set empty suggestions to clear any stale data
+      setAiSuggestions([]);
+    }
   };
 
   const handleSave = () => {
     if (!task) return;
+    
+    // Validate dates
+    if (start >= end) {
+      console.error('Invalid date range: start date must be before end date');
+      return;
+    }
+    
+    // Ensure we have required fields
+    if (!title.trim()) {
+      console.error('Title is required');
+      return;
+    }
+    
     onSave({
       taskId: task.id,
       startDate: start,
       endDate: end,
-      title,
-      description
+      title: title.trim(),
+      description: description.trim()
     });
   };
 

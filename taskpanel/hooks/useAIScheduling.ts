@@ -18,8 +18,23 @@ export function useAIScheduling() {
     existingSchedule: any[],
     preferences: any
   ) => {
+    if (!taskDescription?.trim()) {
+      throw new Error('Task description is required');
+    }
+    
+    if (!Array.isArray(existingSchedule)) {
+      throw new Error('Existing schedule must be an array');
+    }
+    
+    if (!preferences || typeof preferences !== 'object') {
+      throw new Error('Valid preferences object is required');
+    }
+
     setIsLoading(true);
     setError(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     try {
       await aiService.initialize();
@@ -32,19 +47,26 @@ export function useAIScheduling() {
       1. Task urgency and complexity
       2. Existing commitments
       3. User preferences and work patterns
-      4. Potential scheduling conflicts`;
+      4. Potential scheduling conflicts
+      5. Working hours and breaks
+      6. Task dependencies
+      7. Resource availability`;
 
-      const response = await aiService.analyzeTask(prompt);
+      const response = await aiService.analyzeTask(prompt, { signal: controller.signal });
       
       if (response.status === 'error') {
-        throw new Error(response.error);
+        throw new Error(response.error || 'Unknown error occurred');
+      }
+
+      if (!response.content) {
+        throw new Error('Empty response received from AI service');
       }
 
       return response.content;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to get scheduling suggestions';
       setError(message);
-      throw err;
+      throw new Error(`Scheduling suggestion failed: ${message}`);
     } finally {
       setIsLoading(false);
     }

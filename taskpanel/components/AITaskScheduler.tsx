@@ -98,12 +98,29 @@ export const useAITaskScheduler = (): {
 
       const prompt = SCHEDULE_ANALYSIS_PROMPT.replace('{tasks}', tasksContext);
       const response = await puter.ai.chat(prompt, {
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         stream: false,
+        temperature: 0.7, // Add some creativity while maintaining consistency
+        max_tokens: 2000, // Ensure we get complete responses
       });
 
       try {
-        return JSON.parse(response.toString());
+        const parsed = JSON.parse(response.toString());
+      
+      // Validate response format
+      if (!parsed || !Array.isArray(parsed.schedule) || !Array.isArray(parsed.conflicts) || !Array.isArray(parsed.recommendations)) {
+        throw new Error('Invalid response format from AI service');
+      }
+      
+      // Validate and sanitize dates in schedule
+      parsed.schedule = parsed.schedule.map((item: { suggestedStartDate: string, suggestedEndDate: string, rationale: string }) => ({
+        ...item,
+        suggestedStartDate: new Date(item.suggestedStartDate).toISOString(),
+        suggestedEndDate: new Date(item.suggestedEndDate).toISOString(),
+        rationale: item.rationale || 'No rationale provided'
+      }));
+      
+      return parsed;
       } catch (parseError) {
         console.error('Failed to parse AI response:', parseError);
         throw new Error('Failed to parse schedule data from AI response');
@@ -111,10 +128,10 @@ export const useAITaskScheduler = (): {
     } catch (err) {
       setError('Failed to generate schedule. Please try again.');
       console.error('AI Schedule Generation Error:', err);
-      throw {
+      return {
         schedule: [],
         conflicts: [],
-        recommendations: []
+        recommendations: ['Failed to generate schedule due to an error. Please try again.']
       };
     } finally {
       setLoading(false);
@@ -185,7 +202,13 @@ export function AITaskScheduler({ tasks, onScheduleUpdate }: AITaskSchedulerProp
         </button>
       </div>
 
-      {(error || localError) && <p className="text-sm text-red-500">{localError || error}</p>}
+      {(error || localError) && (
+        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
+          <p className="text-sm text-red-700 dark:text-red-300 font-medium">Error</p>
+          <p className="text-sm text-red-600 dark:text-red-400">{localError || error}</p>
+          <p className="text-sm text-red-500 dark:text-red-300 mt-1">Please try again or adjust your task parameters.</p>
+        </div>
+      )}
 
       {schedule?.schedule && schedule.schedule.length > 0 && (
         <div className="space-y-4">
