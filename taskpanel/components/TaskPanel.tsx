@@ -47,6 +47,7 @@ interface TaskPanelProps {
 
 export default function TaskPanel({ onLogout }: TaskPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { scheduledBlocks, conflicts, autoScheduleTask } = useSchedulingEngine(tasks);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -63,6 +64,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
 
   useEffect(() => {
     const loadTasks = async () => {
+      setIsLoading(true);
       if (puter.kv) {
         const tasksString = await puter.kv.get("tasks");
         if (tasksString) {
@@ -75,6 +77,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
               }));
               setTasks(parsedTasksWithDates);
+              setIsLoading(false);
               
               // Check notifications after loading tasks
               checkDeadlines(parsedTasksWithDates);
@@ -592,7 +595,12 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
 
                 {/* Task List / Cards */}
                 <div className="space-y-4">
-                  {tasks.map((task) => (
+                  {isLoading ? (
+                    <div className="flex flex-col items-center justify-center p-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+                      <div className="text-muted-foreground mt-4">please wait as we load your tasks</div>
+                    </div>
+                  ) : tasks.map((task) => (
                     <div
                       key={task.id}
                       className={`group bg-primary/5 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-border/10 
@@ -829,6 +837,13 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                     </div>
                   ))}
                 </div>
+
+                {/* Error handling for task loading */}
+                {!isLoading && tasks.length === 0 && (
+                  <div className="text-center p-8 text-muted-foreground">
+                    No tasks found. Add your first task above!
+                  </div>
+                )}
 
                 {/* Task Details Drawer (Modal or Side Drawer) */}
                 {selectedTask && (

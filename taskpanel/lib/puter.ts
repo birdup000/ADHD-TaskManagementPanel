@@ -15,16 +15,58 @@ export const loadPuter = async (): Promise<Puter> => {
         // Create Puter instance with available modules
         const instance: Puter = {
           ai: window.puter.ai,
-          auth: window.puter?.auth ? (() => {
+          auth: (() => {
+            if (!window.puter?.auth) {
+              throw new Error('Puter auth module not available');
+            }
             const auth = window.puter.auth;
             return {
-              signIn: () => auth.signIn(),
-              signOut: () => auth.signOut(),
-              isSignedIn: () => auth.isSignedIn(),
-              getUser: () => auth.getUser(),
-              authenticate: () => auth.signIn()
+              signIn: async () => {
+                try {
+                  await auth.signIn();
+                } catch (error) {
+                  console.error('Failed to sign in:', error);
+                  throw error;
+                }
+              },
+              signOut: async () => {
+                try {
+                  await auth.signOut();
+                } catch (error) {
+                  console.error('Failed to sign out:', error);
+                  throw error;
+                }
+              },
+              isSignedIn: () => {
+                try {
+                  return auth.isSignedIn();
+                } catch (error) {
+                  console.error('Failed to check sign in status:', error);
+                  return false;
+                }
+              },
+              getUser: async () => {
+                try {
+                  const user = await auth.getUser();
+                  if (!user) throw new Error('No user found');
+                  return user;
+                } catch (error) {
+                  console.error('Failed to get user:', error);
+                  throw error;
+                }
+              },
+              authenticate: async () => {
+                try {
+                  if (!auth.isSignedIn()) {
+                    await auth.signIn();
+                  }
+                } catch (error) {
+                  console.error('Failed to authenticate:', error);
+                  throw error;
+                }
+              }
             };
-          })() : undefined,
+          })(),
           kv: (() => {
             if (!window.puter.kv) {
               throw new Error('Puter kv module not available');

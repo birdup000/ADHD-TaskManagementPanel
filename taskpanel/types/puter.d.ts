@@ -18,11 +18,11 @@ export interface PuterAI {
 }
 
 export interface PuterAuth {
-  signIn: () => Promise<void> | undefined;
-  signOut: () => Promise<void> | undefined;
+  signIn: () => Promise<void>;
+  signOut: () => Promise<void>;
   isSignedIn: () => boolean;
-  getUser: () => Promise<{ id: string; username: string }> | undefined;
-  authenticate: () => Promise<void> | undefined;
+  getUser: () => Promise<{ id: string; username: string }>;
+  authenticate: () => Promise<void>;
 }
 
 export interface Puter {
