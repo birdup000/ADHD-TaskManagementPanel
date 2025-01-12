@@ -50,7 +50,10 @@ export class AITaskPrioritizer {
       const response = await aiService.analyzeTask(prompt);
       
       if (response.status === 'error') {
-        throw new Error(response.error);
+        throw new Error(typeof response.error === 'string' ? response.error : String(response.error));
+      }
+      if (typeof response.content === 'string') {
+        throw new Error('Unexpected string response from AI service');
       }
 
       // Transform the AI response into structured priority data
