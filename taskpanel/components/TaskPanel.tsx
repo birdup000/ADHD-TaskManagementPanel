@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { FocusTimer } from "./FocusTimer";
 import { RecurringTaskManager, useRecurringTaskManager } from "./RecurringTaskManager";
 import Tutorial from "./Tutorial";
+import AGiXTSettings from "./AGiXTSettings";
+import type { AGiXTConfig } from "../lib/agixt-service";
 import TaskDetailsDrawer from "./TaskDetailsDrawer";
 import AITaskCheckin from "./AITaskCheckin";
 import { AITaskScheduler } from "./AITaskScheduler";
@@ -183,6 +185,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
   >([]);
   const [chatInput, setChatInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAGiXTSettings, setShowAGiXTSettings] = useState(false);
   const [showTutorial, setShowTutorial] = useState(() => {
     const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
     return hasSeenTutorial ? false : true;
@@ -470,6 +473,15 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                         className="block w-full text-left px-4 py-2 hover:bg-muted/50 transition-colors"
                       >
                         View Tutorial
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAGiXTSettings(true);
+                          setTimeout(() => setMenuOpen(false), 100);
+                        }}
+                        className="block w-full text-left px-4 py-2 hover:bg-muted/50 transition-colors"
+                      >
+                        AGiXT Settings
                       </button>
                     </div>
                   )}
@@ -1038,6 +1050,17 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
 
             {/* Notification System */}
             <NotificationSystem tasks={tasks} />
+
+            {/* AGiXT Settings Modal */}
+            {showAGiXTSettings && (
+              <AGiXTSettings
+                onClose={() => setShowAGiXTSettings(false)}
+                onSave={(config: AGiXTConfig) => {
+                  console.log('AGiXT config saved:', config);
+                  setShowAGiXTSettings(false);
+                }}
+              />
+            )}
 
             {/* Bottom Utility Bar (Optional) */}
             <div className="mt-auto pt-6">
