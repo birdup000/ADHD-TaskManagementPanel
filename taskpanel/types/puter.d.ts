@@ -14,6 +14,7 @@ export interface PuterAI {
   complete: (prompt: string, options?: { temperature?: number; max_tokens?: number }) => Promise<string>;
   embed: (text: string) => Promise<number[]>;
   moderate: (content: string) => Promise<{ flagged: boolean; categories: string[] }>;
+  txt2speech: (text: string, language?: string, testMode?: boolean) => Promise<HTMLAudioElement>;
 }
 
 export interface PuterAuth {

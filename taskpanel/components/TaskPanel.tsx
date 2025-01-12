@@ -29,6 +29,7 @@ export interface Task {
   createdAt: Date;
   subtasks?: SubTask[];
   lastUpdate?: Date;
+  blockers?: string[];
 }
 
 type TaskCategory = "work" | "personal" | "urgent";
@@ -424,7 +425,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                 <input
                   type="text"
                   placeholder="Search tasks..."
-                  className="w-48 px-4 py-2 bg-background/50 border border-border/20 rounded-lg focus:ring-2 focus:ring-accent/50 transition-all placeholder:text-black"
+                  className="w-48 px-4 py-2 bg-background/50 border border-border/20 rounded-lg focus:ring-2 focus:ring-accent/50 transition-all placeholder:text-softWhite/60"
                 />
 
                 {/* Profile or Settings Icon */}
@@ -530,7 +531,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                           }))
                         }
                         placeholder="What needs to be done?"
-                        className="w-full bg-background/50 border border-border/20 rounded-lg px-4 py-3 focus:ring-2 focus:ring-accent/50 transition-colors placeholder:text-muted-foreground/60 group-hover:border-border/40 text-softWhite"
+                        className="w-full bg-background/50 border border-border/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 text-foreground y-3 focus:ring-2 focus:ring-accent/50 transition-colors placeholder:text-softWhite/60 group-hover:border-border/40 text-softWhite"
                       />
                       <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
                         <svg
@@ -1005,7 +1006,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           placeholder="Type your message..."
-                          className="flex-1 bg-background/50 border border-border/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 text-softWhite"
+                          className="flex-1 bg-background/50 border border-border/20 rounded-lg px-4 py-2 focus:ring-2 focus:ring-accent/50 text-foreground"
                         />
                         <button
                           onClick={handleSendMessage}

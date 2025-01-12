@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { loadPuter } from "../lib/puter";
+import { playNotificationSound } from "../utils/notificationUtils";
 
 interface FocusTimerProps {
   activeTask: string | null;
@@ -25,13 +27,19 @@ export function FocusTimer({ activeTask, onTaskComplete }: FocusTimerProps) {
         setTimeLeft((prev) => prev - 1);
         // Gentle reminder every 5 minutes
         if ((timeLeft - 1) % 300 === 0 && timeLeft > 60) {
-          new Audio("/reminder.mp3").play();
+          playNotificationSound("/reminder.mp3");
         }
       }, 1000);
     } else if (timeLeft === 0) {
-      new Audio("/notification.mp3").play();
+      playNotificationSound("/notification.mp3");
       setIsActive(false);
-      
+      loadPuter().then(puter => {
+        if (puter) {
+          puter.ai.txt2speech("Timer is up! Feel free to take a break.").then(audio => {
+            audio.play();
+          });
+        }
+      });
       if (isBreakTime) {
         setIsBreakTime(false);
         setTimeLeft(selectedDuration * 60);

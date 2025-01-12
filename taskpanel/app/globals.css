@@ -91,17 +91,20 @@ h1, h2, h3, h4 {
 
 .task-input {
   background: red;
+  background: var(--primary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.2rem;
   transition: var(--transition);
   width: 100%;
   font-size: 1.1rem;
-  color: #ffffff;
+  color: #f0f0f0;
+  color: var(--foreground);
 }
 
 .task-input::placeholder {
-  color: #cccccc;
+  color: #dddddd;
+  color: var(--foreground);
 }
 
 .task-input:focus {

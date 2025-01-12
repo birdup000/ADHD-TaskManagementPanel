@@ -1,4 +1,5 @@
-import type { Puter } from '../types/puter';
+import type { Puter as PuterType } from '../types/puter';
+export type Puter = PuterType;
 
 let puterInstance: Puter | null = null;
 
