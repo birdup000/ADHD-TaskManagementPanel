@@ -1,5 +1,8 @@
 import type { PuterAI } from '../types/puter';
+import { AIServiceError, TimeoutError } from '../types/errors';
+import { withRetry } from './retry-utils';
 import { loadPuter } from './puter';
+import { contextManager } from './ai-context-manager';
 
 export interface AIResponse<T = string> {
   content: T;
@@ -21,14 +24,25 @@ export interface AITaskAnalysis {
 
 export class AIService {
   private ai: PuterAI | null = null;
+  private static readonly DEFAULT_TIMEOUT = 30000; // 30 second default timeout
 
   async initialize(): Promise<void> {
-    const puter = await loadPuter();
-    this.ai = puter.ai;
+    try {
+      const puter = await loadPuter();
+      if (!puter?.ai) {
+        throw new AIServiceError('Failed to initialize AI service - AI provider not available', 'AI_INIT_FAILED');
+      }
+      this.ai = puter.ai;
+    } catch (error) {
+      throw new AIServiceError(
+        `Failed to initialize AI service: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'AI_INIT_FAILED'
+      );
+    }
   }
 
   async analyzeTask(taskDescription: string): Promise<AIResponse<AITaskAnalysis>> {
-    if (!this.ai) throw new Error('AI service not initialized');
+    if (!this.ai) { throw new AIServiceError('AI service not initialized', 'AI_NOT_INITIALIZED'); }
     
     const prompt = `Analyze the following task and provide structured output:
     Task: ${taskDescription}
@@ -46,7 +60,7 @@ export class AIService {
       
       return {
         content: analysis,
-        model: 'gpt-3.5-turbo',
+        model: 'claude-3-5-sonnet',
         status: 'success'
       };
     } catch (error) {
@@ -57,7 +71,7 @@ export class AIService {
           suggestedSubtasks: [],
           keywords: []
         },
-        model: 'gpt-3.5-turbo',
+        model: 'claude-3-5-sonnet',
         status: 'error',
         error: error instanceof Error ? error.message : 'Unknown error'
       };
@@ -71,9 +85,16 @@ export class AIService {
       temperature?: number;
       maxTokens?: number;
       context?: string[];
+      timeout?: number;
     } = {}
   ): Promise<void> {
-    if (!this.ai) throw new Error('AI service not initialized');
+    if (!this.ai) {
+      throw new AIServiceError('AI service not initialized', 'AI_NOT_INITIALIZED');
+    }
+
+    const timeout = options.timeout || 30000; // 30 second default timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
       // Get relevant context if not provided
@@ -81,7 +102,7 @@ export class AIService {
       
       // Construct prompt with context
       const contextualPrompt = [
-        ...context.map(ctx => `Context: ${ctx}`),
+        ...context.map((ctx: string) => `Context: ${ctx}`),
         `Current request: ${prompt}`
       ].join('\n\n');
 
@@ -90,17 +111,33 @@ export class AIService {
         temperature: options.temperature,
         max_tokens: options.maxTokens,
       });
-      // Handle streaming response
-      onUpdate({
-        content: response,
-        model: 'gpt-3.5-turbo',
-        status: 'success',
-        isComplete: true
+      await withRetry(async () => {
+        const response = await this.ai!.chat(contextualPrompt, {
+          stream: true,
+          temperature: options.temperature,
+          max_tokens: options.maxTokens,
+        });
+
+        for await (const chunk of response) {
+          onUpdate({
+            content: chunk,
+            isComplete: false,
+            model: 'claude-3-5-sonnet',
+            status: 'success'
+          });
+        }
+
+        onUpdate({
+          content: '',
+          isComplete: true,
+          model: 'claude-3-5-sonnet',
+          status: 'success'
+        });
       });
     } catch (error) {
       onUpdate({
         content: '',
-        model: 'gpt-3.5-turbo',
+        model: 'claude-3-5-sonnet',
         status: 'error',
         isComplete: true,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -109,38 +146,59 @@ export class AIService {
   }
 
   async analyzeSentiment(text: string): Promise<{ sentiment: string; confidence: number }> {
-    if (!this.ai) throw new Error('AI service not initialized');
+    if (!this.ai) {
+      throw new AIServiceError('AI service not initialized', 'AI_NOT_INITIALIZED');
+    }
     
     try {
-      const result = await this.ai.analyze(text, 'sentiment');
-      return result;
+      return await withRetry(async () => {
+        const result = await this.ai!.analyze(text, 'sentiment');
+        return result;
+      });
     } catch (error) {
       console.error('Failed to analyze sentiment:', error);
-      return { sentiment: 'neutral', confidence: 0 };
+      throw new AIServiceError(
+        `Sentiment analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'SENTIMENT_FAILED'
+      );
     }
   }
 
   async extractKeyPhrases(text: string): Promise<string[]> {
-    if (!this.ai) throw new Error('AI service not initialized');
+    if (!this.ai) {
+      throw new AIServiceError('AI service not initialized', 'AI_NOT_INITIALIZED');
+    }
     
     try {
-      const result = await this.ai.analyze(text, 'keywords');
-      return Array.isArray(result) ? result : [];
+      return await withRetry(async () => {
+        const result = await this.ai!.analyze(text, 'keywords');
+        return Array.isArray(result) ? result : [];
+      });
     } catch (error) {
       console.error('Failed to extract key phrases:', error);
-      return [];
+      throw new AIServiceError(
+        `Key phrase extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'KEYWORDS_FAILED'
+      );
     }
   }
 
   async moderateContent(text: string): Promise<boolean> {
-    if (!this.ai) throw new Error('AI service not initialized');
+    if (!this.ai) {
+      throw new AIServiceError('AI service not initialized', 'AI_NOT_INITIALIZED');
+    }
     
     try {
-      const result = await this.ai.moderate(text);
-      return !result.flagged;
+      return await withRetry(async () => {
+        const result = await this.ai!.moderate(text);
+        return !result.flagged;
+      });
     } catch (error) {
       console.error('Failed to moderate content:', error);
-      return true; // Allow content by default
+      throw new AIServiceError(
+        `Content moderation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'MODERATION_FAILED'
+      );
     }
   }
 

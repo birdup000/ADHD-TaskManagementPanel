@@ -49,7 +49,7 @@ export const useAITaskCheckin = () => {
       return response.toString();
     } catch (err: any) {
       setError('Failed to generate check-in prompt. Please try again.');
-      console.error('AI Check-in Generation Error:', err);
+      console.error('AI Check-in Generation Error:', err.message);
       return 'How is the task progressing?';
     } finally {
       setLoading(false);

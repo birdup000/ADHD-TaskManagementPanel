@@ -13,6 +13,10 @@ export class AIContextManager {
   private context: ContextEntry[] = [];
 
   addEntry(content: string, type: ContextEntry['type']) {
+    if (!content?.trim()) {
+      throw new ValidationError('Context entry content cannot be empty');
+    }
+
     this.context.push({
       timestamp: Date.now(),
       content,
