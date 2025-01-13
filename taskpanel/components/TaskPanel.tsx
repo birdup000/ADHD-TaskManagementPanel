@@ -221,11 +221,22 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         .join("\n");
       const prompt = `Current tasks:\n${taskContext}\n\nUser message: ${chatInput}\n\nRespond with a helpful message. If the user is requesting to manage tasks, provide your response as a JSON object with this format:\n{\n  "command": "create" | "edit" | "delete" | "complete" | "editDueDate",\n  "taskId": "task id (for edit/delete/complete/editDueDate)",\n  "title": "task title (for create/edit)",\n  "description": "task description (for create/edit)",\n  "category": "work|personal|urgent (for create/edit)",\n  "priority": "high|medium|low (for create/edit)",\n  "dueDate": "YYYY-MM-DD (for create/editDueDate)"\n}\n\nOtherwise, respond with a simple text message.`;
       setChatHistory((prev) => [...prev, { role: "user", content: chatInput }]);
-      const puter = getPuter();
-      try {
-        const response = await puter.ai.chat(prompt);
-        // Ensure the response is properly formatted as a string
-        const responseText = typeof response === 'object' ? 
+     const puter = getPuter();
+     if (!puter.ai) {
+       console.error("puter.ai is not available. Ensure Puter.js is loaded.");
+       setChatHistory((prev) => [
+         ...prev,
+         { role: "assistant", content: "Error: AI service not available." },
+       ]);
+       setChatInput("");
+       return;
+     }
+     try {
+       console.log('AI Prompt:', prompt);
+       const response = await puter.ai.chat(prompt);
+       console.log('Raw AI Response:', response);
+       // Ensure the response is properly formatted as a string
+       const responseText = typeof response === 'object' ?
           JSON.stringify(response, null, 2) : // Pretty print JSON if it's an object
           String(response); // Otherwise convert to string
         
@@ -233,16 +244,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         console.log('AI Response type:', typeof response);
         console.log('AI Response:', response);
         // Convert response to string before adding to chat history
-        let contentToAdd = '';
-        try {
-          contentToAdd = typeof responseText === 'string' ? 
-            responseText : 
-            JSON.stringify(responseText, null, 2);
-        } catch (e) {
-          console.error('Error stringifying response:', e);
-          contentToAdd = 'Error processing response';
-        }
-        
+        let contentToAdd = responseText;
         setChatHistory((prev) => [
           ...prev,
           { role: "assistant", content: contentToAdd },
@@ -396,6 +398,7 @@ export default function TaskPanel({ onLogout }: TaskPanelProps) {
         }
       } catch (error) {
         console.error("Error sending message:", error);
+        console.error("Error object:", JSON.stringify(error, null, 2));
         setChatHistory((prev) => [
           ...prev,
           { role: "assistant", content: "Error sending message." },
