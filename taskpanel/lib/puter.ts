@@ -2,6 +2,7 @@ import type { Puter as PuterType } from '../types/puter';
 export type Puter = PuterType;
 
 let puterInstance: Puter | null = null;
+let puterScript: HTMLScriptElement | null = null;
 
 export const loadPuter = async (): Promise<Puter> => {
   if (puterInstance) return puterInstance;
@@ -14,94 +15,98 @@ export const loadPuter = async (): Promise<Puter> => {
     const script = document.createElement('script');
     script.src = 'https://js.puter.com/v2/';
     script.async = true;
-    script.onload = async () => {
-      if (window.puter) {
-        
-        // Create Puter instance with available modules
-        const instance: Puter = {
-          ai: window.puter.ai,
-          auth: await (async (): Promise<any> => {
-            const auth = window.puter.auth;
-            
-            ({
-              signIn: async () => {
-                try {
-                  if(auth) await auth.signIn();
-                } catch (error) {
-                  console.error('Failed to sign in:', error);
-                  throw error;
-                }
-              },
-              signOut: async () => {
-                try {
-                  if(auth) await auth.signOut();
-                } catch (error) {
-                  console.error('Failed to sign out:', error);
-                  throw error;
-                }
-              },
-              isSignedIn: () => {
-                try {
-                  return auth ? auth.isSignedIn() : false;
-                } catch (error) {
-                  console.error('Failed to check sign in status:', error);
-                  return false;
-                }
-              },
-              getUser: async () => {
-                try {
-                  const user = auth ? await auth.getUser() : null;
-                  if (!user) throw new Error('No user found');
-                  return user;
-                } catch (error) {
-                  console.error('Failed to get user:', error);
-                  throw error;
-                }
-              },
-              authenticate: async () => {
-                try {
-                  if (auth && !auth.isSignedIn()) {
-                    await auth.signIn();
+    puterScript = script;
+    if (puterScript) {
+      
+      script.onload = async () => {
+        if (window.puter) {
+          
+          // Create Puter instance with available modules
+          const instance: Puter = {
+            ai: window.puter.ai,
+            auth: await (async (): Promise<any> => {
+              const auth = window.puter.auth;
+              
+              ({
+                signIn: async () => {
+                  try {
+                    if(auth) await auth.signIn();
+                  } catch (error) {
+                    console.error('Failed to sign in:', error);
+                    throw error;
                   }
-                } catch (error) {
-                  console.error('Failed to authenticate:', error);
-                  throw error;
+                },
+                signOut: async () => {
+                  try {
+                    if(auth) await auth.signOut();
+                  } catch (error) {
+                    console.error('Failed to sign out:', error);
+                    throw error;
+                  }
+                },
+                isSignedIn: () => {
+                  try {
+                    return auth ? auth.isSignedIn() : false;
+                  } catch (error) {
+                    console.error('Failed to check sign in status:', error);
+                    return false;
+                  }
+                },
+                getUser: async () => {
+                  try {
+                    const user = auth ? await auth.getUser() : null;
+                    if (!user) throw new Error('No user found');
+                    return user;
+                  } catch (error) {
+                    console.error('Failed to get user:', error);
+                    throw error;
+                  }
+                },
+                authenticate: async () => {
+                  try {
+                    if (auth && !auth.isSignedIn()) {
+                      await auth.signIn();
+                    }
+                  } catch (error) {
+                    console.error('Failed to authenticate:', error);
+                    throw error;
+                  }
                 }
+              })
+            })(),
+            kv: await (async () => {
+              if (!window.puter.kv) {
+                throw new Error('Puter kv module not available');
               }
-            })
-          })(),
-          kv: await (async () => {
-            if (!window.puter.kv) {
-              throw new Error('Puter kv module not available');
-            }
-            const kv = window.puter.kv;
-            return {
-              set: (key: string, value: string | number | boolean) => kv.set(key, value),
-              get: (key: string) => kv.get(key),
-              incr: (key: string, amount?: number) => kv.incr(key, amount),
-              decr: (key: string, amount?: number) => kv.decr(key, amount),
-              del: (key: string) => kv.del(key),
-              list: (pattern?: string, returnValues?: boolean) => kv.list(pattern, returnValues),
-              flush: () => kv.flush(),
-            };
-          })()
-        };
-        puterInstance = instance;
-        
-        if (!puterInstance.auth) {
-          console.warn('Using Puter.js without auth functionality');
+              const kv = window.puter.kv;
+              return {
+                set: (key: string, value: string | number | boolean) => kv.set(key, value),
+                get: (key: string) => kv.get(key),
+                incr: (key: string, amount?: number) => kv.incr(key, amount),
+                decr: (key: string, amount?: number) => kv.decr(key, amount),
+                del: (key: string) => kv.del(key),
+                list: (pattern?: string, returnValues?: boolean) => kv.list(pattern, returnValues),
+                flush: () => kv.flush(),
+              };
+            })()
+          };
+          puterInstance = instance;
+          
+          if (!puterInstance.auth) {
+            console.warn('Using Puter.js without auth functionality');
+          }
+          if (!puterInstance.kv) {
+            console.warn('Using Puter.js without kv functionality');
+          }
+          resolve(puterInstance);
+        } else {
+          reject(new Error('Failed to load Puter.js'));
         }
-        if (!puterInstance.kv) {
-          console.warn('Using Puter.js without kv functionality');
-        }
-        resolve(puterInstance);
-      } else {
-        reject(new Error('Failed to load Puter.js'));
-      }
-    };
-    script.onerror = () => {
-      reject(new Error('Failed to load Puter.js'));
-    };
+      };
+      return;
+    }
+    
+    
     document.head.appendChild(script);
   });
 };
