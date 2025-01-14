@@ -7,19 +7,26 @@ export const loadPuter = async (): Promise<Puter> => {
   if (puterInstance) return puterInstance;
 
   return new Promise<Puter>((resolve, reject) => {
+    if (document.querySelector(`script[src="https://js.puter.com/v2/"]`)) {
+      resolve(window.puter as Puter);
+      return;
+    }
     const script = document.createElement('script');
     script.src = 'https://js.puter.com/v2/';
     script.async = true;
-    script.onload = () => {
+    script.onload = async () => {
       if (window.puter) {
         // Create Puter instance with available modules
         const instance: Puter = {
           ai: window.puter.ai,
-          auth: (() => {
+          auth: await (async (): Promise<any> => {
             if (!window.puter?.auth) {
               throw new Error('Puter auth module not available');
             }
             const auth = window.puter.auth;
+            
+            await new Promise(resolve => setTimeout(resolve, 0));
+            
             return {
               signIn: async () => {
                 try {
@@ -67,7 +74,7 @@ export const loadPuter = async (): Promise<Puter> => {
               }
             };
           })(),
-          kv: (() => {
+          kv: await (async () => {
             if (!window.puter.kv) {
               throw new Error('Puter kv module not available');
             }

@@ -16,9 +16,8 @@ export default function Dashboard() {
 
     const authenticate = async () => {
       try {
-        await loadPuter();
-        const puter = getPuter();
-        const isAuthenticated = puter.auth ? puter.auth.isSignedIn() : false;
+        const puterInstance = await loadPuter();
+        const isAuthenticated = puterInstance?.auth ? puterInstance.auth.isSignedIn() : false;
         if (isMounted) {
           setIsAuthenticated(isAuthenticated);
         }
@@ -70,15 +69,15 @@ export default function Dashboard() {
               onClick={async () => {
                 try {
                   setIsLoading(true);
-                  const puter = getPuter();
-                  if (!puter.auth) {
+                  const puterInstance = await loadPuter();
+                  if (!puterInstance?.auth) {
                     console.error('Puter auth not available');
                     alert('Puter authentication module is not available. Please try again later.');
                     setIsAuthenticated(false);
                     return;
                   }
-                  await puter.auth.authenticate();
-                  const authResult = puter.auth.isSignedIn();
+                  await puterInstance.auth.authenticate();
+                  const authResult = puterInstance.auth.isSignedIn();
                   setIsAuthenticated(authResult);
                 } catch (error) {
                   console.error('Authentication failed:', error);
