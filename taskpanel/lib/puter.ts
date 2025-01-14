@@ -16,21 +16,17 @@ export const loadPuter = async (): Promise<Puter> => {
     script.async = true;
     script.onload = async () => {
       if (window.puter) {
+        
         // Create Puter instance with available modules
         const instance: Puter = {
           ai: window.puter.ai,
           auth: await (async (): Promise<any> => {
-            if (!window.puter?.auth) {
-              throw new Error('Puter auth module not available');
-            }
             const auth = window.puter.auth;
             
-            await new Promise(resolve => setTimeout(resolve, 0));
-            
-            return {
+            ({
               signIn: async () => {
                 try {
-                  await auth.signIn();
+                  if(auth) await auth.signIn();
                 } catch (error) {
                   console.error('Failed to sign in:', error);
                   throw error;
@@ -38,7 +34,7 @@ export const loadPuter = async (): Promise<Puter> => {
               },
               signOut: async () => {
                 try {
-                  await auth.signOut();
+                  if(auth) await auth.signOut();
                 } catch (error) {
                   console.error('Failed to sign out:', error);
                   throw error;
@@ -46,7 +42,7 @@ export const loadPuter = async (): Promise<Puter> => {
               },
               isSignedIn: () => {
                 try {
-                  return auth.isSignedIn();
+                  return auth ? auth.isSignedIn() : false;
                 } catch (error) {
                   console.error('Failed to check sign in status:', error);
                   return false;
@@ -54,7 +50,7 @@ export const loadPuter = async (): Promise<Puter> => {
               },
               getUser: async () => {
                 try {
-                  const user = await auth.getUser();
+                  const user = auth ? await auth.getUser() : null;
                   if (!user) throw new Error('No user found');
                   return user;
                 } catch (error) {
@@ -64,7 +60,7 @@ export const loadPuter = async (): Promise<Puter> => {
               },
               authenticate: async () => {
                 try {
-                  if (!auth.isSignedIn()) {
+                  if (auth && !auth.isSignedIn()) {
                     await auth.signIn();
                   }
                 } catch (error) {
@@ -72,7 +68,7 @@ export const loadPuter = async (): Promise<Puter> => {
                   throw error;
                 }
               }
-            };
+            })
           })(),
           kv: await (async () => {
             if (!window.puter.kv) {
@@ -123,8 +119,13 @@ export const authenticateWithPuter = async (): Promise<boolean> => {
     throw new Error('Puter auth module not available. Please ensure you are using a version of Puter.js that includes authentication functionality.');
   }
   try {
-    await puter.auth.signIn();
-    return true;
+    if (puter.auth) {
+      await puter.auth.signIn();
+      return true;
+    } else {
+      console.error('Puter auth module not available.');
+      return false;
+    }
   } catch (error) {
     console.error('Puter authentication failed:', error);
     return false;

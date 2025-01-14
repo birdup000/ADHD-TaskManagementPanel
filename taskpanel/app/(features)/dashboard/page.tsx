@@ -17,8 +17,12 @@ export default function Dashboard() {
     const authenticate = async () => {
       try {
         const puterInstance = await loadPuter();
-        const isAuthenticated = puterInstance?.auth ? puterInstance.auth.isSignedIn() : false;
+        let isAuthenticated = puterInstance?.auth ? puterInstance.auth.isSignedIn() : false;
         if (isMounted) {
+          if (!isAuthenticated && puterInstance?.auth) {
+            await puterInstance.auth.authenticate();
+            isAuthenticated = puterInstance.auth.isSignedIn();
+          }
           setIsAuthenticated(isAuthenticated);
         }
       } catch (error) {
@@ -38,7 +42,7 @@ export default function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, [isAuthenticated]);
+  }, []);
 
   if (isLoading) {
     return (
@@ -69,9 +73,16 @@ export default function Dashboard() {
               onClick={async () => {
                 try {
                   setIsLoading(true);
-                  const puterInstance = await loadPuter();
+                  let puterInstance = await loadPuter();
+                  let authCheckAttempts = 0;
+                  while (!puterInstance?.auth && authCheckAttempts < 5) {
+                    console.log('Puter auth not available, retrying...');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    puterInstance = await loadPuter();
+                    authCheckAttempts++;
+                  }
                   if (!puterInstance?.auth) {
-                    console.error('Puter auth not available');
+                    console.error('Puter auth not available after multiple retries');
                     alert('Puter authentication module is not available. Please try again later.');
                     setIsAuthenticated(false);
                     return;
