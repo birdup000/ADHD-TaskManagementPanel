@@ -36,7 +36,7 @@ export default function RootLayout({
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between h-16">
                 <div className="flex items-center gap-8">
-                  <a href="/" className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded-lg py-2">
+                  <a href="/dashboard" className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded-lg py-2">
                     <span className="text-2xl font-bold bg-gradient-to-r from-accent via-accent to-accent text-transparent bg-clip-text leading-none">ADHD Task Panel</span>
                   </a>
                   <div className="hidden md:flex items-center space-x-2 animate-fade-in bg-background/30 backdrop-blur-sm rounded-full px-2 border border-border/5">

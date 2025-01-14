@@ -19,16 +19,23 @@ export interface PuterAI {
 
 export interface PuterAuth {
   signIn: () => Promise<void>;
+  signInWithPopup: () => Promise<void>;
   signOut: () => Promise<void>;
   isSignedIn: () => boolean;
   getUser: () => Promise<{ id: string; username: string }>;
   authenticate: () => Promise<void>;
+  showAuth: () => Promise<void>;
 }
 
 export interface Puter {
   ai: PuterAI;
   auth?: PuterAuth;
   kv?: PuterKV;
+  ui?: PuterUI;
+}
+
+export interface PuterUI {
+  authenticateWithPuter: () => Promise<boolean>;
 }
 
 export interface PuterKV {
