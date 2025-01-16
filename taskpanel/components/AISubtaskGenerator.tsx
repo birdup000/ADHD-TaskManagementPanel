@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { loadPuter } from "../lib/puter";
+import { aiService } from "../lib/ai-service";
 import { SubTask } from "../types/SubTask";
 import { taskTemplates, taskTips, makeTaskConcrete } from "../lib/task-templates";
 import { GENERATE_SINGLE_SUBTASK_PROMPT } from "../lib/prompt-templates";
-
-/// <reference path="../types/puter.d.ts" />
 
 The response MUST be a valid JSON object conforming to this schema.
 `;
@@ -40,8 +38,6 @@ export const useAISubtaskGenerator = () => {
     let generatedSubtasks: SubTask[] = [];
 
     try {
-      const puter = await loadPuter();
-
       for (let i = 0; i < 5; i++) {
         let retries = 0;
         const previousSubtasksContext = generatedSubtasks
@@ -68,7 +64,7 @@ export const useAISubtaskGenerator = () => {
           .replace('{additionalContext}', additionalContext || 'N/A')
           .replace('{previousSubtasks}', previousSubtasksContext);
 
-        const response = await puter.ai.chat(prompt, {
+        const response = await aiService.chat(prompt, {
           model: 'gpt-4o-mini',
           stream: false,
         });
@@ -122,12 +118,11 @@ export const useAISubtaskGenerator = () => {
     setLoading(true);
     setError(null);
     try {
-      const puter = await loadPuter();
       const prompt = IDENTIFY_DEPENDENCIES_PROMPT
         .replace('{taskName}', taskName)
         .replace('{taskDescription}', taskDescription);
 
-      const response = await puter.ai.chat(prompt, {
+      const response = await aiService.chat(prompt, {
         model: "gpt-4o-mini",
         stream: false,
       });

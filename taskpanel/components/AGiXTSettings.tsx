@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { AGiXTConfig } from '../lib/agixt-service';
-import { getPuter } from '../lib/puter';
+import { storageService } from '../lib/storage-service';
 
 interface AGiXTSettingsProps {
   onClose: () => void;
@@ -16,9 +16,7 @@ export default function AGiXTSettings({ onClose, onSave }: AGiXTSettingsProps) {
 
   useEffect(() => {
     const loadConfig = async () => {
-      const puter = getPuter();
-      if (puter.kv) {
-        const savedConfig = await puter.kv.get('agixt_config');
+      const savedConfig = await storageService.get('agixt_config');
         if (savedConfig) {
           setConfig(JSON.parse(savedConfig));
         }
@@ -28,9 +26,7 @@ export default function AGiXTSettings({ onClose, onSave }: AGiXTSettingsProps) {
   }, []);
 
   const handleSave = async () => {
-    const puter = getPuter();
-    if (puter.kv) {
-      await puter.kv.set('agixt_config', JSON.stringify(config));
+    await storageService.set('agixt_config', JSON.stringify(config));
       onSave(config);
       onClose();
     }

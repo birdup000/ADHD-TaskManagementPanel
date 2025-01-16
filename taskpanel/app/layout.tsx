@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import React from "react";
 import NotificationSystem from "@/components/NotificationSystem";
+import { AuthProvider } from "@/components/AuthContext";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,7 +31,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full bg-background`}
       >
-        <script src="https://js.puter.com/v2/"></script>
+        
         <div className="min-h-full flex flex-col">
           <header className="bg-primary/5 backdrop-blur-md border-b border-border/10 sticky top-0 z-50">
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -66,7 +67,9 @@ export default function RootLayout({
           </header>
           <main className="flex-1">
             <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-4">
-              {children}
+              <AuthProvider>
+                {children}
+              </AuthProvider>
             </div>
           </main>
           <NotificationSystem tasks={[]} />

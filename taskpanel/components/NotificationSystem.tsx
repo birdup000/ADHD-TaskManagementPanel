@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNotificationVolume } from '../hooks/useNotificationVolume';
-import { loadPuter, Puter } from '../lib/puter';
 import { playNotificationSound } from '../utils/notificationUtils';
+import { aiService } from '../lib/ai-service';
+import { storageService } from '../lib/storage-service';
 import { Task } from './TaskPanel';
 
 interface QueuedNotification {
@@ -49,10 +50,8 @@ export const useNotificationSystem = () => {
 
     setIsTtsPlaying(true);
     const { notification, volume } = nextNotification;
-    const puter = await loadPuter();
-
-    if (puter && volume > 0 && ttsEnabled) {
-      puter.ai.txt2speech(notification.message).then((audio: HTMLAudioElement) => {
+    if (volume > 0 && ttsEnabled) {
+      aiService.txt2speech(notification.message).then((audio: HTMLAudioElement) => {
         audio.play();
         audio.onended = () => {
           setNotificationQueue(prev => prev.slice(1));
@@ -69,9 +68,8 @@ export const useNotificationSystem = () => {
 
   const playTestTts = useCallback(async (testVolume: number) => {
     if (!ttsEnabled) return;
-    const puter = await loadPuter();
-    if (puter && testVolume > 0) {
-      puter.ai.txt2speech("Test notification sound").then((audio: HTMLAudioElement) => {
+    if (testVolume > 0) {
+      aiService.txt2speech("Test notification sound").then((audio: HTMLAudioElement) => {
         audio.play();
       });
     }
@@ -102,7 +100,6 @@ export const useNotificationSystem = () => {
   };
 
   const markAsRead = async (notificationId: string) => {
-    const puter = await loadPuter();
     setNotifications(prev => {
       const updatedNotifications = prev.map(n =>
         n.id === notificationId ? { ...n, read: true } : n
@@ -110,10 +107,10 @@ export const useNotificationSystem = () => {
       // Remove read notifications after marking them as read
       const filteredNotifications = updatedNotifications.filter(n => !n.read);
       
-      // Remove the notification from puter kv
+      // Remove the notification from storage
       const notificationToRemove = updatedNotifications.find(n => n.id === notificationId);
-      if (notificationToRemove && puter.kv) {
-        puter.kv.del(`notification-${notificationToRemove.id}`);
+      if (notificationToRemove) {
+        storageService.del(`notification-${notificationToRemove.id}`);
       }
       return filteredNotifications;
     });
@@ -170,7 +167,6 @@ export const useNotificationSystem = () => {
   }, [shownNotifications, volume]);
 
   const checkBlockers = useCallback(async (tasks: Task[]) => {
-    const puter = await loadPuter();
     
     // AI analysis of potential blockers
     for (const task of tasks) {
@@ -186,7 +182,7 @@ export const useNotificationSystem = () => {
         `;
 
         try {
-          const response = await puter.ai.chat(prompt, {
+          const response = await aiService.chat(prompt, {
             model: 'gpt-4o-mini',
             stream: false,
           });
