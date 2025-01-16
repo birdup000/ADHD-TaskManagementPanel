@@ -21,7 +21,7 @@ The project is structured with the following directories:
 - `components`: Contains reusable UI components such as `TaskPanel`, `FocusTimer`, `Reminders`, `AISubtaskGenerator`, `Tutorial`, `TaskDetailsDrawer`, `AITaskCheckin`, `AITaskScheduler`, `NotificationSystem`, `Calendar`, `RecurringTaskManager`, and `BottleneckForecast`.
 - `hooks`: Contains custom hooks like `useAISubtaskGenerator`, `usePredictiveAnalytics`, and `useSchedulingEngine`.
 - `lib`: Contains utility files, such as `puter.ts`, `prompt-templates.ts`, and `task-templates.ts`.
-- `types`: Contains type definitions, such as `ai-responses.d.ts`, `puter.d.ts`, and `SubTask.ts`.
+- `types`: Contains type definitions, such as `ai-responses.d.ts`, and `SubTask.ts`.
 - `public`: Contains static assets such as images and icons.
 
 The project also includes configuration files such as `next.config.ts`, `package.json`, `postcss.config.mjs`, `tailwind.config.ts`, and `tsconfig.json`.
