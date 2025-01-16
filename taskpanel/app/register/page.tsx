@@ -22,24 +22,50 @@ export default function Register() {
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+    setMessage("");
+    
+    if (!apiBaseUrl) {
+      setError("Please configure the AGiXT backend URL first.");
+      return;
+    }
+
+    // Basic validation
+    if (!email || !password) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    const { apiKey } = useBackendConfig() || {};
     try {
-      const response = await axios.post(`${apiBaseUrl || 'http://localhost:7437'}/v1/user`, {
+      const response = await axios.post(`${apiBaseUrl}/v1/user`, {
         email,
         password,
         first_name: firstName,
         last_name: lastName,
+      }, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
       });
-      if (response.status === 200) {
-          setMessage('Registration successful. Please log in.');
-          setError('');
-          router.push('/login');
+      
+      setMessage('Registration successful. Please log in.');
+      router.push('/login');
+    } catch (error: any) {
+      if (error.code === "ECONNREFUSED" || error.message.includes("Network Error")) {
+        setError("Unable to connect to AGiXT backend. Please check your backend configuration.");
+      } else if (error.response?.status === 409) {
+        setError("Email already exists. Please use a different email.");
+      } else if (error.response?.data?.error) {
+        setError(error.response.data.error);
       } else {
-        setError(response.data.error || 'Registration failed.');
-        setMessage('');
+        setError("An unexpected error occurred. Please try again.");
       }
-    } catch (err) {
-      setError('Registration failed.');
-      setMessage('');
     }
   };
 

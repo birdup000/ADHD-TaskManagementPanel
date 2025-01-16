@@ -20,21 +20,38 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+    
+    if (!apiBaseUrl) {
+      setError("Please configure the AGiXT backend URL first.");
+      return;
+    }
+
+    const { apiKey } = useBackendConfig() || {};
     try {
-      const response = await axios.post(`${apiBaseUrl || 'http://localhost:7437'}/v1/login`, {
+      const response = await axios.post(`${apiBaseUrl}/v1/login`, {
         email,
         password,
+      }, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
       });
+      
       const { token, user } = response.data;
-      if (response.status === 200) {
-        login(token);
-        localStorage.setItem("user", JSON.stringify(user));
-        router.push("/dashboard");
+      login(token);
+      localStorage.setItem("user", JSON.stringify(user));
+      router.push("/dashboard");
+    } catch (error: any) {
+      if (error.code === "ECONNREFUSED" || error.message.includes("Network Error")) {
+        setError("Unable to connect to AGiXT backend. Please check your backend configuration.");
+      } else if (error.response?.status === 401) {
+        setError("Invalid email or password.");
+      } else if (error.response?.data?.error) {
+        setError(error.response.data.error);
       } else {
-        setError(response.data.error || "Login failed.");
+        setError("An unexpected error occurred. Please try again.");
       }
-    } catch (error) {
-      setError("An error occurred.");
     }
   };
 
