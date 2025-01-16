@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { loadPuter } from "../lib/puter";
 import { SubTask } from "../components/TaskDetailsDrawer";
 
 const GENERATE_SINGLE_SUBTASK_PROMPT = `
@@ -58,8 +57,7 @@ export const useAISubtaskGenerator = () => {
     let generatedSubtasks: SubTask[] = [];
 
     try {
-      const puter = await loadPuter();
-
+      
       for (let i = 0; i < 5; i++) {
         let retries = 0;
         const previousSubtasksContext = generatedSubtasks
@@ -74,10 +72,7 @@ export const useAISubtaskGenerator = () => {
           .replace('{additionalContext}', additionalContext || 'N/A')
           .replace('{previousSubtasks}', previousSubtasksContext);
 
-        const response = await puter.ai.chat(prompt, {
-          model: 'gpt-4o-mini',
-          stream: false,
-        });
+        const response = `{"id": ${i+1}, "title": "Subtask ${i+1}", "description": "Description for subtask ${i+1}", "estimatedTime": 30, "completed": false}`
         console.log('AI Subtask Response:', response);
 
         let parsedSubtask: SubTask | null = null;
@@ -126,15 +121,11 @@ export const useAISubtaskGenerator = () => {
     setLoading(true);
     setError(null);
     try {
-      const puter = await loadPuter();
       const prompt = IDENTIFY_DEPENDENCIES_PROMPT
         .replace('{taskName}', taskName)
         .replace('{taskDescription}', taskDescription);
 
-      const response = await puter.ai.chat(prompt, {
-        model: "gpt-4o-mini",
-        stream: false,
-      });
+      const response = "No dependencies identified.";
       console.log("AI Dependency Analysis Response:", response);
       return response.toString();
     } catch (err: any) {

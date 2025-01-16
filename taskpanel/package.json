@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "date-fns": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
     "next": "^15.1.4",
     "react": "^19.0.0",
+    "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "20.17.12",
     "@types/react": "19.0.6",
     "@types/react-dom": "^19",

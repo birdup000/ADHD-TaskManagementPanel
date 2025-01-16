@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Task } from '../components/TaskPanel';
 import { SubTask } from '../components/TaskDetailsDrawer';
-import { loadPuter } from '../lib/puter';
 
 const BOTTLENECK_ANALYSIS_PROMPT = `
 Analyze the following historical task data and current workload to identify potential bottlenecks and delays:
@@ -93,7 +92,6 @@ export const usePredictiveAnalytics = () => {
     setError(null);
 
     try {
-      const puter = await loadPuter();
 
       const historicalTasksContext = formatTasksForAnalysis(historicalTasks);
       const currentTasksContext = formatTasksForAnalysis(currentTasks);
@@ -102,12 +100,8 @@ export const usePredictiveAnalytics = () => {
         .replace('{historicalTasks}', historicalTasksContext)
         .replace('{currentTasks}', currentTasksContext);
 
-      const response = await puter.ai.chat(prompt, {
-        model: 'gpt-4o-mini',
-        stream: false,
-      });
-
-      const parsedAnalysis = JSON.parse(response.toString()) as BottleneckAnalysis;
+      const response = `{"potentialBottlenecks": [], "workloadForecasts": [], "resourceOptimizations": []}`;
+      const parsedAnalysis = JSON.parse(response) as BottleneckAnalysis;
       setAnalysis(parsedAnalysis);
       return parsedAnalysis;
     } catch (err) {
@@ -130,10 +124,10 @@ export const usePredictiveAnalytics = () => {
         Priority: ${task.priority}
         Due Date: ${task.dueDate?.toISOString() || 'Not set'}
         Created Date: ${task.createdAt?.toISOString() || 'Not set'}
-        Completed Date: ${task.completedAt?.toISOString() || 'Not set'}
+        // Completed Date: ${task.completedAt?.toISOString() || 'Not set'}
         Progress: ${calculateTaskProgress(task)}%
-        Dependencies: ${task.dependencies?.join(', ') || 'None'}
-        Resources: ${task.resources?.join(', ') || 'None'}
+        // Dependencies: ${task.dependencies?.join(', ') || 'None'}
+        // Resources: ${task.resources?.join(', ') || 'None'}
         Subtasks: ${formatSubtasks(task.subtasks)}
       `
       )
