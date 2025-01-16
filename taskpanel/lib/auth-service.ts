@@ -1,9 +1,8 @@
-import { User, AuthResponse, JWTPayload } from '../types/auth-types';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET, JWT_EXPIRES_IN } from './jwt-config';
+import { User } from '../types/auth-types';
 
-const users: User[] = [];
-
+const users: User[] = []; // In production, use a database
 
 export const registerUser = async (username: string, passwordHash: string): Promise<User> => {
     const newUser: User = {
@@ -15,12 +14,12 @@ export const registerUser = async (username: string, passwordHash: string): Prom
     return newUser;
 };
 
-export const loginUser = async (username: string, passwordHash: string): Promise<AuthResponse | null> => {
+export const loginUser = async (username: string, passwordHash: string): Promise<{ token: string, user: User } | null> => {
     const user = users.find(u => u.username === username && u.passwordHash === passwordHash);
     if (!user) {
         return null;
     }
-    const payload: JWTPayload = {
+    const payload: { userId: string, username: string } = {
         userId: user.id,
         username: user.username
     };
@@ -34,21 +33,11 @@ export const loginUser = async (username: string, passwordHash: string): Promise
 };
 
 export const verifyToken = async (token: string): Promise<User | null> => {
-    // TODO: Verify JWT
-    let valid = true;
-    const expectedToken = 'test-token';
-    if (token.length !== expectedToken.length) {
-        valid = false;
-    } else {
-        for (let i = 0; i < token.length; i++) {
-            if (token[i] !== expectedToken[i]) {
-                valid = false;
-                break;
-            }
-        }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, username: string };
+        const user = users.find(u => u.id === decoded.userId);
+        return user || null;
+    } catch {
+        return null;
     }
-    if (valid) {
-        return users[0];
-    }
-    return null;
 };
