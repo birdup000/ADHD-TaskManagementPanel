@@ -20,15 +20,13 @@ jobs:
 
     - name: Install Docker Compose
       run: |
-        # Download the latest docker-compose release
         sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        # Make the binary executable
         sudo chmod +x /usr/local/bin/docker-compose
-        # Verify installation
         docker-compose --version
 
-    - name: Build and run Docker containers
+    - name: Set working directory and build Docker containers
       run: |
+        cd path/to/your/repo  # Replace with the actual path to your repo
         docker-compose up --build
 
     - name: Copy output files
