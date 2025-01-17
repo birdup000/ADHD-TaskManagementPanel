@@ -27,7 +27,7 @@ jobs:
 
     - name: Install repo-to-text
       run: |
-        pip install -e .
+        pip install repo-to-text
 
     - name: Run repo-to-text
       run: |
