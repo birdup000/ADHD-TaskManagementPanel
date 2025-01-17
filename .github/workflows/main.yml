@@ -26,7 +26,7 @@ jobs:
 
     - name: Set working directory and build Docker containers
       run: |
-        cd path/to/your/repo  # Replace with the actual path to your repo
+        cd /home/runner/work/_actions/birdup000/ADHD-TaskManagementPanel/v1  # Replace with the actual path to your repo
         docker-compose up --build
 
     - name: Copy output files
