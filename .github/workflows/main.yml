@@ -15,15 +15,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Docker Compose
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v2
+
+    - name: Install Docker Compose
+      run: |
+        # Download the latest docker-compose release
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        # Make the binary executable
+        sudo chmod +x /usr/local/bin/docker-compose
+        # Verify installation
+        docker-compose --version
+
+    - name: Build and run Docker containers
       run: |
         docker-compose up --build
 
-    - name: Run repo-to-text
-      run: |
-        docker-compose run repo-to-text . --output-dir /home/user/output
-
-    - name: Copy output to workspace
+    - name: Copy output files
       run: |
         cp /home/user/output/* ./output/
 
