@@ -1,0 +1,34 @@
+name: Generate Repository Text with Docker Compose
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Compose
+      run: |
+        docker-compose up --build
+
+    - name: Run repo-to-text
+      run: |
+        docker-compose run repo-to-text . --output-dir /home/user/output
+
+    - name: Copy output to workspace
+      run: |
+        cp /home/user/output/* ./output/
+
+    - name: Upload output as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: repo-text-output
+        path: ./output/repo-to-text_*.txt
