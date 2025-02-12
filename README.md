@@ -1,27 +1,36 @@
-This project is a task management panel built using React and Next.js. It includes several key features:
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-- **Task Management:** The core functionality revolves around managing tasks, likely with the `TaskPanel` component.
-- **Focus Timer:** A `FocusTimer` component is included to help users focus on their tasks.
-- **Reminders:** The `Reminders` component likely provides a way to set and manage reminders.
-- **AI Subtask Generation:** The `AISubtaskGenerator` component suggests subtasks for a given task, leveraging AI.
-- **Tutorial:** A `Tutorial` component is included to guide users on how to use the application.
-- **Task Details Drawer:** The `TaskDetailsDrawer` component likely displays detailed information about a selected task.
-- **Subtask Parsing:** The `SubtaskParser` component is likely used to parse subtasks from user input.
-- **AI Task Check-in:** An `AITaskCheckin` component is included to provide AI-assisted task progress updates.
-- **AI Task Scheduler:** An `AITaskScheduler` component is available for AI-assisted task scheduling.
-- **Notification System:** A `NotificationSystem` component is implemented to manage and display notifications related to tasks.
-- **Calendar:** A `Calendar` component for visualizing tasks and schedules.
-- **Recurring Task Management:** A `RecurringTaskManager` component for handling recurring tasks.
-- **Bottleneck Forecast:** A `BottleneckForecast` component for predicting potential bottlenecks in task management.
-- **Analytics:** An analytics feature for tracking task completion rates, productivity, and other metrics.
+## Getting Started
 
-The project is structured with the following directories:
+First, run the development server:
 
-- `app`: Contains the main application layout (`layout.tsx`) and the main page (`page.tsx`), as well as the analytics feature.
-- `components`: Contains reusable UI components such as `TaskPanel`, `FocusTimer`, `Reminders`, `AISubtaskGenerator`, `Tutorial`, `TaskDetailsDrawer`, `AITaskCheckin`, `AITaskScheduler`, `NotificationSystem`, `Calendar`, `RecurringTaskManager`, and `BottleneckForecast`.
-- `hooks`: Contains custom hooks like `useAISubtaskGenerator`, `usePredictiveAnalytics`, and `useSchedulingEngine`.
-- `lib`: Contains utility files, such as `puter.ts`, `prompt-templates.ts`, and `task-templates.ts`.
-- `types`: Contains type definitions, such as `ai-responses.d.ts`, and `SubTask.ts`.
-- `public`: Contains static assets such as images and icons.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-The project also includes configuration files such as `next.config.ts`, `package.json`, `postcss.config.mjs`, `tailwind.config.ts`, and `tsconfig.json`.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
