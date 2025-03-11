@@ -3,19 +3,117 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-bg-primary text-text-primary antialiased;
+  }
+
+  /* Custom scrollbar for the dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-secondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-default rounded-full hover:bg-accent-primary transition-colors;
+  }
+
+  /* Improved focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-primary;
+  }
+
+  /* Custom range input styling */
+  input[type="range"] {
+    @apply h-2 rounded-full bg-bg-tertiary;
+    -webkit-appearance: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    @apply w-4 h-4 rounded-full bg-accent-primary cursor-pointer;
+    -webkit-appearance: none;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    @apply w-4 h-4 rounded-full bg-accent-primary cursor-pointer border-none;
+  }
+
+  /* Custom date input styling */
+  input[type="date"] {
+    @apply bg-bg-tertiary border border-border-default rounded-md px-3 py-2
+           text-text-primary focus:outline-none focus:border-accent-primary;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply filter invert opacity-70 hover:opacity-100 cursor-pointer;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Task status animations */
+  .task-complete-animation {
+    animation: taskComplete 0.3s ease-in-out;
+  }
+
+  @keyframes taskComplete {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Hover transitions */
+  .hover-transition {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  /* Button states */
+  .btn-primary {
+    @apply bg-accent-primary text-white rounded-md px-4 py-2
+           hover:bg-opacity-90 transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply border border-border-default text-text-secondary rounded-md px-4 py-2
+           hover:bg-hover transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Custom checkbox */
+  .custom-checkbox {
+    @apply w-5 h-5 rounded-full border-2 border-border-default
+           flex items-center justify-center
+           hover:border-accent-primary transition-colors duration-200;
+  }
+
+  /* Tag styles */
+  .task-tag {
+    @apply px-2 py-0.5 rounded-full bg-bg-tertiary text-xs
+           hover:bg-accent-primary hover:bg-opacity-10 transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  /* Glass effect for modals and overlays */
+  .glass-effect {
+    @apply backdrop-blur-sm bg-bg-primary bg-opacity-80;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-primary to-accent-secondary;
+  }
 }
