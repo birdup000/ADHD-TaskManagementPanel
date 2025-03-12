@@ -13,8 +13,8 @@
 
   /* Custom scrollbar for the dark theme */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
@@ -27,12 +27,12 @@
 
   /* Improved focus styles */
   :focus-visible {
-    @apply outline-none ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-primary;
+    @apply outline-none ring-2 ring-accent-primary ring-offset-1 ring-offset-bg-primary;
   }
 
   /* Custom range input styling */
   input[type="range"] {
-    @apply h-2 rounded-full bg-bg-tertiary;
+    @apply h-1.5 rounded-full bg-bg-tertiary;
     -webkit-appearance: none;
   }
 
@@ -47,8 +47,16 @@
 
   /* Custom date input styling */
   input[type="date"] {
-    @apply bg-bg-tertiary border border-border-default rounded-md px-3 py-2
-           text-text-primary focus:outline-none focus:border-accent-primary;
+    @apply bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+           text-text-primary focus:outline-none focus:border-accent-primary
+           cursor-pointer transition-colors duration-200;
+  }
+
+  /* Form controls */
+  input[type="text"],
+  input[type="search"],
+  textarea {
+    @apply transition-colors duration-200;
   }
 
   input[type="date"]::-webkit-calendar-picker-indicator {
@@ -81,14 +89,14 @@
 
   /* Button states */
   .btn-primary {
-    @apply bg-accent-primary text-white rounded-md px-4 py-2
+    @apply bg-accent-primary text-white rounded-md px-6 py-2.5 text-sm font-medium
            hover:bg-opacity-90 transition-colors duration-200
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply border border-border-default text-text-secondary rounded-md px-4 py-2
-           hover:bg-hover transition-colors duration-200
+    @apply border border-border-default text-text-secondary rounded-md px-6 py-2.5 text-sm font-medium
+           hover:bg-hover hover:text-text-primary transition-colors duration-200
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
@@ -101,8 +109,8 @@
 
   /* Tag styles */
   .task-tag {
-    @apply px-2 py-0.5 rounded-full bg-bg-tertiary text-xs
-           hover:bg-accent-primary hover:bg-opacity-10 transition-colors duration-200;
+    @apply px-3 py-1.5 rounded-full bg-bg-tertiary text-xs font-medium
+           hover:bg-accent-primary hover:bg-opacity-10 transition-colors duration-200 border border-border-default;
   }
 }
 
@@ -116,4 +124,9 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-primary to-accent-secondary;
   }
+}
+
+/* Layout transitions */
+.panel-transition {
+  @apply transition-transform duration-300 ease-in-out;
 }

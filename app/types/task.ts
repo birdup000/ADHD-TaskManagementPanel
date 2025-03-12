@@ -9,4 +9,5 @@ export interface Task {
   tags?: string[];
   effort?: string;
   progress?: number;
+  category?: string;
 }

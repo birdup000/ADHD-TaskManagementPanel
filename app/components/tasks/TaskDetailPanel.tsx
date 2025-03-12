@@ -2,6 +2,9 @@
 
 import React from 'react';
 import { Task } from '../../types/task';
+import { Category } from '../../types/category';
+import { useCategories } from '../../hooks/useCategories';
+import CategoryModal from '../categories/CategoryModal';
 
 interface TaskDetailPanelProps {
   task: Task | null;
@@ -17,6 +20,8 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   const [formData, setFormData] = React.useState<Partial<Task>>(task || {});
   const [isDirty, setIsDirty] = React.useState(false);
   const [newTag, setNewTag] = React.useState('');
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
+  const { categories, addCategory } = useCategories();
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   // Update form data when task changes
@@ -89,9 +94,19 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
     }
   };
 
+  const handleNewCategory = async (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newCategory = await addCategory(categoryData);
+      setFormData(prev => ({ ...prev, category: newCategory.id }));
+      setIsDirty(true);
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
+  };
+
   if (!task) {
     return (
-      <div className="h-full flex items-center justify-center text-text-secondary p-4 text-center">
+      <div className="h-full flex items-center justify-center text-text-secondary p-6 text-center">
         <div>
           <svg className="w-16 h-16 mx-auto mb-4 text-text-disabled" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
@@ -107,7 +122,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border-default">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border-default bg-bg-secondary">
         <div>
           <h2 className="text-xl font-semibold">Task Details</h2>
           {isDirty && <p className="text-xs text-text-secondary mt-1">You have unsaved changes</p>}
@@ -126,7 +141,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
 
       {/* Task Form */}
       <div className="flex-1 overflow-y-auto">
-        <form className="p-4 space-y-6" onSubmit={handleSubmit}>
+        <form className="p-6 space-y-6" onSubmit={handleSubmit}>
           {/* Title */}
           <div className="space-y-2">
             <label htmlFor="title" className="text-sm font-medium text-text-secondary">
@@ -140,7 +155,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               onChange={handleChange}
               className={`w-full bg-bg-tertiary border ${
                 errors.title ? 'border-priority-high' : 'border-border-default'
-              } rounded-md px-3 py-2 text-text-primary focus:outline-none focus:border-accent-primary`}
+              } rounded-md px-4 py-2.5 text-text-primary focus:outline-none focus:border-accent-primary`}
               placeholder="Task title"
             />
             {errors.title && (
@@ -159,13 +174,64 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               value={formData.description || ''}
               onChange={handleChange}
               rows={4}
-              className="w-full bg-bg-tertiary border border-border-default rounded-md px-3 py-2
-                     text-text-primary focus:outline-none focus:border-accent-primary resize-none"
+              className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+                     text-text-primary focus:outline-none focus:border-accent-primary resize-none min-h-[120px]"
               placeholder="Add a detailed description..."
             />
           </div>
 
-          {/* Priority and Status */}
+          {/* Category, Priority and Status */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="category" className="text-sm font-medium text-text-secondary">
+                  Category
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="text-accent-primary hover:text-accent-primary/80 text-sm"
+                >
+                  + New Category
+                </button>
+              </div>
+              <select
+                id="category"
+                name="category"
+                value={formData.category || ''}
+                onChange={handleChange}
+                className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+                       text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+              >
+                <option value="">No Category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="status" className="text-sm font-medium text-text-secondary">
+                Status
+              </label>
+              <select
+                id="status"
+                name="status"
+                value={formData.status || 'todo'}
+                onChange={handleChange}
+                className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+                       text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+              >
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Priority and Progress */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="priority" className="text-sm font-medium text-text-secondary">
@@ -176,29 +242,12 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 name="priority"
                 value={formData.priority || 'medium'}
                 onChange={handleChange}
-                className="w-full bg-bg-tertiary border border-border-default rounded-md px-3 py-2
-                       text-text-primary focus:outline-none focus:border-accent-primary"
+                className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+                       text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
               >
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="status" className="text-sm font-medium text-text-secondary">
-                Status
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status || 'todo'}
-                onChange={handleChange}
-                className="w-full bg-bg-tertiary border border-border-default rounded-md px-3 py-2
-                       text-text-primary focus:outline-none focus:border-accent-primary"
-              >
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
               </select>
             </div>
           </div>
@@ -215,8 +264,8 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 type="date"
                 value={formData.startDate || ''}
                 onChange={handleChange}
-                className="w-full bg-bg-tertiary border border-border-default rounded-md px-3 py-2
-                       text-text-primary focus:outline-none focus:border-accent-primary"
+                className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+                       text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
               />
             </div>
             <div className="space-y-2">
@@ -231,7 +280,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 onChange={handleChange}
                 className={`w-full bg-bg-tertiary border ${
                   errors.dueDate ? 'border-priority-high' : 'border-border-default'
-                } rounded-md px-3 py-2 text-text-primary focus:outline-none focus:border-accent-primary`}
+                } rounded-md px-4 py-2.5 text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer`}
               />
               {errors.dueDate && (
                 <p className="text-sm text-priority-high">{errors.dueDate}</p>
@@ -253,7 +302,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 max="100"
                 value={formData.progress || 0}
                 onChange={handleChange}
-                className="flex-1 accent-accent-primary"
+                className="flex-1 accent-accent-primary h-2 rounded-full bg-bg-tertiary"
               />
               <span className="text-sm text-text-secondary w-12">
                 {formData.progress || 0}%
@@ -268,7 +317,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               {formData.tags?.map((tag) => (
                 <span
                   key={tag}
-                  className="px-3 py-1 rounded-full bg-bg-tertiary text-sm flex items-center gap-2 group"
+                  className="px-3 py-1.5 rounded-full bg-bg-tertiary text-sm flex items-center gap-2 group border border-border-default"
                 >
                   {tag}
                   <button
@@ -287,8 +336,8 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 placeholder="Add a tag"
-                className="flex-1 bg-bg-tertiary border border-border-default rounded-md px-3 py-2
-                       text-text-primary focus:outline-none focus:border-accent-primary text-sm"
+                className="flex-1 bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+                       text-text-primary focus:outline-none focus:border-accent-primary text-sm min-w-0"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -299,7 +348,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               <button
                 type="button"
                 onClick={handleAddTag}
-                className="px-4 py-2 rounded-md bg-bg-tertiary border border-border-default
+                className="px-4 py-2.5 rounded-md bg-bg-tertiary border border-border-default
                        text-text-secondary hover:text-text-primary hover:border-accent-primary
                        focus:outline-none focus:border-accent-primary text-sm"
               >
@@ -311,13 +360,13 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="p-4 border-t border-border-default">
+      <div className="px-6 py-4 border-t border-border-default bg-bg-secondary">
         <div className="flex items-center gap-4">
           <button
             type="submit"
             onClick={handleSubmit}
             disabled={!isDirty}
-            className={`flex-1 py-2 px-4 rounded-md ${
+            className={`flex-1 py-2.5 px-6 rounded-md text-sm font-medium ${
               isDirty
                 ? 'bg-accent-primary text-white hover:bg-opacity-90'
                 : 'bg-bg-tertiary text-text-disabled cursor-not-allowed'
@@ -328,12 +377,20 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="py-2 px-4 rounded-md border border-border-default text-text-secondary
+            className="py-2.5 px-6 rounded-md border border-border-default text-text-secondary text-sm font-medium
                    hover:bg-hover transition-colors duration-200"
           >
             Close
           </button>
         </div>
+        
+        {/* Category Modal */}
+        <CategoryModal
+          isOpen={isCategoryModalOpen}
+          onClose={() => setIsCategoryModalOpen(false)}
+          onSave={handleNewCategory}
+          initialData={{}}
+        />
       </div>
     </div>
   );

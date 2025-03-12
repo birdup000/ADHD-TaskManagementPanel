@@ -2,11 +2,14 @@
 
 import React from 'react';
 import { Task } from '../../types/task';
+import TaskContextMenu from './TaskContextMenu';
 
 interface TaskListProps {
   tasks: Task[];
   onTaskSelect: (taskId: string) => void;
   onTaskStatusChange: (taskId: string, status: Task['status']) => void;
+  onNewTask?: () => void;
+  onTaskDelete?: (taskId: string) => void;
 }
 
 const getPriorityColor = (priority: Task['priority']) => {
@@ -22,11 +25,16 @@ const TaskList: React.FC<TaskListProps> = ({
   tasks,
   onTaskSelect,
   onTaskStatusChange,
+  onNewTask,
+  onTaskDelete,
 }) => {
   const [sortBy, setSortBy] = React.useState('priority');
   const [filterStatus, setFilterStatus] = React.useState('all');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list');
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
 
   // Filter and sort tasks
   const filteredTasks = tasks.filter(task => {
@@ -55,15 +63,44 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   });
 
+  const handleMenuOpen = (event: React.MouseEvent, taskId: string) => {
+    event.stopPropagation();
+    setSelectedTaskId(taskId);
+    setMenuAnchorEl(event.currentTarget as HTMLElement);
+    setMenuOpen(true);
+  };
+
+  const handleMenuClose = () => {
+    setMenuOpen(false);
+    setSelectedTaskId(null);
+    setMenuAnchorEl(null);
+  };
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Header with search, sorting and view options */}
-      <div className="sticky top-0 bg-bg-primary p-4 border-b border-border-default z-10">
-        <div className="flex items-center justify-between mb-4">
+      <div className="sticky top-0 bg-bg-primary px-6 py-4 border-b border-border-default z-10">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">{`${filteredTasks.length} ${
             filteredTasks.length === 1 ? 'Task' : 'Tasks'
           }`}</h2>
           <div className="flex items-center gap-2">
+            <button
+              onClick={onNewTask}
+              className="px-3 py-2 rounded-md bg-accent-primary text-white hover:bg-opacity-90 
+                       transition-colors duration-200 flex items-center gap-2"
+              aria-label="New task"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              New Task
+            </button>
             <button 
               className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-hover' : 'hover:bg-hover'}`}
               onClick={() => setViewMode('grid')}
@@ -86,7 +123,7 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
 
         {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
           <div className="relative flex-1">
             <input
               type="text"
@@ -94,7 +131,7 @@ const TaskList: React.FC<TaskListProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-bg-tertiary text-text-primary border border-border-default rounded-md 
-                       pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-accent-primary"
+                       pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-accent-primary"
             />
             <svg
               className="absolute left-3 top-2.5 w-4 h-4 text-text-secondary"
@@ -105,12 +142,12 @@ const TaskList: React.FC<TaskListProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="bg-bg-tertiary text-text-primary border border-border-default rounded-md 
-                       px-3 py-2 text-sm focus:outline-none focus:border-accent-primary"
+                       px-3 py-2.5 text-sm focus:outline-none focus:border-accent-primary min-w-[140px]"
             >
               <option value="priority">Sort by Priority</option>
               <option value="dueDate">Sort by Due Date</option>
@@ -120,7 +157,7 @@ const TaskList: React.FC<TaskListProps> = ({
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="bg-bg-tertiary text-text-primary border border-border-default rounded-md 
-                       px-3 py-2 text-sm focus:outline-none focus:border-accent-primary"
+                       px-3 py-2.5 text-sm focus:outline-none focus:border-accent-primary min-w-[120px]"
             >
               <option value="all">All Tasks</option>
               <option value="todo">To Do</option>
@@ -132,7 +169,7 @@ const TaskList: React.FC<TaskListProps> = ({
       </div>
 
       {/* Task List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-6 min-h-0">
         {sortedTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-text-secondary">
             <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,8 +184,9 @@ const TaskList: React.FC<TaskListProps> = ({
             {sortedTasks.map((task) => (
               <div
                 key={task.id}
-                className={`group flex items-center gap-4 p-4 rounded-lg bg-bg-secondary 
-                         hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer
+                className={`group flex items-start gap-4 p-4 rounded-lg bg-bg-secondary 
+                         hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer 
+                          border border-transparent hover:border-border-default
                          ${task.status === 'completed' ? 'opacity-60' : ''}`}
                 onClick={() => onTaskSelect(task.id)}
               >
@@ -192,7 +230,7 @@ const TaskList: React.FC<TaskListProps> = ({
                   {/* Tags */}
                   {task.tags && task.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {task.tags.map((tag) => (
+                      {task.tags.slice(0, 3).map((tag) => (
                         <span
                           key={tag}
                           className="px-2 py-0.5 rounded-full bg-bg-tertiary text-xs truncate"
@@ -200,12 +238,15 @@ const TaskList: React.FC<TaskListProps> = ({
                           {tag}
                         </span>
                       ))}
+                      {task.tags.length > 3 && (
+                        <span className="text-xs text-text-secondary">+{task.tags.length - 3}</span>
+                      )}
                     </div>
                   )}
 
                   {/* Due Date */}
                   {task.dueDate && (
-                    <span className="text-sm text-text-secondary block mt-1">
+                    <span className="text-sm text-text-secondary block mt-2">
                       Due {new Date(task.dueDate).toLocaleDateString()}
                     </span>
                   )}
@@ -214,8 +255,10 @@ const TaskList: React.FC<TaskListProps> = ({
                 {/* Actions */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
                   <button
+                    onClick={(e) => handleMenuOpen(e, task.id)}
                     className="p-2 hover:bg-hover rounded-md text-text-secondary 
                              hover:text-text-primary transition-colors duration-200"
+                    aria-label="Task options"
                   >
                     <svg
                       className="w-4 h-4"
@@ -236,11 +279,23 @@ const TaskList: React.FC<TaskListProps> = ({
             ))}
           </div>
         )}
+        
+        {/* Context Menu */}
+        <TaskContextMenu
+          isOpen={menuOpen}
+          onClose={handleMenuClose}
+          onDelete={() => {
+            if (selectedTaskId && onTaskDelete) {
+              onTaskDelete(selectedTaskId);
+            }
+          }}
+          anchorEl={menuAnchorEl}
+        />
       </div>
 
       {/* Task Count Summary */}
-      <div className="p-4 border-t border-border-default">
-        <div className="flex justify-between text-sm text-text-secondary">
+      <div className="px-6 py-3 border-t border-border-default bg-bg-secondary">
+        <div className="flex justify-between text-sm font-medium text-text-secondary">
           <span>{sortedTasks.length} tasks</span>
           <span>{tasks.filter(t => t.status === 'completed').length} completed</span>
         </div>
