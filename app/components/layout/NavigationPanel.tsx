@@ -13,12 +13,28 @@ interface NavigationPanelProps {
   categories: NavItem[];
   smartLists: NavItem[];
   tags: NavItem[];
+  activeSmartList?: string;
+  activeCategory?: string;
+  activeTag?: string;
+  activeView?: string;
+  onSmartListClick?: (id: string) => void;
+  onCategoryClick?: (id: string) => void;
+  onTagClick?: (id: string) => void;
+  onViewChange?: (view: 'list' | 'board' | 'calendar') => void;
 }
 
 const NavigationPanel: React.FC<NavigationPanelProps> = ({
   categories,
   smartLists,
   tags,
+  activeSmartList,
+  activeCategory,
+  activeTag,
+  activeView = 'list',
+  onSmartListClick = () => {},
+  onCategoryClick = () => {},
+  onTagClick = () => {},
+  onViewChange = () => {},
 }) => {
   return (
     <nav className="h-full flex flex-col p-4 text-text-primary">
@@ -34,8 +50,10 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
           {smartLists.map((item) => (
             <li key={item.id}>
               <button
-                className="w-full text-left px-3 py-2 rounded-md hover:bg-hover 
-                         flex items-center justify-between transition-colors duration-200"
+                onClick={() => onSmartListClick(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-md hover:bg-hover 
+                         flex items-center justify-between transition-colors duration-200
+                         ${activeSmartList === item.id ? 'bg-accent-primary bg-opacity-10' : ''}`}
               >
                 <span>{item.label}</span>
                 {item.count && (
@@ -54,8 +72,10 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
           {categories.map((category) => (
             <li key={category.id}>
               <button
-                className="w-full text-left px-3 py-2 rounded-md hover:bg-hover 
-                         flex items-center justify-between transition-colors duration-200"
+                onClick={() => onCategoryClick(category.id)}
+                className={`w-full text-left px-3 py-2 rounded-md hover:bg-hover 
+                         flex items-center justify-between transition-colors duration-200
+                         ${activeCategory === category.id ? 'bg-accent-primary bg-opacity-10' : ''}`}
               >
                 <span>{category.label}</span>
                 {category.count && (
@@ -74,10 +94,15 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
           {tags.map((tag) => (
             <button
               key={tag.id}
-              className="px-3 py-1 rounded-full text-xs bg-bg-tertiary hover:bg-accent-primary 
-                       hover:bg-opacity-10 transition-colors duration-200"
+              onClick={() => onTagClick(tag.id)}
+              className={`px-3 py-1 rounded-full text-xs hover:bg-accent-primary 
+                       hover:bg-opacity-10 transition-colors duration-200
+                       ${activeTag === tag.id ? 'bg-accent-primary bg-opacity-10' : 'bg-bg-tertiary'}`}
             >
-              {tag.label}
+              <span className="flex items-center gap-2">
+                {tag.label}
+                {tag.count && <span className="text-text-secondary text-xs ml-1">({tag.count})</span>}
+              </span>
             </button>
           ))}
         </div>
@@ -88,19 +113,28 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
         <h2 className="text-sm font-medium text-text-secondary mb-2">VIEW</h2>
         <div className="bg-bg-tertiary rounded-md p-2 flex gap-2">
           <button
-            className="flex-1 px-3 py-2 rounded bg-accent-primary text-white text-sm"
+            onClick={() => onViewChange('list')}
+            className={`flex-1 px-3 py-2 rounded text-sm ${
+              activeView === 'list' ? 'bg-accent-primary text-white' : 'hover:bg-hover'
+            }`}
             aria-label="List view"
           >
             List
           </button>
           <button
-            className="flex-1 px-3 py-2 rounded hover:bg-hover text-sm"
+            onClick={() => onViewChange('board')}
+            className={`flex-1 px-3 py-2 rounded text-sm ${
+              activeView === 'board' ? 'bg-accent-primary text-white' : 'hover:bg-hover'
+            }`}
             aria-label="Board view"
           >
             Board
           </button>
           <button
-            className="flex-1 px-3 py-2 rounded hover:bg-hover text-sm"
+            onClick={() => onViewChange('calendar')}
+            className={`flex-1 px-3 py-2 rounded text-sm ${
+              activeView === 'calendar' ? 'bg-accent-primary text-white' : 'hover:bg-hover'
+            }`}
             aria-label="Calendar view"
           >
             Calendar

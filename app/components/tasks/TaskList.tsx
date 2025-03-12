@@ -60,7 +60,9 @@ const TaskList: React.FC<TaskListProps> = ({
       {/* Header with search, sorting and view options */}
       <div className="sticky top-0 bg-bg-primary p-4 border-b border-border-default z-10">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">All Tasks</h2>
+          <h2 className="text-xl font-semibold">{`${filteredTasks.length} ${
+            filteredTasks.length === 1 ? 'Task' : 'Tasks'
+          }`}</h2>
           <div className="flex items-center gap-2">
             <button 
               className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-hover' : 'hover:bg-hover'}`}
