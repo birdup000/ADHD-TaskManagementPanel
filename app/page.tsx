@@ -179,6 +179,14 @@ export default function Home() {
     });
   };
 
+  const handleTaskDelete = async (taskId: string) => {
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    setTasks(updatedTasks);
+    await storage.setItem(TASKS_STORAGE_KEY, JSON.stringify(updatedTasks));
+    setSelectedTaskId(null);
+  };
+
+
   const handleNewTask = () => {
     const emptyTask: Task = {
       id: `new-${Date.now()}`,
@@ -316,6 +324,7 @@ export default function Home() {
                   onTaskSelect={handleTaskSelect}
                   onTaskStatusChange={handleTaskStatusChange}
                   onNewTask={handleNewTask}
+                  onTaskDelete={handleTaskDelete}
                 />
               )}
               {currentView === 'board' && (
@@ -339,6 +348,7 @@ export default function Home() {
             task={selectedTask}
             onClose={() => setSelectedTaskId(null)}
             onSave={handleTaskSave}
+            onDelete={handleTaskDelete}
           />
         }
       />
