@@ -3,11 +3,12 @@
 import React from 'react';
 import TaskList from './tasks/TaskList';
 import BoardView from './tasks/BoardView';
+import MindMapView from './tasks/MindMapView';
 import TaskDetailPanel from './tasks/TaskDetailPanel';
 import { Task } from '../types/task';
 import { useTasks } from '../hooks/useTasks';
 
-type ViewMode = 'list' | 'board';
+type ViewMode = 'list' | 'board' | 'mindmap';
 
 const TaskManager: React.FC = () => {
   const {
@@ -61,6 +62,16 @@ const TaskManager: React.FC = () => {
             >
               Board View
             </button>
+            <button
+              onClick={() => setViewMode('mindmap')}
+              className={`px-4 py-2 rounded-md ${
+                viewMode === 'mindmap'
+                  ? 'bg-accent-primary text-white'
+                  : 'text-text-secondary hover:bg-hover'
+              }`}
+            >
+              Mind Map
+            </button>
           </div>
         </div>
 
@@ -71,11 +82,17 @@ const TaskManager: React.FC = () => {
             onTaskSelect={setSelectedTaskId}
             onTaskStatusChange={updateTaskStatus}
           />
-        ) : (
+        ) : viewMode === 'board' ? (
           <BoardView
             tasks={tasks}
             onTaskSelect={setSelectedTaskId}
             onTaskStatusChange={updateTaskStatus}
+          />
+        ) : (
+          <MindMapView
+            tasks={tasks}
+            onTaskSelect={setSelectedTaskId}
+            onTaskCreate={addTask}
           />
         )}
       </div>

@@ -6,6 +6,7 @@ import NavigationPanel from './components/layout/NavigationPanel';
 import TaskList from './components/tasks/TaskList';
 import BoardView from './components/tasks/BoardView';
 import CalendarView from './components/tasks/CalendarView';
+import MindMapView from './components/tasks/MindMapView';
 import TaskDetailPanel from './components/tasks/TaskDetailPanel';
 import { Task } from './types/task';
 import { useNavigation } from './hooks/useNavigation';
@@ -200,6 +201,19 @@ export default function Home() {
     setSelectedTaskId(emptyTask.id);
   };
 
+  const handleMindMapTaskCreate = (partialTask: Partial<Task>) => {
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: partialTask.title || '',
+      description: partialTask.description || '',
+      status: partialTask.status || 'todo',
+      priority: partialTask.priority || 'medium',
+      category: partialTask.category,
+      tags: partialTask.tags || []
+    };
+    handleTaskSave(newTask);
+  };
+
   return (
     <main className="h-screen">
       <TaskPanelLayout
@@ -313,6 +327,17 @@ export default function Home() {
                 >
                   Calendar
                 </button>
+                <button
+                  onClick={() => handleViewChange('mindmap')}
+                  className={`px-3 py-1.5 rounded-md ${
+                    currentView === 'mindmap' 
+                      ? 'bg-accent-primary text-white' 
+                      : 'hover:bg-hover'
+                  }`}
+                >
+                  Mind Map
+                </button>
+                
               </div>
             </div>
 
@@ -338,6 +363,13 @@ export default function Home() {
                 <CalendarView
                   tasks={filteredTasks}
                   onTaskSelect={handleTaskSelect}
+                />
+              )}
+              {currentView === 'mindmap' && (
+                <MindMapView
+                  tasks={filteredTasks}
+                  onTaskSelect={handleTaskSelect}
+                  onTaskCreate={handleMindMapTaskCreate}
                 />
               )}
             </div>

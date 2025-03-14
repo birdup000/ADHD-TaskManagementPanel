@@ -6,9 +6,9 @@ export const useNavigation = () => {
   const searchParams = useSearchParams();
   
   // Initialize view from URL or default to 'list'
-  const defaultView = searchParams.get('view') as 'list' | 'board' | 'calendar' | null;
-  const [currentView, setCurrentView] = useState<'list' | 'board' | 'calendar'>(
-    defaultView && ['list', 'board', 'calendar'].includes(defaultView) ? defaultView : 'list'
+  const defaultView = searchParams.get('view') as 'list' | 'board' | 'calendar' | 'mindmap' | null;
+  const [currentView, setCurrentView] = useState<'list' | 'board' | 'calendar' | 'mindmap'>(
+    defaultView && ['list', 'board', 'calendar', 'mindmap'].includes(defaultView) ? defaultView : 'list'
   );
 
   const handleSmartListClick = (id: string) => {
@@ -50,7 +50,7 @@ export const useNavigation = () => {
     router.push(`/?${params.toString()}`);
   };
 
-  const handleViewChange = (view: 'list' | 'board' | 'calendar') => {
+  const handleViewChange = (view: 'list' | 'board' | 'calendar' | 'mindmap') => {
     setCurrentView(view);
     const params = new URLSearchParams(searchParams.toString());
     // Preserve existing filters when changing view
