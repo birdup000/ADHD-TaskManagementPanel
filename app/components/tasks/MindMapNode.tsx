@@ -6,6 +6,7 @@ interface MindMapNodeProps {
   onSelect: (id: string) => void;
   onContentChange: (id: string, content: string) => void;
   selected: boolean;
+  onCollapse: () => void;
 }
 
 const MindMapNode: React.FC<MindMapNodeProps> = ({
@@ -13,6 +14,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
   onSelect,
   onContentChange,
   selected,
+  onCollapse,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(node.content);
@@ -119,6 +121,29 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
                 d="M3 8l3.5 3.5L12 5"
                 className="stroke-white stroke-2"
                 fill="none"
+              />
+            </g>
+          )}
+          {/* Collapse/Expand indicator */}
+          {node.children.length > 0 && (
+            <g
+              transform="translate(70, -18)"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCollapse();
+              }}
+              className="cursor-pointer hover:opacity-80"
+            >
+              <rect
+                width="16"
+                height="16"
+                rx="3"
+                className={`${node.isCollapsed ? 'fill-accent-primary' : 'fill-white opacity-20'}`}
+              />
+              <path
+                d={node.isCollapsed ? 'M4 8h8' : 'M4 8h8 M8 4v8'}
+                className="stroke-white stroke-2"
+                strokeLinecap="round"
               />
             </g>
           )}

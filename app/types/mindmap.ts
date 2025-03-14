@@ -7,6 +7,7 @@ export interface MindMapNode {
   taskId?: string; // Reference to actual task if this node is a task
   x?: number; // For layout positioning
   y?: number;
+  isCollapsed?: boolean; // Whether node's children are hidden
 }
 
 export interface MindMap {
@@ -14,4 +15,11 @@ export interface MindMap {
   name: string;
   rootId: string;
   nodes: { [key: string]: MindMapNode };
+}
+
+export interface MindMapHistory {
+  past: MindMap[];
+  present: MindMap;
+  future: MindMap[];
+  maxSteps?: number;
 }

@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MindMap, MindMapNode } from '../../types/mindmap';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { MindMap, MindMapNode, MindMapHistory } from '../../types/mindmap';
 import { Task } from '../../types/task';
 import MindMapNodeComponent from './MindMapNode';
 
@@ -16,13 +16,7 @@ const MindMapView: React.FC<MindMapViewProps> = ({
 }) => {
   // Constants
   const MINDMAP_STORAGE_KEY = 'adhd-panel-mindmap';
-
-  // View state
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const MAX_HISTORY_STEPS = 50;
 
   // Default mind map structure
   const defaultMindMap: MindMap = {
@@ -35,12 +29,69 @@ const MindMapView: React.FC<MindMapViewProps> = ({
         parentId: null,
         content: 'Main Goal',
         children: [],
-        status: 'idea'
+        status: 'idea',
+        isCollapsed: false
       }
     }
   };
 
-  const [mindMap, setMindMap] = useState<MindMap>(defaultMindMap);
+  // History management
+  const [history, setHistory] = useState<MindMapHistory>({
+    past: [],
+    present: defaultMindMap,
+    future: [],
+    maxSteps: MAX_HISTORY_STEPS
+  });
+
+  // View state
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Get current mindMap from history
+  const mindMap = history.present;
+
+  // Update mindMap through history management
+  const updateMindMap = useCallback((newMindMap: MindMap) => {
+    setHistory(prev => ({
+      past: [...prev.past, prev.present].slice(-MAX_HISTORY_STEPS),
+      present: newMindMap,
+      future: [],
+      maxSteps: MAX_HISTORY_STEPS
+    }));
+  }, []);
+
+  // Undo/Redo functions
+  const undo = useCallback(() => {
+    setHistory(prev => {
+      if (prev.past.length === 0) return prev;
+      const newPast = prev.past.slice(0, -1);
+      const newPresent = prev.past[prev.past.length - 1];
+      return {
+        past: newPast,
+        present: newPresent,
+        future: [prev.present, ...prev.future],
+        maxSteps: MAX_HISTORY_STEPS
+      };
+    });
+  }, []);
+
+  const redo = useCallback(() => {
+    setHistory(prev => {
+      if (prev.future.length === 0) return prev;
+      const [newPresent, ...newFuture] = prev.future;
+      return {
+        past: [...prev.past, prev.present],
+        present: newPresent,
+        future: newFuture,
+        maxSteps: MAX_HISTORY_STEPS
+      };
+    });
+  }, []);
 
   // Load mind map data on mount
   useEffect(() => {
@@ -80,14 +131,14 @@ const MindMapView: React.FC<MindMapViewProps> = ({
         try {
           const parsed = JSON.parse(stored);
           if (validateMindMap(parsed)) {
-            setMindMap(parsed);
+            setHistory({ past: [], present: parsed, future: [], maxSteps: MAX_HISTORY_STEPS });
           } else {
             console.error('Invalid mind map structure in storage');
-            setMindMap(defaultMindMap);
+            setHistory({ past: [], present: defaultMindMap, future: [], maxSteps: MAX_HISTORY_STEPS });
           }
         } catch (error) {
           console.error('Error parsing mind map from storage:', error);
-          setMindMap(defaultMindMap);
+          setHistory({ past: [], present: defaultMindMap, future: [], maxSteps: MAX_HISTORY_STEPS });
         }
       }
     };
@@ -101,27 +152,29 @@ const MindMapView: React.FC<MindMapViewProps> = ({
 
   // Add existing tasks as nodes
   useEffect(() => {
-    setMindMap(prev => {
-      const newNodes = { ...prev.nodes };
-      tasks.forEach(task => {
-        if (!newNodes[`task-${task.id}`]) {
-          newNodes[`task-${task.id}`] = {
-            id: `task-${task.id}`,
-            parentId: prev.rootId,
-            content: task.title,
-            children: [],
-            status: 'task',
-            taskId: task.id
-          };
-          newNodes[prev.rootId].children.push(`task-${task.id}`);
-        }
-      });
-      return { ...prev, nodes: newNodes };
-    });
-  }, [tasks]);
+    const newNodes = { ...mindMap.nodes };
+    let hasChanges = false;
 
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+    tasks.forEach(task => {
+      if (!newNodes[`task-${task.id}`]) {
+        hasChanges = true;
+        newNodes[`task-${task.id}`] = {
+          id: `task-${task.id}`,
+          parentId: mindMap.rootId,
+          content: task.title,
+          children: [],
+          status: 'task',
+          isCollapsed: false,
+          taskId: task.id
+        };
+        newNodes[mindMap.rootId].children.push(`task-${task.id}`);
+      }
+    });
+
+    if (hasChanges) {
+      updateMindMap({ ...mindMap, nodes: newNodes });
+    }
+  }, [tasks, mindMap, updateMindMap]);
 
   // Handle zooming
   const handleWheel = (e: React.WheelEvent) => {
@@ -173,7 +226,7 @@ const MindMapView: React.FC<MindMapViewProps> = ({
   // Reset mind map to default
   const resetMindMap = () => {
     if (window.confirm('Are you sure you want to reset the mind map? This will clear all your ideas.')) {
-      setMindMap(defaultMindMap);
+      updateMindMap(defaultMindMap);
       resetView();
       setSelectedNode(null);
     }
@@ -185,23 +238,24 @@ const MindMapView: React.FC<MindMapViewProps> = ({
       parentId,
       content: 'New Idea',
       children: [],
-      status: 'idea'
+      status: 'idea',
+      isCollapsed: false
     };
 
-    setMindMap(prev => {
-      const parent = prev.nodes[parentId];
-      return {
-        ...prev,
-        nodes: {
-          ...prev.nodes,
-          [parentId]: {
-            ...parent,
-            children: [...parent.children, newNode.id]
-          },
-          [newNode.id]: newNode
-        }
-      };
-    });
+    const parent = mindMap.nodes[parentId];
+    const newMindMap = {
+      ...mindMap,
+      nodes: {
+        ...mindMap.nodes,
+        [parentId]: {
+          ...parent,
+          children: [...parent.children, newNode.id]
+        },
+        [newNode.id]: newNode
+      }
+    };
+
+    updateMindMap(newMindMap);
   };
 
   const convertToTask = (nodeId: string) => {
@@ -215,20 +269,35 @@ const MindMapView: React.FC<MindMapViewProps> = ({
   };
 
   const updateNodeContent = (nodeId: string, content: string) => {
-    setMindMap(prev => ({
-      ...prev,
+    const newMindMap = {
+      ...mindMap,
       nodes: {
-        ...prev.nodes,
+        ...mindMap.nodes,
         [nodeId]: {
-          ...prev.nodes[nodeId],
+          ...mindMap.nodes[nodeId],
           content
         }
       }
-    }));
+    };
+    updateMindMap(newMindMap);
   };
 
+  const toggleNodeCollapse = useCallback((nodeId: string) => {
+    const newMindMap = {
+      ...mindMap,
+      nodes: {
+        ...mindMap.nodes,
+        [nodeId]: {
+          ...mindMap.nodes[nodeId],
+          isCollapsed: !mindMap.nodes[nodeId].isCollapsed
+        }
+      }
+    };
+    updateMindMap(newMindMap);
+  }, [mindMap, updateMindMap]);
+
   // Layout calculation with centered root
-  const calculateLayout = () => {
+  const calculateLayout = useCallback(() => {
     const nodeWidth = 160;
     const verticalSpacing = 50;
     const levelHeight = 100;
@@ -241,10 +310,12 @@ const MindMapView: React.FC<MindMapViewProps> = ({
       levels[level].push(nodeId);
 
       const node = mindMap.nodes[nodeId];
-      // Guard against undefined nodes
       if (!node || !node.children) return;
 
-      node.children.forEach(childId => assignLevels(childId, level + 1));
+      // Only process children if node is not collapsed
+      if (!node.isCollapsed) {
+        node.children.forEach(childId => assignLevels(childId, level + 1));
+      }
     };
 
     assignLevels(mindMap.rootId, 0);
@@ -258,27 +329,55 @@ const MindMapView: React.FC<MindMapViewProps> = ({
       nodeIds.forEach((nodeId, index) => {
         if (!mindMap.nodes[nodeId]) return;
         const node = mindMap.nodes[nodeId];
-        if (!node) return;
         node.x = startX + (index * nodeWidth) + (nodeWidth / 2);
         node.y = Number(level) * (levelHeight + verticalSpacing);
       });
     });
-  };
+  }, [mindMap]);
 
+  // Run layout calculation when mindMap changes
   useEffect(() => {
     calculateLayout();
-  }, [mindMap]);
+  }, [calculateLayout]);
 
   // Initial centering
   useEffect(() => {
     if (svgRef.current) {
-      const bbox = svgRef.current.getBBox();
       setPan({
-        x: (window.innerWidth / 2) - (bbox.width / 2),
+        x: (window.innerWidth / 2),
         y: (window.innerHeight / 3)
       });
     }
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'z') {
+          if (e.shiftKey) {
+            e.preventDefault();
+            redo();
+          } else {
+            e.preventDefault();
+            undo();
+          }
+        } else if (key === 'y') {
+          e.preventDefault();
+          redo();
+        }
+      } else if (selectedNode && e.key === ' ') {
+        e.preventDefault();
+        toggleNodeCollapse(selectedNode);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNode, undo, redo, toggleNodeCollapse]);
 
   return (
     <div 
@@ -300,7 +399,7 @@ const MindMapView: React.FC<MindMapViewProps> = ({
       >
         {/* Render connections */}
         {Object.values(mindMap.nodes).map(node => (
-          node.parentId && (
+          node.parentId && !mindMap.nodes[node.parentId].isCollapsed && (
             <line
               key={`line-${node.id}`}
               x1={mindMap.nodes[node.parentId].x || 0}
@@ -322,12 +421,13 @@ const MindMapView: React.FC<MindMapViewProps> = ({
             selected={selectedNode === node.id}
             onSelect={handleNodeSelect}
             onContentChange={updateNodeContent}
+            onCollapse={() => toggleNodeCollapse(node.id)}
           />
         ))}
       </svg>
       
       {/* Controls */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2 bg-black/20 backdrop-blur p-4 rounded-lg shadow-lg">
         <div className="flex gap-2">
           <button
             onClick={() => setZoom(prev => Math.min(prev + 0.1, 2))}
@@ -360,25 +460,29 @@ const MindMapView: React.FC<MindMapViewProps> = ({
         </div>
         <div className="flex gap-2">
           <button
-          onClick={() => selectedNode && addNode(selectedNode)}
-          className="bg-accent-primary text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!selectedNode}
-        >
-          Add Idea
-        </button>
-        <button
-          onClick={() => selectedNode && convertToTask(selectedNode)}
-          className="bg-accent-secondary text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!selectedNode || mindMap.nodes[selectedNode].status === 'task'}
-        >
-          Convert to Task
-        </button>
+            onClick={() => selectedNode && addNode(selectedNode)}
+            className="bg-accent-primary text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!selectedNode}
+          >
+            Add Idea
+          </button>
+          <button
+            onClick={() => selectedNode && convertToTask(selectedNode)}
+            className="bg-accent-secondary text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!selectedNode || mindMap.nodes[selectedNode].status === 'task'}
+          >
+            Convert to Task
+          </button>
         </div>
       </div>
       <div className="absolute top-4 left-4 text-sm text-text-secondary">
-        Click and drag to pan • Scroll to zoom • Click node to select • Double-click to edit • Press Enter to save edit • Existing tasks shown as nodes
+        Click and drag to pan • Scroll to zoom • Click node to select • Double-click to edit • Press Space to collapse/expand
+        <br />
+        Ctrl+Z to undo • Ctrl+Shift+Z/Ctrl+Y to redo • Press Enter to save edit • Existing tasks shown as nodes
       </div>
-      <div className="absolute top-4 right-4 text-sm text-text-secondary">Mind map data is saved automatically</div>
+      <div className="absolute top-4 right-4 text-sm text-text-secondary">
+        Mind map data is saved automatically
+      </div>
     </div>
   );
 };
