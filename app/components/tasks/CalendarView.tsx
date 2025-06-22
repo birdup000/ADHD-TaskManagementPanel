@@ -13,6 +13,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
   onTaskSelect,
 }) => {
   const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [focusedDay, setFocusedDay] = React.useState<number | null>(null);
+  const [focusedTaskIndex, setFocusedTaskIndex] = React.useState<number | null>(null);
   
   // Get first day of the month
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -37,10 +39,63 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   const changeMonth = (offset: number) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
+    setFocusedDay(null); // Reset focus when changing months
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent, day: number, daysInMonth: number, dayTasks: Task[]) => {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      if (day > 1) {
+        setFocusedDay(day - 1);
+        setFocusedTaskIndex(null);
+      } else {
+        changeMonth(-1);
+        setFocusedDay(new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate());
+        setFocusedTaskIndex(null);
+      }
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      if (day < daysInMonth) {
+        setFocusedDay(day + 1);
+        setFocusedTaskIndex(null);
+      } else {
+        changeMonth(1);
+        setFocusedDay(1);
+        setFocusedTaskIndex(null);
+      }
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (day > 7) {
+        setFocusedDay(day - 7);
+        setFocusedTaskIndex(null);
+      }
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (day <= daysInMonth - 7) {
+        setFocusedDay(day + 7);
+        setFocusedTaskIndex(null);
+      }
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (dayTasks.length > 0) {
+        setFocusedTaskIndex(0);
+        onTaskSelect(dayTasks[0].id);
+      }
+    } else if (event.key >= '1' && event.key <= '9' && dayTasks.length >= parseInt(event.key)) {
+      event.preventDefault();
+      const taskIndex = parseInt(event.key) - 1;
+      setFocusedTaskIndex(taskIndex);
+      onTaskSelect(dayTasks[taskIndex].id);
+    } else if (event.key === 't') {
+      event.preventDefault();
+      setCurrentDate(new Date());
+      setFocusedDay(new Date().getDate());
+      setFocusedTaskIndex(null);
+    }
   };
 
   return (
-    <div className="h-full flex flex-col bg-bg-primary" role="main" aria-label="Calendar view">
+    <div className="h-full flex flex-col bg-bg-primary" role="main" aria-label="Calendar view for task management">
       {/* Calendar Header - Improved for mobile touch targets */}
       <header className="p-4 md:p-6 border-b border-border-default bg-bg-primary">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -49,8 +104,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             <button
               onClick={() => changeMonth(-1)}
               className="p-3 rounded-lg hover:bg-accent-muted transition-colors duration-200
-                       focus:outline-none focus:ring-2 focus:ring-accent-focus touch-manipulation"
-              aria-label="Previous month"
+                      focus:outline-none focus:ring-2 focus:ring-accent-focus touch-manipulation"
+              aria-label="Previous month navigation"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -64,8 +119,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             <button
               onClick={() => changeMonth(1)}
               className="p-3 rounded-lg hover:bg-accent-muted transition-colors duration-200
-                       focus:outline-none focus:ring-2 focus:ring-accent-focus touch-manipulation"
-              aria-label="Next month"
+                      focus:outline-none focus:ring-2 focus:ring-accent-focus touch-manipulation"
+              aria-label="Next month navigation"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -74,7 +129,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             <button
               onClick={() => setCurrentDate(new Date())}
               className="btn-secondary btn-sm ml-2 touch-manipulation"
-              aria-label="Go to current month"
+              aria-label="Go to current month (shortcut: t)"
             >
               Today
             </button>
@@ -110,36 +165,45 @@ const CalendarView: React.FC<CalendarViewProps> = ({
             return (
               <div
                 key={day}
-                className={`bg-bg-secondary rounded-lg p-2 flex flex-col min-h-[100px] md:min-h-[120px]
-                          ${isToday ? 'ring-2 ring-accent-primary' : ''}`}
+                className={`bg-bg-secondary rounded-lg p-2 flex flex-col min-h-[100px] sm:min-h-[120px] md:min-h-[140px]
+                          ${isToday ? 'ring-2 ring-accent-primary' : ''}
+                          ${focusedDay === day ? 'outline outline-2 outline-accent-primary' : ''}`}
                 role="gridcell"
-                aria-label={`Day ${day}, ${dayTasks.length} tasks${isToday ? ', Today' : ''}`}
+                aria-label={`Day ${day}, ${dayTasks.length} tasks${isToday ? ', Today' : ''}${focusedDay === day ? ', Focused' : ''}`}
+                tabIndex={0}
+                onFocus={() => setFocusedDay(day)}
+                onKeyDown={(e) => handleKeyDown(e, day, daysInMonth, dayTasks)}
               >
                 <div className="text-sm font-medium mb-1">{day}</div>
-                <div className="flex-1 overflow-y-hidden max-h-20 md:max-h-24 relative">
+                <div className="flex-1 overflow-y-hidden max-h-20 sm:max-h-24 md:max-h-28 relative">
                   {dayTasks.slice(0, 3).map((task) => (
                     <div
                       key={task.id}
                       onClick={() => onTaskSelect(task.id)}
                       className={`text-xs p-1 mb-1 rounded cursor-pointer
-                                ${task.priority === 'high' ? 'bg-priority-high bg-opacity-20' :
-                                  task.priority === 'medium' ? 'bg-priority-medium bg-opacity-20' :
-                                  'bg-priority-low bg-opacity-20'}`}
+                                ${task.priority === 'high' ? 'bg-priority-high bg-opacity-20 text-text-primary' :
+                                  task.priority === 'medium' ? 'bg-priority-medium bg-opacity-20 text-text-primary' :
+                                  'bg-priority-low bg-opacity-20 text-text-primary'}
+                                ${focusedDay === day && focusedTaskIndex === dayTasks.indexOf(task) ? 'outline outline-1 outline-accent-primary' : ''}`}
                       tabIndex={0}
                       role="button"
-                      aria-label={`Task: ${task.title}, Priority: ${task.priority}`}
+                      aria-label={`Task: ${task.title}, Priority: ${task.priority}${focusedDay === day && focusedTaskIndex === dayTasks.indexOf(task) ? ', Focused' : ''}`}
                     >
                       <div className="truncate">{task.title}</div>
                     </div>
                   ))}
                   {dayTasks.length > 3 && (
-                    <button
-                      className="text-xs text-accent-primary hover:underline"
-                      onClick={() => alert(`Additional tasks on day ${day}: ${dayTasks.slice(3).map(t => t.title).join(', ')}`)}
+                    <div className="text-xs text-accent-primary hover:underline cursor-pointer"
+                      onClick={() => {
+                        // Show a scrollable list or tooltip for additional tasks
+                        const additionalTasks = dayTasks.slice(3);
+                        const taskList = additionalTasks.map(t => t.title).join('\n');
+                        alert(`Additional tasks on day ${day}:\n${taskList}`);
+                      }}
                       aria-label={`Show ${dayTasks.length - 3} more tasks`}
                     >
                       +{dayTasks.length - 3} more
-                    </button>
+                    </div>
                   )}
                 </div>
               </div>

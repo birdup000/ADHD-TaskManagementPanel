@@ -51,6 +51,7 @@ const MindMapView: React.FC<MindMapViewProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [tooltip, setTooltip] = useState<{ visible: boolean, content: string, x: number, y: number }>({ visible: false, content: '', x: 0, y: 0 });
 
   // Get current mindMap from history
   const mindMap = history.present;
@@ -149,6 +150,7 @@ const MindMapView: React.FC<MindMapViewProps> = ({
   useEffect(() => {
     try {
       localStorage.setItem(MINDMAP_STORAGE_KEY, JSON.stringify(mindMap));
+      // TODO: Transition to backend storage solution or provide export/import functionality for data persistence.
     } catch (error) {
       console.error('Failed to save mind map to localStorage:', error);
       // Notify user of potential data loss risk
@@ -475,18 +477,56 @@ const MindMapView: React.FC<MindMapViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedNode, undo, redo, toggleNodeCollapse, mindMap.nodes, setSelectedNode]);
   
+  const [isSimplifiedMode, setIsSimplifiedMode] = useState(false);
+
   return (
     <div
       className="h-full w-full bg-bg-secondary relative overflow-hidden"
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
+      onMouseMove={(e) => {
+        handleMouseMove(e);
+        if (tooltip.visible) {
+          setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }));
+        }
+      }}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       tabIndex={0}
       role="application"
-      aria-label="Interactive Mind Map"
+      aria-label="Interactive Mind Map for Task Planning"
+      aria-describedby="mindmap-description"
     >
+      <div id="mindmap-description" className="sr-only">
+        This interactive mind map allows you to visualize and organize tasks and ideas hierarchically. Use arrow keys to navigate between nodes, Space or Enter to collapse or expand nodes, and Ctrl+Z or Ctrl+Y for undo and redo actions. Click and drag to pan the view, and use Ctrl+Plus or Ctrl+Minus to zoom in and out.
+      </div>
+      {/* Help and Simplified Mode Controls */}
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <button
+          className="bg-accent-primary text-text-onAccent px-3 py-1.5 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-focus"
+          onClick={() => alert('Mind Map Help: Use arrow keys to navigate nodes, Space/Enter to collapse/expand, Ctrl+Z/Y to undo/redo, Ctrl+/- to zoom. Click and drag to pan the view.')}
+          aria-label="Show mind map help instructions"
+        >
+          Help
+        </button>
+        <button
+          className={`px-3 py-1.5 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-focus ${isSimplifiedMode ? 'bg-accent-primary text-text-onAccent' : 'bg-bg-tertiary text-text-secondary'}`}
+          onClick={() => setIsSimplifiedMode(!isSimplifiedMode)}
+          aria-label={isSimplifiedMode ? "Switch to detailed mode" : "Switch to simplified mode for easier interaction"}
+          aria-pressed={isSimplifiedMode}
+        >
+          {isSimplifiedMode ? 'Detailed' : 'Simplified'}
+        </button>
+      </div>
+      {/* Tooltip */}
+      {tooltip.visible && (
+        <div
+          className="absolute bg-bg-elevated text-text-primary text-sm p-2 rounded-md shadow-lg max-w-xs z-50"
+          style={{ top: tooltip.y + 10, left: tooltip.x + 10 }}
+        >
+          {tooltip.content}
+        </div>
+      )}
       <svg
         ref={svgRef}
         className="w-full h-full"
@@ -518,8 +558,9 @@ const MindMapView: React.FC<MindMapViewProps> = ({
           )
         ))}
         
-        {/* Render nodes */}
+        {/* Render nodes with virtualization consideration */}
         {Object.values(mindMap.nodes).map(node => (
+          // Implement lazy loading or virtualization for large datasets
           <MindMapNodeComponent
             key={node.id}
             node={node}
@@ -584,6 +625,8 @@ const MindMapView: React.FC<MindMapViewProps> = ({
         Click and drag to pan • Scroll to zoom • Click node to select • Double-click to edit • Press Space to collapse/expand
         <br />
         Ctrl+Z to undo • Ctrl+Shift+Z/Ctrl+Y to redo • Press Enter to save edit • Existing tasks shown as nodes
+        <br />
+        <strong>Onboarding Tip:</strong> Start by clicking the root node to add ideas or convert them to tasks.
       </div>
       <div className="absolute top-4 right-4 text-sm text-text-secondary">
         Mind map data is saved automatically

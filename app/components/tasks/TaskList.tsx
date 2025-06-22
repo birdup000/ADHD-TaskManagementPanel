@@ -31,7 +31,7 @@ const TaskList: React.FC<TaskListProps> = ({
   const [sortBy, setSortBy] = React.useState('priority');
   const [filterStatus, setFilterStatus] = React.useState('all');
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [viewMode, setViewMode] = React.useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = React.useState<'list' | 'grid' | 'compact'>('list');
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
@@ -146,6 +146,21 @@ const TaskList: React.FC<TaskListProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
+              <button
+                className={`p-2 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-focus
+                         ${viewMode === 'compact'
+                           ? 'bg-accent-primary text-text-onAccent shadow-sm'
+                           : 'text-text-secondary hover:bg-accent-muted hover:text-text-primary'
+                         }`}
+                onClick={() => setViewMode('compact')}
+                role="tab"
+                aria-selected={viewMode === 'compact'}
+                aria-label="Switch to compact view"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -224,110 +239,197 @@ const TaskList: React.FC<TaskListProps> = ({
             <p className="text-sm">Try adjusting your search or filters</p>
           </div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2' : 'space-y-2'}>
+          <div className={
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2'
+              : viewMode === 'compact'
+                ? 'space-y-1'
+                : 'space-y-2'
+          }>
             {sortedTasks.map((task) => (
-              <div
-                key={task.id}
-                className={`group flex items-start gap-4 p-4 rounded-lg bg-bg-secondary
-                         hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer
-                         border border-border-default hover:border-accent-primary
-                         ${task.status === 'completed' ? 'opacity-75 border-l-4 border-green-600' : ''}`}
-                onClick={() => onTaskSelect(task.id)}
-                tabIndex={0}
-                role="button"
-                aria-label={`Task: ${task.title}, Status: ${task.status}`}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    onTaskSelect(task.id);
-                  }
-                }}
-              >
-                {/* Checkbox */}
-                <button
-                  className={`w-5 h-5 rounded-full border-2 border-border-default flex items-center justify-center
-                          hover:border-accent-primary transition-colors duration-200
-                          ${task.status === 'completed' ? 'bg-priority-completed' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTaskStatusChange(
-                      task.id,
-                      task.status === 'completed' ? 'todo' : 'completed'
-                    );
+              viewMode === 'compact' ? (
+                <div
+                  key={task.id}
+                  className={`group flex items-center gap-3 p-2 rounded-lg bg-bg-secondary
+                           hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer
+                           border border-border-default hover:border-accent-primary
+                           ${task.status === 'completed' ? 'opacity-75 border-l-2 border-green-600' : ''}`}
+                  onClick={() => onTaskSelect(task.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Task: ${task.title}, Status: ${task.status}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onTaskSelect(task.id);
+                    }
                   }}
                 >
-                  {task.status === 'completed' && (
-                    <svg className="w-3 h-3 text-text-primary" viewBox="0 0 12 12">
-                      <path
-                        d="M3.5 6L5 7.5L8.5 4"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </button>
-
-                {/* Priority Indicator */}
-                <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)} mt-1`} />
-
-                {/* Task Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className={`text-base font-medium truncate ${
-                    task.status === 'completed' ? 'line-through text-text-secondary' : ''
-                  }`}>
-                    {task.title}
-                  </h3>
-                  
-                  {/* Tags */}
-                  {task.tags && task.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {task.tags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-0.5 rounded-full bg-bg-tertiary text-xs truncate"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {task.tags.length > 3 && (
-                        <span className="text-xs text-text-secondary">+{task.tags.length - 3}</span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Due Date */}
-                  {task.dueDate && (
-                    <span className="text-sm text-text-secondary block mt-2">
-                      Due {new Date(task.dueDate).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                  {/* Checkbox */}
                   <button
-                    onClick={(e) => handleMenuOpen(e, task.id)}
-                    className="p-2 hover:bg-hover rounded-md text-text-secondary 
-                             hover:text-text-primary transition-colors duration-200"
-                    aria-label="Task options"
+                    className={`w-4 h-4 rounded-full border-2 border-border-default flex items-center justify-center
+                            hover:border-accent-primary transition-colors duration-200
+                            ${task.status === 'completed' ? 'bg-priority-completed' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTaskStatusChange(
+                        task.id,
+                        task.status === 'completed' ? 'todo' : 'completed'
+                      );
+                    }}
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                      />
-                    </svg>
+                    {task.status === 'completed' && (
+                      <svg className="w-2.5 h-2.5 text-text-primary" viewBox="0 0 12 12">
+                        <path
+                          d="M3.5 6L5 7.5L8.5 4"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
                   </button>
+
+                  {/* Priority Indicator */}
+                  <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+
+                  {/* Task Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-sm font-medium truncate ${
+                      task.status === 'completed' ? 'line-through text-text-secondary' : ''
+                    }`}>
+                      {task.title}
+                    </h3>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                    <button
+                      onClick={(e) => handleMenuOpen(e, task.id)}
+                      className="p-1 hover:bg-hover rounded-md text-text-secondary
+                               hover:text-text-primary transition-colors duration-200"
+                      aria-label="Task options"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div
+                  key={task.id}
+                  className={`group flex items-start gap-4 p-4 rounded-lg bg-bg-secondary
+                           hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer
+                           border border-border-default hover:border-accent-primary
+                           ${task.status === 'completed' ? 'opacity-75 border-l-4 border-green-600' : ''}`}
+                  onClick={() => onTaskSelect(task.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Task: ${task.title}, Status: ${task.status}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onTaskSelect(task.id);
+                    }
+                  }}
+                >
+                  {/* Checkbox */}
+                  <button
+                    className={`w-5 h-5 rounded-full border-2 border-border-default flex items-center justify-center
+                            hover:border-accent-primary transition-colors duration-200
+                            ${task.status === 'completed' ? 'bg-priority-completed' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTaskStatusChange(
+                        task.id,
+                        task.status === 'completed' ? 'todo' : 'completed'
+                      );
+                    }}
+                  >
+                    {task.status === 'completed' && (
+                      <svg className="w-3 h-3 text-text-primary" viewBox="0 0 12 12">
+                        <path
+                          d="M3.5 6L5 7.5L8.5 4"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Priority Indicator */}
+                  <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)} mt-1`} />
+
+                  {/* Task Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-base font-medium truncate ${
+                      task.status === 'completed' ? 'line-through text-text-secondary' : ''
+                    }`}>
+                      {task.title}
+                    </h3>
+                    
+                    {/* Tags */}
+                    {task.tags && task.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {task.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 rounded-full bg-bg-tertiary text-xs truncate"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {task.tags.length > 3 && (
+                          <span className="text-xs text-text-secondary">+{task.tags.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Due Date */}
+                    {task.dueDate && (
+                      <span className="text-sm text-text-secondary block mt-2">
+                        Due {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 shrink-0">
+                    <button
+                      onClick={(e) => handleMenuOpen(e, task.id)}
+                      className="p-2 hover:bg-hover rounded-md text-text-secondary
+                               hover:text-text-primary transition-colors duration-200"
+                      aria-label="Task options"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )
             ))}
           </div>
         )}

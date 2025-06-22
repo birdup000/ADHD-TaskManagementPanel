@@ -44,6 +44,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   const [isCategoryModalOpen, setIsCategoryModalOpen] = React.useState(false);
   const { categories, addCategory } = useCategories();
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  // Removed unused variables for steps
   
   // Create a ref to store the original task data
   const originalTaskRef = React.useRef<Task | null>(null);
@@ -227,7 +228,11 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col" role="dialog" aria-labelledby="task-details-title">
+    <div className="h-full flex flex-col" role="dialog" aria-labelledby="task-details-title" tabIndex={-1} onKeyDown={(e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    }}>
       {/* Header - Improved hierarchy and status indication */}
       <header className="flex items-center justify-between px-6 py-5 border-b border-border-default bg-bg-secondary">
         <div className="space-y-2">
@@ -282,12 +287,12 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       </header>
 
       {/* Task Form */}
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-6" role="region" aria-label="Task form content">
         <form className="max-w-4xl mx-auto space-y-8 p-4 sm:p-6" onSubmit={handleSubmit} role="form" aria-labelledby="task-details-title">
           
           {/* Primary Information Section */}
-          <section className="space-y-6">
-            <h2 className="heading-tertiary border-b border-border-default pb-3">Primary Information</h2>
+          <section className="space-y-6" role="group" aria-labelledby="primary-info-heading">
+            <h2 id="primary-info-heading" className="heading-tertiary border-b border-border-default pb-3">Primary Information</h2>
             
             {/* Title */}
             <div className="space-y-3">
@@ -340,7 +345,8 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           </section>
 
           {/* Category, Priority and Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6" role="group" aria-labelledby="category-status-heading">
+            <h3 id="category-status-heading" className="sr-only">Category and Status</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <label htmlFor="category" className="block text-sm font-medium text-text-primary">
@@ -349,10 +355,11 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCategoryModalOpen(true)}
-                  className="text-sm font-medium text-accent-primary hover:text-accent-primary/80 
+                  className="text-sm font-medium text-accent-primary hover:text-accent-primary/80
                          flex items-center gap-1.5"
+                  aria-label="Create new category"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                   + New Category
@@ -365,6 +372,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 onChange={handleChange}
                 className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
                        text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+                aria-describedby="category-description"
               >
                 <option value="">No Category</option>
                 {categories.map((category) => (
@@ -373,6 +381,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                   </option>
                 ))}
               </select>
+              <p id="category-description" className="text-sm text-text-tertiary">Organize tasks by category for better management.</p>
             </div>
 
             <div className="space-y-2">
@@ -394,8 +403,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             </div>
           </div>
 
-          {/* Priority and Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* Priority */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" role="group" aria-labelledby="priority-heading">
+            <h3 id="priority-heading" className="sr-only">Priority</h3>
             <div className="space-y-2">
               <label htmlFor="priority" className="text-sm font-medium text-text-secondary">
                 Priority
@@ -407,16 +417,19 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 onChange={handleChange}
                 className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
                        text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+                aria-describedby="priority-description"
               >
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
               </select>
+              <p id="priority-description" className="text-sm text-text-tertiary">Set task importance to prioritize your focus.</p>
             </div>
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" role="group" aria-labelledby="dates-heading">
+            <h3 id="dates-heading" className="sr-only">Task Dates</h3>
             <div className="space-y-2">
               <label htmlFor="startDate" className="text-sm font-medium text-text-secondary">
                 Start Date
@@ -429,7 +442,9 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 onChange={handleChange}
                 className="w-full bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
                        text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+                aria-describedby="start-date-description"
               />
+              <p id="start-date-description" className="text-sm text-text-tertiary">When you plan to begin this task.</p>
             </div>
             <div className="space-y-2">
               <label htmlFor="dueDate" className="text-sm font-medium text-text-secondary">
@@ -444,10 +459,13 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 className={`w-full bg-bg-tertiary border ${
                   errors.dueDate ? 'border-priority-high' : 'border-border-default'
                 } rounded-md px-4 py-2.5 text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer`}
+                aria-describedby="due-date-description"
+                aria-invalid={errors.dueDate ? 'true' : 'false'}
               />
               {errors.dueDate && (
-                <p className="text-sm text-priority-high">{errors.dueDate}</p>
+                <p id="due-date-error" className="text-sm text-priority-high" role="alert">{errors.dueDate}</p>
               )}
+              <p id="due-date-description" className="text-sm text-text-tertiary">Deadline for task completion.</p>
             </div>
           </div>
 
@@ -483,13 +501,14 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           </div>
 
           {/* Tags */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-text-primary">Tags</label>
+          <div className="space-y-2" role="group" aria-labelledby="tags-heading">
+            <h3 id="tags-heading" className="block text-sm font-medium text-text-primary">Tags</h3>
             <div className="flex flex-wrap gap-2 mb-2">
               {formData.tags?.map((tag) => (
                 <span
                   key={tag}
                   className="px-3 py-1.5 rounded-full bg-accent-primary/10 text-accent-primary text-sm flex items-center gap-2 group border border-accent-primary/20 hover:border-accent-primary/40 transition-colors"
+                  role="listitem"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5a2 2 0 011.585.379l5 4A2 2 0 0119 9v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" />

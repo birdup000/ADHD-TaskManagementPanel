@@ -1,4 +1,5 @@
-export const theme = {
+// Define the base theme structure
+const baseTheme = {
   colors: {
     // Semantic background colors for ADHD-friendly UI
     background: {
@@ -11,8 +12,8 @@ export const theme = {
     // Accent colors with accessible variants
     accent: {
       primary: '#7B68EE',        // Primary actions
-      primaryHover: '#6A5ACD',   // Primary hover state
-      primaryActive: '#5B4FCE',  // Primary active state
+      primaryHover: '#5C4CB0',   // Primary hover state with increased contrast
+      primaryActive: '#4D3FA0',  // Primary active state with increased contrast
       secondary: '#20B2AA',      // Secondary actions
       secondaryHover: '#1C9D96', // Secondary hover state
       muted: 'rgba(123, 104, 238, 0.1)', // Subtle backgrounds
@@ -64,14 +65,14 @@ export const theme = {
       mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace']
     },
     fontSize: {
-      xs: ['0.75rem', { lineHeight: '1rem' }],     // 12px
-      sm: ['0.875rem', { lineHeight: '1.25rem' }], // 14px
-      base: ['1rem', { lineHeight: '1.5rem' }],    // 16px
-      lg: ['1.125rem', { lineHeight: '1.75rem' }], // 18px
-      xl: ['1.25rem', { lineHeight: '1.75rem' }],  // 20px
-      '2xl': ['1.5rem', { lineHeight: '2rem' }],   // 24px
-      '3xl': ['1.875rem', { lineHeight: '2.25rem' }], // 30px
-      '4xl': ['2.25rem', { lineHeight: '2.5rem' }]    // 36px
+      xs: ['0.75rem', { lineHeight: '1.2rem' }],     // 12px, line height adjusted for readability
+      sm: ['0.875rem', { lineHeight: '1.4rem' }],    // 14px, line height adjusted for readability
+      base: ['1rem', { lineHeight: '1.6rem' }],      // 16px, line height adjusted for readability
+      lg: ['1.125rem', { lineHeight: '1.8rem' }],    // 18px, line height adjusted for readability
+      xl: ['1.25rem', { lineHeight: '2rem' }],       // 20px, line height adjusted for readability
+      '2xl': ['1.5rem', { lineHeight: '2.4rem' }],   // 24px, line height adjusted for readability
+      '3xl': ['1.875rem', { lineHeight: '3rem' }],   // 30px, line height adjusted for readability
+      '4xl': ['2.25rem', { lineHeight: '3.6rem' }]   // 36px, line height adjusted for readability
     },
     fontWeight: {
       light: 300,
@@ -114,9 +115,22 @@ export const theme = {
     },
     // Panel dimensions
     panel: {
-      left: '20%',
-      main: '50%',
-      right: '30%'
+      // Responsive panel widths for different breakpoints
+      left: {
+        base: '20%',   // Default for larger screens
+        md: '25%',     // Adjust for medium screens
+        sm: '100%'     // Full width on small screens
+      },
+      main: {
+        base: '50%',   // Default for larger screens
+        md: '75%',     // Wider on medium screens
+        sm: '100%'     // Full width on small screens
+      },
+      right: {
+        base: '30%',   // Default for larger screens
+        md: '0%',      // Hidden or minimized on medium screens
+        sm: '0%'       // Hidden on small screens
+      }
     }
   },
 
@@ -194,17 +208,76 @@ export const theme = {
     popover: 50,
     tooltip: 60
   }
-}
+  };
+
+// Export themes with different configurations
+export const theme = {
+  default: baseTheme,
+  highContrast: {
+    ...baseTheme,
+    colors: {
+      background: {
+        primary: '#000000',
+        secondary: '#1A1A1A',
+        tertiary: '#2A2A2A',
+        elevated: '#3A3A3A',
+        overlay: 'rgba(0, 0, 0, 0.9)'
+      },
+      accent: {
+        primary: '#FFFFFF',
+        primaryHover: '#E0E0E0',
+        primaryActive: '#C0C0C0',
+        secondary: '#00FFFF',
+        secondaryHover: '#00CCCC',
+        muted: 'rgba(255, 255, 255, 0.1)',
+        focus: 'rgba(255, 255, 255, 0.3)'
+      },
+      text: {
+        primary: '#FFFFFF',
+        secondary: 'rgba(255, 255, 255, 0.8)',
+        tertiary: 'rgba(255, 255, 255, 0.6)',
+        inverse: '#000000',
+        onAccent: '#000000'
+      },
+      priority: {
+        high: '#FF0000',
+        highBg: 'rgba(255, 0, 0, 0.2)',
+        medium: '#FFFF00',
+        mediumBg: 'rgba(255, 255, 0, 0.2)',
+        low: '#00FF00',
+        lowBg: 'rgba(0, 255, 0, 0.2)',
+        completed: '#AAAAAA',
+        completedBg: 'rgba(170, 170, 170, 0.2)'
+      },
+      status: {
+        success: '#00FF00',
+        successBg: 'rgba(0, 255, 0, 0.2)',
+        warning: '#FFFF00',
+        warningBg: 'rgba(255, 255, 0, 0.2)',
+        error: '#FF0000',
+        errorBg: 'rgba(255, 0, 0, 0.2)',
+        info: '#00FFFF',
+        infoBg: 'rgba(0, 255, 255, 0.2)'
+      },
+      border: {
+        default: '#FFFFFF',
+        light: '#E0E0E0',
+        heavy: '#C0C0C0',
+        accent: '#FFFFFF'
+      }
+    }
+  }
+};
 
 // Helper functions for consistent styling
-export const getTextSize = (size: keyof typeof theme.typography.fontSize) => {
-  return theme.typography.fontSize[size]
+export const getTextSize = (size: keyof typeof theme.default.typography.fontSize) => {
+  return theme.default.typography.fontSize[size]
 }
 
-export const getSpacing = (size: keyof typeof theme.spacing.component) => {
-  return theme.spacing.component[size]
+export const getSpacing = (size: keyof typeof theme.default.spacing.component) => {
+  return theme.default.spacing.component[size]
 }
 
-export const getButtonClasses = (variant: keyof typeof theme.components.button.variants, size: keyof typeof theme.components.button.sizes = 'md') => {
-  return `${theme.components.button.sizes[size]} ${theme.components.button.variants[variant]} rounded-md font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-accent-focus focus:ring-offset-1 focus:ring-offset-background-primary`
+export const getButtonClasses = (variant: keyof typeof theme.default.components.button.variants, size: keyof typeof theme.default.components.button.sizes = 'md') => {
+  return `${theme.default.components.button.sizes[size]} ${theme.default.components.button.variants[variant]} rounded-md font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-accent-focus focus:ring-offset-1 focus:ring-offset-background-primary`
 }

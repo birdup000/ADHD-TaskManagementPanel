@@ -10,4 +10,5 @@ export interface Task {
   effort?: string;
   progress?: number;
   category?: string;
+// TODO: Implement runtime validation for Task data using a library like zod or joi to ensure data integrity and type safety.
 }
