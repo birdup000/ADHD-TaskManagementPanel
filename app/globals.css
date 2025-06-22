@@ -87,17 +87,53 @@
     @apply transition-all duration-200 ease-in-out;
   }
 
-  /* Button states */
+  /* Enhanced button system for ADHD-friendly design */
   .btn-primary {
-    @apply bg-accent-primary text-white rounded-md px-6 py-2.5 text-sm font-medium
-           hover:bg-opacity-90 transition-colors duration-200
+    @apply bg-accent-primary text-text-onAccent rounded-md px-6 py-2.5 text-sm font-medium
+           hover:bg-accent-primaryHover active:bg-accent-primaryActive
+           transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-accent-focus focus:ring-offset-1 focus:ring-offset-bg-primary
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
     @apply border border-border-default text-text-secondary rounded-md px-6 py-2.5 text-sm font-medium
-           hover:bg-hover hover:text-text-primary transition-colors duration-200
+           hover:bg-accent-muted hover:text-text-primary hover:border-border-light
+           transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-accent-focus focus:ring-offset-1 focus:ring-offset-bg-primary
            disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply text-text-secondary rounded-md px-6 py-2.5 text-sm font-medium
+           hover:bg-accent-muted hover:text-text-primary
+           transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-accent-focus focus:ring-offset-1 focus:ring-offset-bg-primary
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-status-error text-text-onAccent rounded-md px-6 py-2.5 text-sm font-medium
+           hover:bg-red-600 transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-1 focus:ring-offset-bg-primary
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Button sizes */
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-md {
+    @apply px-4 py-2 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-6 py-2.5 text-base;
+  }
+
+  .btn-xl {
+    @apply px-8 py-3 text-lg;
   }
 
   /* Custom checkbox */
@@ -124,9 +160,77 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-primary to-accent-secondary;
   }
+
+  /* Card components */
+  .card-base {
+    @apply bg-bg-secondary border border-border-default rounded-lg;
+  }
+
+  .card-elevated {
+    @apply bg-bg-secondary border border-border-default rounded-lg shadow-md;
+  }
+
+  .card-interactive {
+    @apply bg-bg-secondary border border-border-default rounded-lg hover:border-border-light
+           transition-colors cursor-pointer;
+  }
+
+  /* Input components */
+  .input-base {
+    @apply bg-bg-tertiary border border-border-default rounded-md px-4 py-2.5
+           text-text-primary transition-colors duration-200
+           focus:outline-none focus:border-accent-primary focus:ring-2 focus:ring-accent-focus;
+  }
+
+  .input-error {
+    @apply border-status-error focus:border-status-error focus:ring-red-200;
+  }
+
+  /* Typography utilities */
+  .heading-primary {
+    @apply text-2xl font-bold text-text-primary;
+  }
+
+  .heading-secondary {
+    @apply text-xl font-semibold text-text-primary;
+  }
+
+  .heading-tertiary {
+    @apply text-lg font-medium text-text-primary;
+  }
+
+  .label-primary {
+    @apply text-sm font-medium text-text-primary;
+  }
+
+  .label-secondary {
+    @apply text-sm font-medium text-text-secondary;
+  }
+
+  /* Priority indicators */
+  .priority-high {
+    @apply text-priority-high bg-priority-highBg border border-priority-high;
+  }
+
+  .priority-medium {
+    @apply text-priority-medium bg-priority-mediumBg border border-priority-medium;
+  }
+
+  .priority-low {
+    @apply text-priority-low bg-priority-lowBg border border-priority-low;
+  }
+
+  .priority-completed {
+    @apply text-priority-completed bg-priority-completedBg border border-priority-completed;
+  }
 }
 
 /* Layout transitions */
 .panel-transition {
   @apply transition-transform duration-300 ease-in-out;
+}
+
+/* Enhanced focus styles for accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-1 focus:ring-offset-bg-primary;
 }

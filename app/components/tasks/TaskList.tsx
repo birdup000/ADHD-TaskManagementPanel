@@ -37,31 +37,37 @@ const TaskList: React.FC<TaskListProps> = ({
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
 
   // Filter and sort tasks
-  const filteredTasks = tasks.filter(task => {
-    if (filterStatus === 'all') return true;
-    return task.status === filterStatus;
-  }).filter(task => {
-    if (!searchQuery) return true;
-    return task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           task.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-  });
+  // Use useMemo to optimize filtering and sorting for large datasets
+  const filteredTasks = React.useMemo(() => {
+    return tasks.filter(task => {
+      if (filterStatus === 'all') return true;
+      return task.status === filterStatus;
+    }).filter(task => {
+      if (!searchQuery) return true;
+      return task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             task.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+             task.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    });
+  }, [tasks, filterStatus, searchQuery]);
 
-  // Sort tasks
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    switch (sortBy) {
-      case 'priority':
-        const priorityOrder = { high: 0, medium: 1, low: 2 };
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-      case 'dueDate':
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      case 'title':
-        return a.title.localeCompare(b.title);
-      default:
-        return 0;
-    }
-  });
+  // Sort tasks with useMemo for performance
+  const sortedTasks = React.useMemo(() => {
+    return [...filteredTasks].sort((a, b) => {
+      switch (sortBy) {
+        case 'priority':
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        case 'dueDate':
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        case 'title':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+  }, [filteredTasks, sortBy]);
 
   const handleMenuOpen = (event: React.MouseEvent, taskId: string) => {
     event.stopPropagation();
@@ -77,21 +83,27 @@ const TaskList: React.FC<TaskListProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0">
-      {/* Header with search, sorting and view options */}
-      <div className="sticky top-0 bg-bg-primary px-6 py-4 border-b border-border-default z-10">
+    <div className="h-full flex flex-col min-h-0" role="region" aria-label="Task list" id="task-content">
+      {/* Header with improved hierarchy and accessibility */}
+      <header className="sticky top-0 bg-bg-primary px-6 py-5 border-b border-border-default z-10 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">{`${filteredTasks.length} ${
-            filteredTasks.length === 1 ? 'Task' : 'Tasks'
-          }`}</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <h1 className="heading-secondary">
+              {filteredTasks.length} {filteredTasks.length === 1 ? 'Task' : 'Tasks'}
+            </h1>
+            {searchQuery && (
+              <span className="text-sm text-text-tertiary bg-bg-tertiary px-2 py-1 rounded-md">
+                filtered by &ldquo;{searchQuery}&rdquo;
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
             <button
               onClick={onNewTask}
-              className="px-3 py-2 rounded-md bg-accent-primary text-white hover:bg-opacity-90 
-                       transition-colors duration-200 flex items-center gap-2"
-              aria-label="New task"
+              className="btn-primary btn-md flex items-center gap-2 shadow-sm"
+              aria-label="Create new task"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -101,72 +113,104 @@ const TaskList: React.FC<TaskListProps> = ({
               </svg>
               New Task
             </button>
-            <button 
-              className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-hover' : 'hover:bg-hover'}`}
-              onClick={() => setViewMode('grid')}
-              aria-label="Grid view"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </button>
-            <button 
-              className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-hover' : 'hover:bg-hover'}`}
-              onClick={() => setViewMode('list')}
-              aria-label="List view"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+            
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-bg-tertiary rounded-lg p-1 border border-border-default" role="tablist" aria-label="View mode">
+              <button
+                className={`p-2 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-focus
+                         ${viewMode === 'grid'
+                           ? 'bg-accent-primary text-text-onAccent shadow-sm'
+                           : 'text-text-secondary hover:bg-accent-muted hover:text-text-primary'
+                         }`}
+                onClick={() => setViewMode('grid')}
+                role="tab"
+                aria-selected={viewMode === 'grid'}
+                aria-label="Switch to grid view"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button
+                className={`p-2 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-focus
+                         ${viewMode === 'list'
+                           ? 'bg-accent-primary text-text-onAccent shadow-sm'
+                           : 'text-text-secondary hover:bg-accent-muted hover:text-text-primary'
+                         }`}
+                onClick={() => setViewMode('list')}
+                role="tab"
+                aria-selected={viewMode === 'list'}
+                aria-label="Switch to list view"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+        {/* Search and Filters - Enhanced for accessibility */}
+        <section className="flex flex-col sm:flex-row gap-4 sm:items-center" role="search" aria-label="Task search and filters">
           <div className="relative flex-1">
+            <label htmlFor="task-search" className="sr-only">Search tasks</label>
             <input
+              id="task-search"
               type="text"
-              placeholder="Search tasks..."
+              placeholder="Search tasks by title, description, or tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bg-tertiary text-text-primary border border-border-default rounded-md 
-                       pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-accent-primary"
+              className="input-base w-full pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-accent-focus"
+              aria-describedby="search-help"
             />
             <svg
-              className="absolute left-3 top-2.5 w-4 h-4 text-text-secondary"
+              className="absolute left-3 top-3.5 w-4 h-4 text-text-secondary pointer-events-none"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
+            <p id="search-help" className="sr-only">
+              Search across task titles, descriptions, and tags to quickly find specific tasks
+            </p>
           </div>
-          <div className="flex gap-3">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-bg-tertiary text-text-primary border border-border-default rounded-md 
-                       px-3 py-2.5 text-sm focus:outline-none focus:border-accent-primary min-w-[140px]"
-            >
-              <option value="priority">Sort by Priority</option>
-              <option value="dueDate">Sort by Due Date</option>
-              <option value="title">Sort by Title</option>
-            </select>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-bg-tertiary text-text-primary border border-border-default rounded-md 
-                       px-3 py-2.5 text-sm focus:outline-none focus:border-accent-primary min-w-[120px]"
-            >
-              <option value="all">All Tasks</option>
-              <option value="todo">To Do</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-            </select>
+          
+          <div className="flex gap-3 flex-wrap sm:flex-nowrap">
+            <div className="min-w-0">
+              <label htmlFor="sort-select" className="sr-only">Sort tasks</label>
+              <select
+                id="sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="input-base px-3 py-3 text-sm focus:ring-2 focus:ring-accent-focus min-w-[140px] cursor-pointer"
+                aria-label="Sort tasks by"
+              >
+                <option value="priority">Sort by Priority</option>
+                <option value="dueDate">Sort by Due Date</option>
+                <option value="title">Sort by Title</option>
+              </select>
+            </div>
+            
+            <div className="min-w-0">
+              <label htmlFor="filter-select" className="sr-only">Filter tasks</label>
+              <select
+                id="filter-select"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="input-base px-3 py-3 text-sm focus:ring-2 focus:ring-accent-focus min-w-[120px] cursor-pointer"
+                aria-label="Filter tasks by status"
+              >
+                <option value="all">All Tasks</option>
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
+      </header>
 
       {/* Task List */}
       <div className="flex-1 overflow-y-auto p-6 min-h-0">
@@ -180,15 +224,23 @@ const TaskList: React.FC<TaskListProps> = ({
             <p className="text-sm">Try adjusting your search or filters</p>
           </div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'}>
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2' : 'space-y-2'}>
             {sortedTasks.map((task) => (
               <div
                 key={task.id}
-                className={`group flex items-start gap-4 p-4 rounded-lg bg-bg-secondary 
-                         hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer 
-                          border border-transparent hover:border-border-default
-                         ${task.status === 'completed' ? 'opacity-60' : ''}`}
+                className={`group flex items-start gap-4 p-4 rounded-lg bg-bg-secondary
+                         hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer
+                         border border-border-default hover:border-accent-primary
+                         ${task.status === 'completed' ? 'opacity-75 border-l-4 border-green-600' : ''}`}
                 onClick={() => onTaskSelect(task.id)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Task: ${task.title}, Status: ${task.status}`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onTaskSelect(task.id);
+                  }
+                }}
               >
                 {/* Checkbox */}
                 <button
@@ -217,12 +269,12 @@ const TaskList: React.FC<TaskListProps> = ({
                 </button>
 
                 {/* Priority Indicator */}
-                <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+                <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)} mt-1`} />
 
                 {/* Task Content */}
                 <div className="flex-1 min-w-0">
                   <h3 className={`text-base font-medium truncate ${
-                    task.status === 'completed' ? 'line-through' : ''
+                    task.status === 'completed' ? 'line-through text-text-secondary' : ''
                   }`}>
                     {task.title}
                   </h3>

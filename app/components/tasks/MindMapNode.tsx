@@ -35,6 +35,14 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
     }
   };
 
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // On touch devices, tapping outside the textarea should save and exit editing mode
+    if (isEditing) {
+      setIsEditing(false);
+      onContentChange(node.id, editContent);
+    }
+  };
+
   // Prevent node click when editing
   const handleEditorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -45,7 +53,10 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
       transform={`translate(${node.x || 0},${node.y || 0})`}
       onClick={() => onSelect(node.id)}
       onDoubleClick={handleDoubleClick}
-      className="cursor-pointer"
+      className="cursor-pointer focus:outline-none"
+      tabIndex={0}
+      role="button"
+      aria-label={`Mind map node: ${node.content}`}
     >
       {/* Node background */}
       <rect
@@ -56,9 +67,11 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
         rx="25"
         className={`${
           selected
-            ? 'fill-accent-primary stroke-accent-primary'
+            ? 'fill-accent-primary stroke-accent-primary ring-2 ring-offset-2 ring-accent-primary'
             : node.status === 'task'
             ? 'fill-accent-secondary stroke-accent-secondary'
+            : node.parentId === null
+            ? 'fill-bg-tertiary stroke-border-default'
             : 'fill-bg-secondary stroke-border-default'
         }`}
       />
@@ -104,7 +117,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
             dominantBaseline="middle"
             className={`${
               selected || node.status === 'task' ? 'fill-white' : 'fill-text-primary'
-            } text-sm font-medium`}
+            } ${node.parentId === null ? 'text-lg' : 'text-sm'} font-medium`}
           >
             {node.content}
           </text>
@@ -145,6 +158,7 @@ const MindMapNode: React.FC<MindMapNodeProps> = ({
                 className="stroke-white stroke-2"
                 strokeLinecap="round"
               />
+              <title>{node.isCollapsed ? 'Expand' : 'Collapse'}</title>
             </g>
           )}
         </>

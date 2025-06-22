@@ -147,7 +147,17 @@ const MindMapView: React.FC<MindMapViewProps> = ({
 
   // Save mind map data on changes
   useEffect(() => {
-    localStorage.setItem(MINDMAP_STORAGE_KEY, JSON.stringify(mindMap));
+    try {
+      localStorage.setItem(MINDMAP_STORAGE_KEY, JSON.stringify(mindMap));
+    } catch (error) {
+      console.error('Failed to save mind map to localStorage:', error);
+      // Notify user of potential data loss risk
+      if (window.confirm('Warning: Unable to save mind map data. Changes may be lost on page refresh. Do you want to continue?')) {
+        // User acknowledges the risk
+      } else {
+        // User may choose to take action, though we can't do much here
+      }
+    }
   }, [mindMap]);
 
   // Add existing tasks as nodes
@@ -181,6 +191,14 @@ const MindMapView: React.FC<MindMapViewProps> = ({
     e.preventDefault();
     const delta = -e.deltaY * 0.001;
     setZoom(prevZoom => Math.min(Math.max(0.1, prevZoom + delta), 2));
+  };
+
+  // Responsive zoom level based on screen size
+  const getResponsiveZoom = () => {
+    const width = window.innerWidth;
+    if (width < 768) return 0.6; // Mobile
+    if (width < 1024) return 0.8; // Tablet
+    return 1; // Desktop
   };
 
   // Handle panning
@@ -297,6 +315,7 @@ const MindMapView: React.FC<MindMapViewProps> = ({
   }, [mindMap, updateMindMap]);
 
   // Layout calculation with centered root
+  // Performance optimization: Memoize and debounce layout calculation for large mind maps
   const calculateLayout = useCallback(() => {
     const nodeWidth = 160;
     const verticalSpacing = 50;
@@ -335,22 +354,65 @@ const MindMapView: React.FC<MindMapViewProps> = ({
     });
   }, [mindMap]);
 
-  // Run layout calculation when mindMap changes
-  useEffect(() => {
-    calculateLayout();
-  }, [calculateLayout]);
+  // Custom debounce function
+  const debounce = <T extends (...args: unknown[]) => void>(
+    func: T,
+    wait: number
+  ): ((...args: Parameters<T>) => void) & { cancel: () => void } => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    
+    const debounced = function(this: unknown, ...args: Parameters<T>) {
+      const later = () => {
+        timeout = null;
+        func.apply(this, args);
+      };
+      
+      if (timeout !== null) {
+        clearTimeout(timeout);
+      }
+      timeout = setTimeout(later, wait);
+    };
+    
+    debounced.cancel = () => {
+      if (timeout !== null) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+    };
+    
+    return debounced as ((...args: Parameters<T>) => void) & { cancel: () => void };
+  };
 
-  // Initial centering
+  // Run layout calculation when mindMap changes with debouncing
+  const debouncedCalculateLayout = useCallback(
+    debounce(() => {
+      calculateLayout();
+    }, 100),
+    [calculateLayout]
+  );
+
+  useEffect(() => {
+    debouncedCalculateLayout();
+    return () => debouncedCalculateLayout.cancel();
+  }, [mindMap, debouncedCalculateLayout]);
+
+  // Initial centering with responsive zoom
   useEffect(() => {
     if (svgRef.current) {
+      setZoom(getResponsiveZoom());
       setPan({
         x: (window.innerWidth / 2),
         y: (window.innerHeight / 3)
       });
     }
+    const handleResize = () => {
+      setZoom(getResponsiveZoom());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts for navigation and actions
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
@@ -368,25 +430,62 @@ const MindMapView: React.FC<MindMapViewProps> = ({
         } else if (key === 'y') {
           e.preventDefault();
           redo();
+        } else if (key === '+' || key === '=') {
+          e.preventDefault();
+          setZoom(prev => Math.min(prev + 0.1, 2));
+        } else if (key === '-') {
+          e.preventDefault();
+          setZoom(prev => Math.max(prev - 0.1, 0.1));
         }
-      } else if (selectedNode && e.key === ' ') {
-        e.preventDefault();
-        toggleNodeCollapse(selectedNode);
+      } else if (selectedNode) {
+        const node = mindMap.nodes[selectedNode];
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          toggleNodeCollapse(selectedNode);
+        } else if (e.key === 'ArrowRight' && node.children && node.children.length > 0 && !node.isCollapsed) {
+          e.preventDefault();
+          setSelectedNode(node.children[0]);
+        } else if (e.key === 'ArrowLeft' && node.parentId) {
+          e.preventDefault();
+          setSelectedNode(node.parentId);
+        } else if (e.key === 'ArrowUp' && node.parentId) {
+          e.preventDefault();
+          const parent = mindMap.nodes[node.parentId];
+          const index = parent.children?.indexOf(selectedNode) || 0;
+          if (index > 0) {
+            setSelectedNode(parent.children![index - 1]);
+          }
+        } else if (e.key === 'ArrowDown' && node.parentId) {
+          e.preventDefault();
+          const parent = mindMap.nodes[node.parentId];
+          const index = parent.children?.indexOf(selectedNode) || 0;
+          if (index < (parent.children?.length || 0) - 1) {
+            setSelectedNode(parent.children![index + 1]);
+          }
+        }
+      } else if (!selectedNode && mindMap.rootId) {
+        if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Enter', ' '].includes(e.key)) {
+          e.preventDefault();
+          setSelectedNode(mindMap.rootId);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNode, undo, redo, toggleNodeCollapse]);
-
+  }, [selectedNode, undo, redo, toggleNodeCollapse, mindMap.nodes, setSelectedNode]);
+  
   return (
-    <div 
+    <div
       className="h-full w-full bg-bg-secondary relative overflow-hidden"
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      tabIndex={0}
+      role="application"
+      aria-label="Interactive Mind Map"
     >
       <svg
         ref={svgRef}
@@ -396,6 +495,8 @@ const MindMapView: React.FC<MindMapViewProps> = ({
         }}
         viewBox="-500 -500 1000 1000"
         preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="Mind Map Diagram"
       >
         {/* Render connections */}
         {Object.values(mindMap.nodes).map(node => (
@@ -408,7 +509,11 @@ const MindMapView: React.FC<MindMapViewProps> = ({
               y2={(node.y || 0) - 20}
               stroke="currentColor"
               strokeWidth="2"
-              className="opacity-30"
+              className={`${
+                node.status === 'task' ? 'text-accent-secondary' :
+                node.status === 'completed' ? 'text-accent-success' : 'text-border-default'
+              } opacity-30`}
+              aria-label={`Connection from ${mindMap.nodes[node.parentId].content} to ${node.content}`}
             />
           )
         ))}

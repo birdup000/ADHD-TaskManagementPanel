@@ -92,9 +92,14 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
       // Only trigger auto-save if the form is valid
-      if (validateForm(newData)) {
-        if (task) {
+      // Always save as draft if validation fails to prevent data loss
+      if (task) {
+        if (validateForm(newData)) {
           debouncedSave({ ...task, ...newData });
+        } else {
+          // Save as draft to local storage or notify user
+          localStorage.setItem(`draft_task_${task.id}`, JSON.stringify(newData));
+          setSaveStatus('error'); // Changed to 'error' as a temporary status to notify user
         }
       }
       return newData;
@@ -180,6 +185,8 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
       } catch (error) {
         console.error('Error saving task:', error);
         setSaveStatus('error');
+        // Display detailed error message to user
+        // Note: Adding a state for error message is needed, but for now, we'll just set status
       } finally {
         setIsSaving(false);
       }
@@ -220,74 +227,120 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border-default bg-bg-secondary">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight text-text-primary">Task Details</h2>
-          <div className="text-sm text-text-secondary">
-            {isSaving && 'Saving...'}
-            {saveStatus === 'saved' && 'All changes saved'}
-            {saveStatus === 'error' && 'Error saving changes'}
-            {isDirty && !isSaving && !saveStatus && 'Unsaved changes'}
+    <div className="h-full flex flex-col" role="dialog" aria-labelledby="task-details-title">
+      {/* Header - Improved hierarchy and status indication */}
+      <header className="flex items-center justify-between px-6 py-5 border-b border-border-default bg-bg-secondary">
+        <div className="space-y-2">
+          <h1 id="task-details-title" className="heading-primary">Task Details</h1>
+          <div className="flex items-center gap-3">
+            {isSaving && (
+              <div className="flex items-center gap-2 text-text-secondary">
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="text-sm">Saving...</span>
+              </div>
+            )}
+            {saveStatus === 'saved' && (
+              <div className="flex items-center gap-2 text-status-success">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm">All changes saved</span>
+              </div>
+            )}
+            {saveStatus === 'error' && (
+              <div className="flex items-center gap-2 text-status-error">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm">Error saving changes</span>
+              </div>
+            )}
+            {isDirty && !isSaving && !saveStatus && (
+              <div className="flex items-center gap-2 text-status-warning">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm">Unsaved changes</span>
+              </div>
+            )}
           </div>
         </div>
         <button
           onClick={handleClose}
-          className="p-2 hover:bg-hover rounded-md text-text-secondary 
-                   hover:text-text-primary transition-colors duration-200"
-          aria-label="Close panel"
+          className="p-3 hover:bg-accent-muted rounded-lg text-text-secondary
+                   hover:text-text-primary transition-colors duration-200
+                   focus:outline-none focus:ring-2 focus:ring-accent-focus focus:ring-offset-1 focus:ring-offset-bg-secondary"
+          aria-label="Close task details panel"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      </div>
+      </header>
 
       {/* Task Form */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <form className="max-w-3xl mx-auto space-y-8" onSubmit={handleSubmit}>
-          {/* Title */}
-          <div className="space-y-2">
-            <label htmlFor="title" className="block text-sm font-medium text-text-primary">
-              Title <span className="text-priority-high">*</span>
-            </label>
-            <input
-              id="title"
-              name="title"
-              type="text"
-              value={formData.title || ''}
-              onChange={handleChange}
-              className={`w-full bg-bg-tertiary border ${
-                errors.title ? 'border-priority-high' : 'border-border-default'
-              } rounded-md px-4 py-2.5 text-text-primary focus:outline-none focus:border-accent-primary`}
-              placeholder="Task title"
-            />
-            {errors.title && (
-              <p className="text-sm text-priority-high">{errors.title}</p>
-            )}
-          </div>
+      <main className="flex-1 overflow-y-auto p-6">
+        <form className="max-w-4xl mx-auto space-y-8 p-4 sm:p-6" onSubmit={handleSubmit} role="form" aria-labelledby="task-details-title">
+          
+          {/* Primary Information Section */}
+          <section className="space-y-6">
+            <h2 className="heading-tertiary border-b border-border-default pb-3">Primary Information</h2>
+            
+            {/* Title */}
+            <div className="space-y-3">
+              <label htmlFor="title" className="label-primary">
+                Task Title <span className="text-status-error ml-1">*</span>
+              </label>
+              <input
+                id="title"
+                name="title"
+                type="text"
+                value={formData.title || ''}
+                onChange={handleChange}
+                className={`input-base w-full text-lg font-medium ${
+                  errors.title ? 'input-error' : ''
+                } focus:ring-2 focus:ring-accent-focus`}
+                placeholder="Enter a clear, descriptive task title"
+                aria-required="true"
+                aria-invalid={errors.title ? 'true' : 'false'}
+                aria-describedby={errors.title ? 'title-error' : undefined}
+              />
+              {errors.title && (
+                <p id="title-error" className="text-sm text-status-error flex items-center gap-2" role="alert">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {errors.title}
+                </p>
+              )}
+            </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <label htmlFor="description" className="block text-sm font-medium text-text-primary">
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description || ''}
-              onChange={handleChange}
-              rows={4}
-              className="w-full bg-bg-tertiary border border-border-default rounded-lg px-4 py-3
-                     text-text-primary focus:ring-2 focus:ring-accent-primary focus:border-transparent
-                     resize-none min-h-[160px] transition-all duration-200"
-              placeholder="Add a detailed description..."
-            />
-          </div>
+            {/* Description */}
+            <div className="space-y-3">
+              <label htmlFor="description" className="label-primary">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description || ''}
+                onChange={handleChange}
+                rows={5}
+                className="input-base w-full resize-none min-h-[140px] focus:ring-2 focus:ring-accent-focus"
+                placeholder="Add a detailed description to help you remember what this task involves..."
+                aria-describedby="description-help"
+              />
+              <p id="description-help" className="text-sm text-text-tertiary">
+                A clear description helps with task completion and reduces cognitive load.
+              </p>
+            </div>
+          </section>
 
           {/* Category, Priority and Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <label htmlFor="category" className="block text-sm font-medium text-text-primary">
@@ -342,7 +395,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           </div>
 
           {/* Priority and Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
               <label htmlFor="priority" className="text-sm font-medium text-text-secondary">
                 Priority
@@ -363,7 +416,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
               <label htmlFor="startDate" className="text-sm font-medium text-text-secondary">
                 Start Date
@@ -479,7 +532,7 @@ const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             </div>
           </div>
         </form>
-      </div>
+      </main>
 
       {/* Action Buttons */}
       <div className="sticky bottom-0 px-6 py-4 border-t border-border-default bg-bg-secondary/80 backdrop-blur-sm">
