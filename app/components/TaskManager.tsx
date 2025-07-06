@@ -4,7 +4,8 @@ import React from 'react';
 import TaskList from './tasks/TaskList';
 import BoardView from './tasks/BoardView';
 import MindMapView from './tasks/MindMapView';
-import TaskDetailPanel from './tasks/TaskDetailPanel';
+// import TaskDetailPanel from './tasks/TaskDetailPanel'; // To be replaced
+import NewTaskView from './tasks/NewTaskView'; // Import the new task view
 import { Task } from '../types/task';
 import { useTasks } from '../hooks/useTasks';
 
@@ -36,74 +37,73 @@ const TaskManager: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex">
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* View Toggle */}
-        <div className="p-4 border-b border-border-default">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-md ${
-                viewMode === 'list'
-                  ? 'bg-accent-primary text-white'
-                  : 'text-text-secondary hover:bg-hover'
-              }`}
-            >
-              List View
-            </button>
-            <button
-              onClick={() => setViewMode('board')}
-              className={`px-4 py-2 rounded-md ${
-                viewMode === 'board'
-                  ? 'bg-accent-primary text-white'
-                  : 'text-text-secondary hover:bg-hover'
-              }`}
-            >
-              Board View
-            </button>
-            <button
-              onClick={() => setViewMode('mindmap')}
-              className={`px-4 py-2 rounded-md ${
-                viewMode === 'mindmap'
-                  ? 'bg-accent-primary text-white'
-                  : 'text-text-secondary hover:bg-hover'
-              }`}
-            >
-              Mind Map
-            </button>
+    <div className="h-full flex flex-col md:flex-row overflow-hidden"> {/* Ensure overflow is handled */}
+      {/* Main Task List / Board / MindMap Area */}
+      {/* This part will dynamically take less space if a task is selected, or full width if not */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-y-auto custom-scrollbar
+                    ${selectedTaskId ? 'md:w-[calc(100%-360px)] lg:w-[calc(100%-400px)]' : 'w-full'}`}
+      >
+        {/* View Toggle Buttons */}
+        <div className="p-4 border-b border-border-default sticky top-0 bg-bg-primary z-10">
+          <div className="flex items-center gap-2 md:gap-4">
+            {(['list', 'board', 'mindmap'] as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`btn ${viewMode === mode ? 'btn-primary' : 'btn-ghost'} btn-sm capitalize`}
+                aria-pressed={viewMode === mode}
+              >
+                {mode} View
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Task Views */}
-        {viewMode === 'list' ? (
-          <TaskList
-            tasks={tasks}
-            onTaskSelect={setSelectedTaskId}
-            onTaskStatusChange={updateTaskStatus}
-          />
-        ) : viewMode === 'board' ? (
-          <BoardView
-            tasks={tasks}
-            onTaskSelect={setSelectedTaskId}
-            onTaskStatusChange={updateTaskStatus}
-          />
-        ) : (
-          <MindMapView
-            tasks={tasks}
-            onTaskSelect={setSelectedTaskId}
-            onTaskCreate={addTask}
-          />
-        )}
+        {/* Conditional Task Views */}
+        <div className="flex-1 p-2 md:p-4"> {/* Added padding for content within scrollable area */}
+          {viewMode === 'list' && (
+            <TaskList
+              tasks={tasks}
+              onTaskSelect={setSelectedTaskId}
+              onTaskStatusChange={updateTaskStatus}
+              selectedTaskId={selectedTaskId} // Pass selectedTaskId for highlighting
+            />
+          )}
+          {viewMode === 'board' && (
+            <BoardView
+              tasks={tasks}
+              onTaskSelect={setSelectedTaskId}
+              onTaskStatusChange={updateTaskStatus}
+            />
+          )}
+          {viewMode === 'mindmap' && (
+            <MindMapView
+              tasks={tasks}
+              onTaskSelect={setSelectedTaskId}
+              onTaskCreate={addTask}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Task Detail Panel */}
-      <div className="w-96 border-l border-border-default">
-        <TaskDetailPanel
-          task={selectedTask}
-          onClose={() => setSelectedTaskId(null)}
-          onSave={updateTask}
-        />
+      {/* New Task View (Task Detail Panel) - slides in or is present */}
+      {/* The NewTaskView itself handles its width (md:w-[320px] lg:w-[360px]) */}
+      {/* We control its visibility and animation here */}
+      <div
+        className={`fixed inset-y-0 right-0 md:relative md:inset-auto bg-bg-secondary border-l border-border-default shadow-xl md:shadow-none
+                    transform transition-transform duration-300 ease-in-out z-20
+                    ${selectedTaskId ? 'translate-x-0' : 'translate-x-full md:translate-x-0 md:hidden'}`} // Control visibility and slide-in
+        style={{ width: selectedTaskId ? 'clamp(320px, 90vw, 420px)' : '0px' }} // Dynamic width for mobile overlay, fixed for desktop
+      >
+        {selectedTaskId && ( // Only render if a task is selected
+          <NewTaskView
+            taskId={selectedTaskId}
+            onClose={() => setSelectedTaskId(null)}
+            // onSave={updateTask} // NewTaskView handles its own saving via its sub-components & useTasks hook
+            // onDelete={deleteTask} // Similarly, can be handled within or passed if preferred
+          />
+        )}
       </div>
     </div>
   );
