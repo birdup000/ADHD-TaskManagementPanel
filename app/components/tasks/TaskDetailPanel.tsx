@@ -261,6 +261,148 @@ export default function TaskDetailPanel({ task, onClose, onSave, onDelete }: Tas
           )}
         </div>
 
+        {/* Recurrence */}
+        <div>
+          <label className="flex items-center space-x-2 mb-2">
+            <input
+              type="checkbox"
+              checked={!!editedTask.isRecurring}
+              onChange={(e) => {
+                const isRecurring = e.target.checked;
+                setEditedTask({
+                  ...editedTask,
+                  isRecurring,
+                  // Reset recurrenceRule if it's being unchecked, or initialize if being checked
+                  recurrenceRule: isRecurring ? (editedTask.recurrenceRule || { frequency: 'daily' }) : undefined,
+                  originalDueDate: isRecurring && !editedTask.originalDueDate && editedTask.dueDate ? editedTask.dueDate : editedTask.originalDueDate
+                });
+              }}
+              className="form-checkbox h-4 w-4 text-accent-primary border-border-default rounded focus:ring-accent-primary disabled:opacity-50"
+              disabled={!isEditing}
+            />
+            <span className="text-sm font-medium text-text-secondary">Recurring Task</span>
+          </label>
+
+          {isEditing && editedTask.isRecurring && (
+            <div className="space-y-3 pl-6 border-l-2 border-border-default ml-2 py-3">
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">Frequency</label>
+                <select
+                  value={editedTask.recurrenceRule?.frequency || 'daily'}
+                  onChange={(e) => setEditedTask({
+                    ...editedTask,
+                    recurrenceRule: { ...editedTask.recurrenceRule, frequency: e.target.value as Task['recurrenceRule']['frequency'] }
+                  })}
+                  className="w-full text-sm px-3 py-1.5 border border-border-default rounded-md focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-transparent"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+
+              {editedTask.recurrenceRule?.frequency && ['daily', 'weekly', 'monthly', 'yearly'].includes(editedTask.recurrenceRule.frequency) && editedTask.recurrenceRule.frequency !== 'yearly' && (
+                 <div>
+                    <label className="block text-xs font-medium text-text-secondary mb-1">
+                      Repeat every
+                    </label>
+                    <div className="flex items-center space-x-2">
+                        <input
+                        type="number"
+                        min="1"
+                        value={editedTask.recurrenceRule?.interval || 1}
+                        onChange={(e) => setEditedTask({
+                            ...editedTask,
+                            recurrenceRule: { ...editedTask.recurrenceRule, interval: parseInt(e.target.value) || 1 }
+                        })}
+                        className="w-20 text-sm px-3 py-1.5 border border-border-default rounded-md focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-transparent"
+                        />
+                        <span className="text-sm text-text-secondary">
+                            {editedTask.recurrenceRule?.frequency === 'daily' ? 'day(s)' : ''}
+                            {editedTask.recurrenceRule?.frequency === 'weekly' ? 'week(s)' : ''}
+                            {editedTask.recurrenceRule?.frequency === 'monthly' ? 'month(s)' : ''}
+                        </span>
+                    </div>
+                </div>
+              )}
+
+              {editedTask.recurrenceRule?.frequency === 'weekly' && (
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Repeat on</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const).map(day => (
+                      <button
+                        key={day}
+                        onClick={() => {
+                          const currentDays = editedTask.recurrenceRule?.daysOfWeek || [];
+                          const newDays = currentDays.includes(day)
+                            ? currentDays.filter(d => d !== day)
+                            : [...currentDays, day];
+                          setEditedTask({
+                            ...editedTask,
+                            recurrenceRule: { ...editedTask.recurrenceRule, daysOfWeek: newDays.length > 0 ? newDays : undefined }
+                          });
+                        }}
+                        className={`px-2 py-1 border rounded-md text-xs transition-colors
+                          ${editedTask.recurrenceRule?.daysOfWeek?.includes(day)
+                            ? 'bg-accent-primary text-white border-accent-primary'
+                            : 'bg-surface-secondary hover:bg-hover border-border-default'}`}
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                  {(!editedTask.recurrenceRule?.daysOfWeek || editedTask.recurrenceRule.daysOfWeek.length === 0) && (
+                     <p className="text-xs text-red-500 mt-1">Select at least one day for weekly repeat.</p>
+                  )}
+                </div>
+              )}
+
+              {editedTask.recurrenceRule?.frequency === 'monthly' && (
+                <div>
+                  <label className="block text-xs font-medium text-text-secondary mb-1">Day of month</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={editedTask.recurrenceRule?.dayOfMonth || ''}
+                    onChange={(e) => {
+                        let day = parseInt(e.target.value);
+                        if (day > 31) day = 31;
+                        if (day < 1 && e.target.value !== '') day = 1;
+                        setEditedTask({
+                        ...editedTask,
+                        recurrenceRule: { ...editedTask.recurrenceRule, dayOfMonth: isNaN(day) ? undefined : day }
+                        });
+                    }}
+                    placeholder="e.g., 15"
+                    className="w-full text-sm px-3 py-1.5 border border-border-default rounded-md focus:outline-none focus:ring-1 focus:ring-accent-primary focus:border-transparent"
+                  />
+                   {editedTask.recurrenceRule?.dayOfMonth === undefined && (
+                     <p className="text-xs text-red-500 mt-1">Specify a day of the month.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+           {!isEditing && task.isRecurring && task.recurrenceRule && (
+            <div className="mt-2 text-sm text-text-secondary pl-6">
+                <p>Repeats {task.recurrenceRule.frequency}
+                {task.recurrenceRule.interval && task.recurrenceRule.interval > 1 ? ` every ${task.recurrenceRule.interval}` : ''}
+                {task.recurrenceRule.frequency === 'weekly' && task.recurrenceRule.daysOfWeek && task.recurrenceRule.daysOfWeek.length > 0 && (
+                    ` on ${task.recurrenceRule.daysOfWeek.join(', ')}`
+                )}
+                {task.recurrenceRule.frequency === 'monthly' && task.recurrenceRule.dayOfMonth && (
+                    ` on day ${task.recurrenceRule.dayOfMonth}`
+                )}
+                .
+                </p>
+                {task.originalDueDate && <p>Original due date: {formatDate(task.originalDueDate)}</p>}
+            </div>
+          )}
+        </div>
+
         {/* Progress */}
         {task.progress !== undefined && (
           <div>

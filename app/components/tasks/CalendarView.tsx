@@ -189,7 +189,23 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                       role="button"
                       aria-label={`Task: ${task.title}, Priority: ${task.priority}${focusedDay === day && focusedTaskIndex === dayTasks.indexOf(task) ? ', Focused' : ''}`}
                     >
-                      <div className="truncate">{task.title}</div>
+                      <div className="flex items-center gap-1">
+                        {task.isRecurring && (
+                          <svg
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2" // Thicker stroke for small icon
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                            className="w-2.5 h-2.5 text-text-secondary flex-shrink-0"
+                            title="Recurring task"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path>
+                          </svg>
+                        )}
+                        <span className="truncate">{task.title}</span>
+                      </div>
                     </div>
                   ))}
                   {dayTasks.length > 3 && (

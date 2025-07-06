@@ -115,15 +115,31 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           )}
           
-          {/* Due date */}
-          {task.dueDate && (
-            <div className="text-xs text-text-secondary flex items-center gap-1">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          {/* Due date & Recurrence Icon */}
+          <div className="flex items-center gap-2 mt-1">
+            {task.dueDate && (
+              <div className="text-xs text-text-secondary flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Due {new Date(task.dueDate).toLocaleDateString()}
+              </div>
+            )}
+            {task.isRecurring && (
+              <svg
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                className={`w-3.5 h-3.5 text-text-secondary ${task.dueDate ? '' : 'ml-0'}`} // Adjust margin if no due date
+                title="Recurring task"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path>
               </svg>
-              Due {new Date(task.dueDate).toLocaleDateString()}
-            </div>
-          )}
+            )}
+          </div>
           
           {/* Expand/Collapse button */}
           {showExpandButton && (
