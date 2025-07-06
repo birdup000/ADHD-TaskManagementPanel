@@ -8,6 +8,7 @@ interface TaskListProps {
   tasks: Task[];
   onTaskSelect: (taskId: string) => void;
   onTaskStatusChange: (taskId: string, status: Task['status']) => void;
+  selectedTaskId?: string | null; // Added to highlight the selected task
   onNewTask?: () => void;
   onTaskDelete?: (taskId: string) => void;
 }
@@ -25,6 +26,7 @@ const TaskList: React.FC<TaskListProps> = ({
   tasks,
   onTaskSelect,
   onTaskStatusChange,
+  selectedTaskId: currentSelectedTaskId, // Renamed prop to avoid conflict with local state
   onNewTask,
   onTaskDelete,
 }) => {
@@ -33,7 +35,7 @@ const TaskList: React.FC<TaskListProps> = ({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [viewMode, setViewMode] = React.useState<'list' | 'grid' | 'compact'>('list');
   const [menuOpen, setMenuOpen] = React.useState(false);
-  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
+  const [contextMenuTaskId, setContextMenuTaskId] = React.useState<string | null>(null); // For context menu
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
 
   // Filter and sort tasks
@@ -71,14 +73,14 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleMenuOpen = (event: React.MouseEvent, taskId: string) => {
     event.stopPropagation();
-    setSelectedTaskId(taskId);
+    setContextMenuTaskId(taskId);
     setMenuAnchorEl(event.currentTarget as HTMLElement);
     setMenuOpen(true);
   };
 
   const handleMenuClose = () => {
     setMenuOpen(false);
-    setSelectedTaskId(null);
+    setContextMenuTaskId(null);
     setMenuAnchorEl(null);
   };
 
@@ -250,10 +252,11 @@ const TaskList: React.FC<TaskListProps> = ({
               viewMode === 'compact' ? (
                 <div
                   key={task.id}
-                  className={`group flex items-center gap-3 p-2 rounded-lg bg-bg-secondary
-                           hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer
-                           border border-border-default hover:border-accent-primary
-                           ${task.status === 'completed' ? 'opacity-75 border-l-2 border-green-600' : ''}`}
+                  className={`group flex items-center gap-3 p-2 rounded-lg transition-all duration-200 cursor-pointer
+                           border hover:border-accent-primary
+                           ${task.status === 'completed' ? 'opacity-60 bg-bg-tertiary border-border-default' : 'bg-bg-secondary border-border-default'}
+                           ${currentSelectedTaskId === task.id ? 'bg-accent-muted border-accent-primary shadow-md' : ''}
+                           `}
                   onClick={() => onTaskSelect(task.id)}
                   tabIndex={0}
                   role="button"
@@ -329,10 +332,11 @@ const TaskList: React.FC<TaskListProps> = ({
               ) : (
                 <div
                   key={task.id}
-                  className={`group flex items-start gap-4 p-4 rounded-lg bg-bg-secondary
-                           hover:bg-bg-tertiary transition-colors duration-200 cursor-pointer
-                           border border-border-default hover:border-accent-primary
-                           ${task.status === 'completed' ? 'opacity-75 border-l-4 border-green-600' : ''}`}
+                  className={`group flex items-start gap-4 p-4 rounded-lg transition-all duration-200 cursor-pointer
+                           border hover:border-accent-primary
+                           ${task.status === 'completed' ? 'opacity-60 bg-bg-tertiary border-border-default' : 'bg-bg-secondary border-border-default'}
+                           ${currentSelectedTaskId === task.id ? 'bg-accent-muted border-accent-primary shadow-lg' : ''}
+                           `}
                   onClick={() => onTaskSelect(task.id)}
                   tabIndex={0}
                   role="button"
@@ -438,12 +442,25 @@ const TaskList: React.FC<TaskListProps> = ({
         <TaskContextMenu
           isOpen={menuOpen}
           onClose={handleMenuClose}
-          onDelete={() => {
-            if (selectedTaskId && onTaskDelete) {
-              onTaskDelete(selectedTaskId);
-            }
-          }}
           anchorEl={menuAnchorEl}
+          task={tasks.find(t => t.id === contextMenuTaskId)} // Pass the specific task for context
+          onDelete={() => {
+            if (contextMenuTaskId && onTaskDelete) {
+              onTaskDelete(contextMenuTaskId);
+            }
+            handleMenuClose(); // Ensure menu closes after action
+          }}
+          onDuplicate={() => {
+            // Implement duplicate logic here or call a prop
+            alert(`Duplicate task: ${contextMenuTaskId}`);
+            handleMenuClose();
+          }}
+          onCopyLink={() => {
+            // Implement copy link logic
+            navigator.clipboard.writeText(`${window.location.origin}/task/${contextMenuTaskId}`);
+            alert(`Link copied for task: ${contextMenuTaskId}`);
+            handleMenuClose();
+          }}
         />
       </div>
 
