@@ -17,7 +17,6 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
 }) => {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = React.useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = React.useState(false);
-  const [isFocusMode, setIsFocusMode] = React.useState(false);
 
   // Update right panel state when visibility changes
   React.useEffect(() => {
@@ -25,7 +24,7 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
   }, [isRightPanelVisible]);
 
   return (
-    <div className={`flex h-[100dvh] bg-bg-primary text-text-primary overflow-hidden ${isFocusMode ? 'focus-mode' : ''}`} role="application" aria-label="Task management panel">
+    <div className="flex h-[100dvh] bg-bg-primary text-text-primary overflow-hidden" role="application" aria-label="Task management panel">
       {/* Mobile Navigation Toggle */}
       <div className="fixed top-4 left-4 md:hidden z-40">
         <button
@@ -53,31 +52,6 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
         </button>
       </div>
       
-      {/* Focus Mode Toggle */}
-      <div className="fixed top-4 right-4 z-40">
-        <button
-          onClick={() => setIsFocusMode(!isFocusMode)}
-          className="p-3 bg-bg-secondary rounded-md hover:bg-accent-muted border border-border-default
-                   shadow-md focus:outline-none focus:ring-2 focus:ring-accent-focus focus:ring-offset-1 focus:ring-offset-bg-primary
-                   transition-colors duration-200"
-          aria-label={isFocusMode ? 'Exit focus mode' : 'Enter focus mode'}
-          aria-pressed={isFocusMode}
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            {isFocusMode ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
-            )}
-          </svg>
-        </button>
-      </div>
 
       {/* Mobile Navigation Backdrop */}
       {isLeftPanelOpen && (
@@ -94,7 +68,7 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
         className={`fixed md:relative left-0 top-0 h-full bg-bg-secondary
                    w-80 md:w-72 lg:w-80 border-r border-border-default transform md:translate-x-0
                    panel-transition duration-300 ease-in-out z-30 md:z-10 ${
-                     isLeftPanelOpen && !isFocusMode ? 'translate-x-0 shadow-xl md:shadow-none' : '-translate-x-full md:translate-x-0'
+                     isLeftPanelOpen ? 'translate-x-0 shadow-xl md:shadow-none' : '-translate-x-full md:translate-x-0'
                    }`}
         role="navigation"
         aria-label="Main navigation"
@@ -120,7 +94,7 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
       {/* Main Task List Panel */}
       <main
         className={`flex-1 min-w-0 bg-bg-primary overflow-hidden transition-all duration-300
-                   ${isRightPanelOpen && !isFocusMode ? 'md:mr-[400px] lg:mr-[420px]' : 'md:mr-0'}`}
+                   ${isRightPanelOpen ? 'md:mr-[400px] lg:mr-[420px]' : 'md:mr-0'}`}
         role="main"
         aria-label="Task list"
       >
@@ -135,7 +109,7 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
                    w-[90vw] max-w-[400px] md:w-[400px] lg:w-[420px]
                    border-l border-border-default transform panel-transition z-20
                    shadow-xl md:shadow-none ${
-                     isRightPanelOpen && !isFocusMode ? 'translate-x-0' : 'translate-x-full'
+                     isRightPanelOpen ? 'translate-x-0' : 'translate-x-full'
                    }`}
         role="complementary"
         aria-label="Task details panel"
