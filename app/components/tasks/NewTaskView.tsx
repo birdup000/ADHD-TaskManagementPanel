@@ -19,7 +19,7 @@ interface NewTaskViewProps {
 }
 
 const NewTaskView: React.FC<NewTaskViewProps> = ({ taskId, onClose }) => {
-  const { tasks, updateTask, getTaskById } = useTasks(); // Assuming getTaskById is available or can be added
+  const { tasks, updateTask } = useTasks();
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ const NewTaskView: React.FC<NewTaskViewProps> = ({ taskId, onClose }) => {
       try {
         await updateTask(updatedTaskData);
         // Optionally re-fetch or confirm save
-      } catch (e) {
+      } catch {
         setError('Failed to update task.');
         // Revert optimistic update if necessary
         setTask(tasks.find(t => t.id === task.id) || null);

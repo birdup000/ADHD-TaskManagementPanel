@@ -6,7 +6,6 @@ import BoardView from './tasks/BoardView';
 import MindMapView from './tasks/MindMapView';
 // import TaskDetailPanel from './tasks/TaskDetailPanel'; // To be replaced
 import NewTaskView from './tasks/NewTaskView'; // Import the new task view
-import { Task } from '../types/task';
 import { useTasks } from '../hooks/useTasks';
 
 type ViewMode = 'list' | 'board' | 'mindmap';
@@ -16,17 +15,15 @@ const TaskManager: React.FC = () => {
     tasks,
     loading,
     addTask,
-    updateTask,
-    deleteTask,
     updateTaskStatus
   } = useTasks();
 
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
   const [viewMode, setViewMode] = React.useState<ViewMode>('list');
 
-  const selectedTask = React.useMemo(() => {
-    return tasks.find(task => task.id === selectedTaskId) || null;
-  }, [tasks, selectedTaskId]);
+  // const selectedTask = React.useMemo(() => {
+  //   return tasks.find(task => task.id === selectedTaskId) || null;
+  // }, [tasks, selectedTaskId]);
 
   if (loading) {
     return (
@@ -81,7 +78,26 @@ const TaskManager: React.FC = () => {
             <MindMapView
               tasks={tasks}
               onTaskSelect={setSelectedTaskId}
-              onTaskCreate={addTask}
+              onTaskCreate={(partial) => {
+                // Adapter: MindMapView gives Partial<Task>, convert to full Task for addTask(Task)
+                const id = partial.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                const fullTask = {
+                  id,
+                  title: partial.title ?? 'Untitled Task',
+                  description: partial.description ?? '',
+                  status: partial.status ?? 'todo',
+                  priority: partial.priority ?? 'medium',
+                  dueDate: partial.dueDate,
+                  startDate: partial.startDate,
+                  tags: partial.tags ?? [],
+                  effort: partial.effort,
+                  progress: partial.progress ?? 0,
+                  category: partial.category,
+                  subTasks: partial.subTasks ?? [],
+                  assigneeId: partial.assigneeId ?? null,
+                } as import('../types/task').Task;
+                void addTask(fullTask);
+              }}
             />
           )}
         </div>

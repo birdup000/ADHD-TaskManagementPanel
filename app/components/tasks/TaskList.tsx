@@ -4,6 +4,38 @@ import React from 'react';
 import { Task } from '../../types/task';
 import TaskContextMenu from './TaskContextMenu';
 
+/**
+ * Small presentational helpers
+ * (Kept lightweight; used within list rows for clarity)
+ */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+const StatusBadge: React.FC<{ status: Task['status'] }> = ({ status }) => {
+  const map: Record<Task['status'], string> = {
+    todo: 'bg-bg-tertiary text-text-secondary border border-border-default',
+    in_progress: 'bg-accent-muted text-text-primary border border-border-default',
+    completed: 'bg-priority-completedBg text-text-primary border border-priority-completed',
+  };
+  const label = status === 'in_progress' ? 'In Progress' : status === 'todo' ? 'To Do' : 'Completed';
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${map[status]}`} aria-label={`Status: ${label}`}>
+      {label}
+    </span>
+  );
+};
+/* eslint-enable @typescript-eslint/no-unused-vars */
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+const PriorityDot: React.FC<{ priority: Task['priority']; size?: 'sm' | 'md' }> = ({ priority, size = 'md' }) => {
+  const sizeCls = size === 'sm' ? 'w-2 h-2' : 'w-3 h-3';
+  const colors = {
+    high: 'bg-priority-high',
+    medium: 'bg-priority-medium',
+    low: 'bg-priority-low',
+  };
+  return <span className={`${sizeCls} rounded-full ${colors[priority]}`} aria-hidden="true" />;
+};
+/* eslint-enable @typescript-eslint/no-unused-vars */
+
 interface TaskListProps {
   tasks: Task[];
   onTaskSelect: (taskId: string) => void;
@@ -37,6 +69,8 @@ const TaskList: React.FC<TaskListProps> = ({
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [contextMenuTaskId, setContextMenuTaskId] = React.useState<string | null>(null); // For context menu
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<HTMLElement | null>(null);
+  // keyboard navigation state (single source of truth)
+  const [focusedIndex, setFocusedIndex] = React.useState<number>(-1);
 
   // Filter and sort tasks
   // Use useMemo to optimize filtering and sorting for large datasets
@@ -56,13 +90,15 @@ const TaskList: React.FC<TaskListProps> = ({
   const sortedTasks = React.useMemo(() => {
     return [...filteredTasks].sort((a, b) => {
       switch (sortBy) {
-        case 'priority':
-          const priorityOrder = { high: 0, medium: 1, low: 2 };
+        case 'priority': {
+          const priorityOrder: Record<Task['priority'], number> = { high: 0, medium: 1, low: 2 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
-        case 'dueDate':
+        }
+        case 'dueDate': {
           if (!a.dueDate) return 1;
           if (!b.dueDate) return -1;
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        }
         case 'title':
           return a.title.localeCompare(b.title);
         default:
@@ -70,6 +106,53 @@ const TaskList: React.FC<TaskListProps> = ({
       }
     });
   }, [filteredTasks, sortBy]);
+
+  // Stable handlers for keyboard shortcuts
+  const completeTask = React.useCallback((taskId: string) => {
+    const target = tasks.find(t => t.id === taskId);
+    if (!target) return;
+    onTaskStatusChange(taskId, target.status === 'completed' ? 'todo' : 'completed');
+  }, [tasks, onTaskStatusChange]);
+
+  // Update visibleTaskIds once sortedTasks is known
+  const visibleTaskIds = React.useMemo(() => sortedTasks.map(t => t.id), [sortedTasks]);
+
+  // Keyboard shortcuts: j/k navigate, c completes, Delete deletes
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ignore when typing in inputs/selects/textareas
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex((prev) => {
+          const next = Math.min((prev < 0 ? 0 : prev + 1), Math.max(visibleTaskIds.length - 1, 0));
+          return next;
+        });
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex((prev) => Math.max((prev < 0 ? 0 : prev - 1), 0));
+      } else if (e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        const id = visibleTaskIds[focusedIndex];
+        if (id) completeTask(id);
+      } else if (e.key === 'Enter') {
+        const id = visibleTaskIds[focusedIndex];
+        if (id) onTaskSelect(id);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        const id = visibleTaskIds[focusedIndex];
+        if (id && onTaskDelete) {
+          e.preventDefault();
+          if (confirm('Delete this task? This cannot be undone.')) {
+            onTaskDelete(id);
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [visibleTaskIds, focusedIndex, completeTask, onTaskSelect, onTaskDelete]);
 
   const handleMenuOpen = (event: React.MouseEvent, taskId: string) => {
     event.stopPropagation();

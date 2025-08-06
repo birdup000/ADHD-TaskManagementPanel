@@ -113,10 +113,9 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
                    }`}
         role="complementary"
         aria-label="Task details panel"
-        aria-expanded={isRightPanelOpen}
         aria-hidden={!isRightPanelOpen}
       >
-        <div className="h-full overflow-y-auto py-6 px-4 md:px-6">
+        <div id="task-details-panel" className="h-full overflow-y-auto py-6 px-4 md:px-6">
           {rightPanel}
         </div>
         
@@ -130,6 +129,7 @@ const TaskPanelLayout: React.FC<TaskPanelLayoutProps> = ({
                    shadow-md"
           aria-label={isRightPanelOpen ? 'Collapse task details panel' : 'Expand task details panel'}
           aria-expanded={isRightPanelOpen}
+          aria-controls="task-details-panel"
         >
           <svg
             className={`w-5 h-5 transition-transform duration-200 text-text-secondary ${

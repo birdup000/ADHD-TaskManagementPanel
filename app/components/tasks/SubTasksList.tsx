@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Task, SubTask } from '../../types/task'; // Assuming SubTask is defined in task.ts
-import { useTasks } from '../../hooks/useTasks'; // Or a specific hook for subtasks if available
 import { debounce } from 'lodash';
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs for new subtasks
 
@@ -59,12 +58,23 @@ const SubTasksList: React.FC<SubTasksListProps> = ({ parentTask, onUpdateParentT
     setSubTasks(parentTask.subTasks || []);
   }, [parentTask.subTasks]);
 
-  const debouncedUpdateParent = useCallback(
-    debounce(async (newSubTasks: SubTask[]) => {
+  /**
+   * Create a stable debounced updater for parent task updates.
+   * useMemo avoids the React Hooks warning about unknown dependencies in debounce,
+   * and we cancel pending calls on unmount/deps change to prevent leaks.
+   */
+  const debouncedUpdateParent = useMemo(() => {
+    const fn = debounce(async (newSubTasks: SubTask[]) => {
       await onUpdateParentTask({ subTasks: newSubTasks });
-    }, 750),
-    [onUpdateParentTask]
-  );
+    }, 750);
+    return fn;
+  }, [onUpdateParentTask]);
+  
+  useEffect(() => {
+    return () => {
+      debouncedUpdateParent.cancel();
+    };
+  }, [debouncedUpdateParent]);
 
   const handleAddSubTask = () => {
     if (newSubTaskTitle.trim() === '') return;
